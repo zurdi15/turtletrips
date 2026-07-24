@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+import secrets
+
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -72,6 +74,30 @@ def export_calendar(trip_id: int, bookings: bool = True, db: Session = Depends(g
         content=content,
         media_type="text/calendar; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.post("/trips/{trip_id}/ics-token")
+def rotate_ics_token(trip_id: int, db: Session = Depends(get_db)) -> dict:
+    """Genera (o rota, invalidando el anterior) el token de suscripción."""
+    trip = get_or_404(db, Trip, trip_id)
+    trip.ics_token = secrets.token_urlsafe(24)
+    db.commit()
+    return {"token": trip.ics_token}
+
+
+@router.get("/calendar/{token}.ics")
+def subscribed_calendar(token: str, bookings: bool = True, db: Session = Depends(get_db)):
+    """Feed de suscripción (Google Calendar «Desde URL»): el token es la llave,
+    pensado para quedar exento de la autenticación del reverse proxy."""
+    trip = db.scalar(select(Trip).where(Trip.ics_token == token)) if token else None
+    if trip is None:
+        raise HTTPException(status_code=404, detail="Calendario no encontrado")
+    content = build_calendar(db, trip, include_bookings=bookings)
+    return Response(
+        content=content,
+        media_type="text/calendar; charset=utf-8",
+        headers={"Cache-Control": "no-cache"},
     )
 
 

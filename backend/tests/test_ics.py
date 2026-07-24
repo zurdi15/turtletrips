@@ -130,3 +130,23 @@ def test_headers_structure_and_404(client, trip):
     assert "X-WR-CALNAME:" in body
 
     assert client.get("/api/v1/trips/99999/calendar.ics").status_code == 404
+
+
+def test_ics_subscription_feed(client, trip):
+    _item(client, trip["id"], title="Visita")
+
+    # el token es la llave: se genera, sirve el feed y rotar invalida el viejo
+    token = client.post(f"/api/v1/trips/{trip['id']}/ics-token").json()["token"]
+    assert client.get(f"/api/v1/trips/{trip['id']}").json()["ics_token"] == token
+
+    feed = client.get(f"/api/v1/calendar/{token}.ics")
+    assert feed.status_code == 200
+    assert feed.headers["content-type"].startswith("text/calendar")
+    assert "SUMMARY:Visita" in feed.text
+
+    assert client.get("/api/v1/calendar/invalido.ics").status_code == 404
+
+    rotated = client.post(f"/api/v1/trips/{trip['id']}/ics-token").json()["token"]
+    assert rotated != token
+    assert client.get(f"/api/v1/calendar/{token}.ics").status_code == 404
+    assert client.get(f"/api/v1/calendar/{rotated}.ics").status_code == 200

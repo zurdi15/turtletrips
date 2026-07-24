@@ -41,7 +41,7 @@ export default defineConfig({
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               url.pathname.startsWith('/api/v1/') &&
-              !/\/(backup|attachments\/\d+\/download|calendar\.ics|expenses\/export\.csv|trips\/\d+\/cover)/.test(
+              !/\/(backup|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover)/.test(
                 url.pathname,
               ),
             handler: 'NetworkFirst',

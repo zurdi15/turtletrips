@@ -22,6 +22,7 @@ export interface Trip {
   base_currency: string
   budget_amount: number | null
   album_url: string | null
+  ics_token: string | null
   notes: string | null
   travelers: Traveler[]
   // true si hay liquidaciones registradas y los saldos quedan a cero

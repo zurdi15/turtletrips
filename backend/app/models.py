@@ -96,6 +96,8 @@ class Trip(TimestampMixin, Base):
     base_currency: Mapped[str] = mapped_column(String(3), default="EUR")
     budget_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     album_url: Mapped[str | None] = mapped_column(String(500))  # enlace a álbum de fotos externo
+    # llave secreta del feed .ics de suscripción (URL pública sin auth)
+    ics_token: Mapped[str | None] = mapped_column(String(64), unique=True)
     notes: Mapped[str | None] = mapped_column(Text)
 
     travelers: Mapped[list["Traveler"]] = relationship(

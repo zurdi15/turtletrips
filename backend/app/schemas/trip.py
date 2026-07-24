@@ -83,6 +83,7 @@ class TripRead(BaseModel):
     base_currency: str
     budget_amount: float | None
     album_url: str | None
+    ics_token: str | None
     notes: str | None
     travelers: list[TravelerRead] = []
     # True si hay liquidaciones registradas y los saldos quedan a cero

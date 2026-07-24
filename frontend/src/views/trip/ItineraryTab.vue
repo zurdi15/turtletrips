@@ -11,6 +11,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es'
 import type { CalendarOptions, EventDropArg } from '@fullcalendar/core'
 import ItineraryFormDialog from '../../components/ItineraryFormDialog.vue'
+import CalendarSubscribeDialog from '../../components/CalendarSubscribeDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import { API_BASE } from '../../api/client'
@@ -36,6 +37,7 @@ const viewOptions = [
 ]
 
 const showForm = ref(false)
+const showSubscribe = ref(false)
 const editing = ref<ItineraryItem | null>(null)
 const presetDay = ref<string | null>(null)
 
@@ -434,6 +436,15 @@ function onEventDrop(info: EventDropArg) {
           class="max-sm:[&_.p-button-label]:hidden"
         />
       </a>
+      <Button
+        label="Suscribirse"
+        icon="mdi mdi-calendar-sync"
+        severity="secondary"
+        outlined
+        v-tooltip.bottom="'URL de suscripción: tu calendario se actualiza solo'"
+        class="max-sm:[&_.p-button-label]:hidden"
+        @click="showSubscribe = true"
+      />
       <span class="flex-1" />
       <SelectButton
         v-model="view"
@@ -729,5 +740,6 @@ function onEventDrop(info: EventDropArg) {
     </div>
 
     <ItineraryFormDialog v-model:visible="showForm" :item="editing" :presetDay="presetDay" />
+    <CalendarSubscribeDialog v-model:visible="showSubscribe" :trip="trip" />
   </div>
 </template>
