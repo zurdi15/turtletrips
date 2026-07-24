@@ -167,6 +167,23 @@ function bookingTime(b: Booking): string {
   return t && t !== '00:00' ? t : ''
 }
 
+// cabecera de columna izquierda: "Check-in: 15:00", "Vuelo: 07:30", "noche"…
+function transportHead(e: TransportEntry): string {
+  const t = transportTime(e)
+  return t ? `${transportKind(e)}: ${t}` : transportKind(e)
+}
+
+function lodgingHead(b: Booking, day: string): string {
+  const kind = lodgingKindLabel(b, day)
+  const t = lodgingTime(b, day)
+  return t ? `${kind}: ${t}` : kind
+}
+
+function bookingHead(b: Booking): string {
+  const t = bookingTime(b)
+  return t ? `${BOOKING_TYPE_LABELS[b.type]}: ${t}` : BOOKING_TYPE_LABELS[b.type]
+}
+
 const days = computed<string[]>(() => {
   const set = new Set<string>()
   const addRange = (from: string, to: string) => {
@@ -477,11 +494,8 @@ function onEventDrop(info: EventDropArg) {
             :key="`t-${e.b.id}-${e.arrival ? 'a' : 's'}`"
             class="flex items-center gap-3 px-4 py-1 text-sky-700"
           >
-            <span class="text-xs sm:text-sm font-mono w-10 sm:w-12 shrink-0 opacity-70">
-              {{ transportTime(e) }}
-            </span>
-            <span class="text-xs w-16 sm:w-20 shrink-0 opacity-80 truncate">
-              {{ transportKind(e) }}
+            <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
+              {{ transportHead(e) }}
             </span>
             <router-link
               :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: e.b.id } }"
@@ -532,11 +546,8 @@ function onEventDrop(info: EventDropArg) {
             :key="`o-${b.id}`"
             class="flex items-center gap-3 px-4 py-1 text-amber-700"
           >
-            <span class="text-xs sm:text-sm font-mono w-10 sm:w-12 shrink-0 opacity-70">
-              {{ bookingTime(b) }}
-            </span>
-            <span class="text-xs w-16 sm:w-20 shrink-0 opacity-80 truncate">
-              {{ BOOKING_TYPE_LABELS[b.type] }}
+            <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
+              {{ bookingHead(b) }}
             </span>
             <router-link
               :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
@@ -662,11 +673,8 @@ function onEventDrop(info: EventDropArg) {
             :key="`l-${b.id}`"
             class="flex items-center gap-3 px-4 py-1 text-violet-700"
           >
-            <span class="text-xs sm:text-sm font-mono w-10 sm:w-12 shrink-0 opacity-70">
-              {{ lodgingTime(b, day) }}
-            </span>
-            <span class="text-xs w-16 sm:w-20 shrink-0 opacity-80 truncate">
-              {{ lodgingKindLabel(b, day) }}
+            <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
+              {{ lodgingHead(b, day) }}
             </span>
             <router-link
               :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
