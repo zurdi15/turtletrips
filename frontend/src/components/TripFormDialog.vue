@@ -10,8 +10,9 @@ import Button from 'primevue/button'
 import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
 import type { Trip, TripStatus } from '../api/types'
+import { api } from '../api/client'
 import { CURRENCIES, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
-import { COUNTRY_OPTIONS } from '../countries'
+import { COUNTRY_OPTIONS, countryName } from '../countries'
 import { useTripsStore } from '../stores/trips'
 import { parseIsoDate, toIsoDate } from '../composables/useMoney'
 
@@ -30,15 +31,68 @@ const baseCurrency = ref('EUR')
 const budget = ref<number | null>(null)
 const albumUrl = ref('')
 const notes = ref('')
-const statusOverride = ref<TripStatus | null>(null)
+// 'auto' como centinela: con null PrimeVue mostraba el placeholder vacío
+const statusOverride = ref<TripStatus | 'auto'>('auto')
 const saving = ref(false)
 const uploadingCover = ref(false)
 const coverInput = ref<HTMLInputElement>()
 
 const statusOptions = [
-  { value: null, label: 'Automático (según fechas)' },
+  { value: 'auto', label: 'Automático (según fechas)' },
   ...toSelectOptions(TRIP_STATUS_LABELS),
 ]
+
+// --- buscador de fotos online para la portada (Wikimedia Commons) ---
+interface ImageResult {
+  title: string
+  thumb_url: string
+  image_url: string
+}
+const showPhotoSearch = ref(false)
+const photoQuery = ref('')
+const photoResults = ref<ImageResult[]>([])
+const photoSearched = ref(false)
+const searchingPhotos = ref(false)
+const applyingPhoto = ref<string | null>(null)
+
+function togglePhotoSearch() {
+  showPhotoSearch.value = !showPhotoSearch.value
+  if (showPhotoSearch.value && !photoQuery.value) {
+    photoQuery.value = countries.value.length
+      ? countryName(countries.value[0])
+      : name.value
+  }
+}
+
+async function searchPhotos() {
+  const q = photoQuery.value.trim()
+  if (q.length < 2) return
+  searchingPhotos.value = true
+  try {
+    photoResults.value = await api.get<ImageResult[]>(
+      `/image-search?q=${encodeURIComponent(q)}`,
+    )
+  } catch {
+    photoResults.value = []
+  } finally {
+    photoSearched.value = true
+    searchingPhotos.value = false
+  }
+}
+
+async function applyPhoto(result: ImageResult) {
+  if (!props.trip) return
+  applyingPhoto.value = result.image_url
+  try {
+    await store.setCoverFromUrl(props.trip.id, result.image_url)
+    toast.add({ severity: 'success', summary: 'Portada actualizada', life: 3000 })
+    showPhotoSearch.value = false
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Error al guardar la portada', detail: String(err), life: 5000 })
+  } finally {
+    applyingPhoto.value = null
+  }
+}
 
 watch(visible, (open) => {
   if (!open) return
@@ -51,7 +105,11 @@ watch(visible, (open) => {
   budget.value = t?.budget_amount ?? null
   albumUrl.value = t?.album_url ?? ''
   notes.value = t?.notes ?? ''
-  statusOverride.value = t?.status_override ?? null
+  statusOverride.value = t?.status_override ?? 'auto'
+  showPhotoSearch.value = false
+  photoQuery.value = ''
+  photoResults.value = []
+  photoSearched.value = false
 })
 
 async function onCoverChosen(event: Event) {
@@ -92,7 +150,7 @@ async function save() {
       budget_amount: budget.value,
       album_url: albumUrl.value.trim() || null,
       notes: notes.value || null,
-      status_override: statusOverride.value,
+      status_override: statusOverride.value === 'auto' ? null : statusOverride.value,
     }
     const trip = props.trip
       ? await store.updateTrip(props.trip.id, payload)
@@ -154,7 +212,7 @@ async function save() {
           />
         </div>
       </div>
-      <div v-if="trip" class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Estado</label>
         <Select
           v-model="statusOverride"
@@ -177,6 +235,14 @@ async function save() {
             @click="coverInput?.click()"
           />
           <Button
+            label="Buscar online"
+            icon="pi pi-search"
+            severity="secondary"
+            outlined
+            size="small"
+            @click="togglePhotoSearch"
+          />
+          <Button
             v-if="trip.cover_url"
             label="Quitar"
             severity="danger"
@@ -184,9 +250,44 @@ async function save() {
             size="small"
             @click="removeCover"
           />
-          <span v-if="!trip.cover_url" class="text-xs text-slate-400">
-            Sin foto se usa una imagen del país automáticamente
-          </span>
+        </div>
+        <span v-if="!trip.cover_url" class="text-xs text-slate-400">
+          Sin foto se usa una imagen del país automáticamente
+        </span>
+
+        <!-- buscador de fotos (Wikimedia Commons): clic en una para usarla -->
+        <div v-if="showPhotoSearch" class="flex flex-col gap-2 mt-1">
+          <div class="flex gap-2">
+            <InputText
+              v-model="photoQuery"
+              placeholder="Taiwán, Alishan, Jiufen…"
+              class="flex-1"
+              @keyup.enter="searchPhotos"
+            />
+            <Button icon="pi pi-search" :loading="searchingPhotos" @click="searchPhotos" />
+          </div>
+          <div v-if="photoResults.length" class="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+            <button
+              v-for="r in photoResults"
+              :key="r.image_url"
+              type="button"
+              class="relative aspect-video rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-[var(--p-primary-color)] cursor-pointer"
+              :title="r.title"
+              @click="applyPhoto(r)"
+            >
+              <img :src="r.thumb_url" class="w-full h-full object-cover" loading="lazy" alt="" />
+              <span
+                v-if="applyingPhoto === r.image_url"
+                class="absolute inset-0 bg-black/40 flex items-center justify-center text-white"
+              >
+                <i class="pi pi-spinner pi-spin" />
+              </span>
+            </button>
+          </div>
+          <p v-else-if="photoSearched && !searchingPhotos" class="text-xs text-slate-400">
+            Sin resultados: prueba con el nombre del país o la ciudad en inglés
+          </p>
+          <p class="text-xs text-slate-400">Fotos de Wikimedia Commons</p>
         </div>
       </div>
       <div class="flex flex-col gap-1">

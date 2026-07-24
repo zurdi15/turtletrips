@@ -62,6 +62,11 @@ export const useTripsStore = defineStore('trips', {
       this._replace(trip)
       return trip
     },
+    async setCoverFromUrl(tripId: number, url: string) {
+      const trip = await api.post<Trip>(`/trips/${tripId}/cover-from-url`, { url })
+      this._replace(trip)
+      return trip
+    },
     async deleteCover(tripId: number) {
       const trip = await api.delete(`/trips/${tripId}/cover`).then(() =>
         api.get<Trip>(`/trips/${tripId}`),

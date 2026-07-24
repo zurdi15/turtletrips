@@ -51,6 +51,17 @@ async def save_upload(trip_id: int, upload: UploadFile) -> tuple[str, int]:
     return stored_name, size
 
 
+def save_bytes(trip_id: int, content: bytes, suffix: str) -> str:
+    """Guarda contenido ya descargado (p. ej. portada desde URL); devuelve stored_name."""
+    if len(content) > MAX_SIZE_BYTES:
+        raise FileValidationError("El fichero supera el tamaño máximo (25 MB)")
+    stored_name = f"{uuid.uuid4().hex}{suffix.lower()[:10]}"
+    target_dir = _trip_dir(trip_id)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    (target_dir / stored_name).write_bytes(content)
+    return stored_name
+
+
 def resolve_stored_file(trip_id: int, stored_name: str) -> Path:
     """Ruta absoluta de un fichero guardado, a prueba de path traversal."""
     base = _trip_dir(trip_id).resolve()

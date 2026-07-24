@@ -1,5 +1,7 @@
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from pydantic import BaseModel, HttpUrl
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -88,6 +90,45 @@ async def upload_cover(trip_id: int, file: UploadFile, db: Session = Depends(get
         raise HTTPException(status_code=415, detail="La portada debe ser una imagen")
     try:
         stored_name, _size = await files.save_upload(trip_id, file)
+    except files.FileValidationError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    if trip.cover_image:
+        files.delete_stored_file(trip_id, trip.cover_image)
+    trip.cover_image = stored_name
+    db.commit()
+    db.refresh(trip)
+    return trip
+
+
+class CoverFromUrl(BaseModel):
+    url: HttpUrl
+
+
+_COVER_MIME_SUFFIX = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+
+
+@router.post("/trips/{trip_id}/cover-from-url", response_model=TripRead)
+async def cover_from_url(
+    trip_id: int, payload: CoverFromUrl, db: Session = Depends(get_db)
+):
+    """Descarga una imagen (buscador online) y la guarda como portada."""
+    trip = get_or_404(db, Trip, trip_id)
+    try:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as client:
+            resp = await client.get(
+                str(payload.url), headers={"User-Agent": "tt-travel-app/0.1 (self-hosted)"}
+            )
+            resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"No se pudo descargar la imagen: {exc}"
+        ) from exc
+    content_type = resp.headers.get("content-type", "").split(";")[0].strip()
+    suffix = _COVER_MIME_SUFFIX.get(content_type)
+    if suffix is None:
+        raise HTTPException(status_code=415, detail="La URL no apunta a una imagen")
+    try:
+        stored_name = files.save_bytes(trip_id, resp.content, suffix)
     except files.FileValidationError as exc:
         raise HTTPException(status_code=415, detail=str(exc)) from exc
     if trip.cover_image:

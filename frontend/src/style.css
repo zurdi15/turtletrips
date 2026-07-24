@@ -110,6 +110,12 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 .p-tooltip {
   max-width: min(22rem, calc(100vw - 2rem));
 }
+/* táctil: los tooltips son de hover y tras un tap se quedaban pegados */
+@media (hover: none) {
+  .p-tooltip {
+    display: none !important;
+  }
+}
 
 /* FullCalendar: la toolbar envuelve en pantallas estrechas */
 .fc .fc-header-toolbar {
