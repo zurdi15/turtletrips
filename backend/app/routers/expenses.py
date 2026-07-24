@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
@@ -7,7 +7,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
-from ..models import Expense, ExpenseShare, Place, Settlement, SplitMode, Traveler, Trip
+from ..models import (
+    Booking,
+    Expense,
+    ExpenseShare,
+    Place,
+    Settlement,
+    SplitMode,
+    Traveler,
+    Trip,
+)
 from ..schemas.expense import (
     ExpenseCreate,
     ExpenseRead,
@@ -173,6 +182,29 @@ async def update_expense(expense_id: int, payload: ExpenseUpdate, db: Session = 
             for s in expense.shares
         ]
         expense.shares = _checked_shares(trip, amount, new_mode, current)
+
+    # gasto generado desde una reserva: importe, moneda, pagador y día se
+    # espejan de vuelta en la reserva (el título manda desde la reserva)
+    if expense.booking_id is not None:
+        booking = db.get(Booking, expense.booking_id)
+        if booking is not None:
+            booking.cost_amount = amount
+            booking.cost_currency = data.get("currency", expense.currency)
+            booking.paid_by_id = data.get("paid_by_id", expense.paid_by_id)
+            booking.paid_by_common = data.get("paid_by_common", expense.paid_by_common)
+            # mover el día del gasto desplaza entrada/salida conservando la
+            # duración de la estancia (y las horas)
+            if "day" in data:
+                new_day: date = data["day"]
+                if booking.start_dt is not None:
+                    delta = new_day - booking.start_dt.date()
+                    if delta:
+                        booking.start_dt += delta
+                        if booking.end_dt is not None:
+                            booking.end_dt += delta
+                else:
+                    booking.start_dt = datetime.combine(new_day, time(0, 0))
+
     return save_updates(db, expense, data)
 
 

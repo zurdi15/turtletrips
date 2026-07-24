@@ -19,12 +19,14 @@ import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
 import { useItineraryStore } from '../../stores/itinerary'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
+import { useExpensesStore } from '../../stores/expenses'
 import { parseIsoDate, toIsoDate } from '../../composables/useMoney'
 
 const props = defineProps<{ trip: Trip }>()
 const store = useItineraryStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
+const expenses = useExpensesStore()
 const confirm = useConfirm()
 
 const view = ref<'agenda' | 'calendar'>('agenda')
@@ -43,6 +45,7 @@ function loadAll(tripId: number) {
   store.load(tripId)
   places.load(tripId)
   bookings.load(tripId)
+  expenses.load(tripId)
 }
 onMounted(() => loadAll(props.trip.id))
 watch(() => props.trip.id, loadAll)
@@ -52,6 +55,14 @@ watch(() => props.trip.id, loadAll)
 // reservas con hueco propio en la agenda: transportes el día de salida y
 // alojamiento en cada noche (check-in → noche anterior al check-out)
 const TRANSPORT_TYPES: BookingType[] = ['flight', 'train', 'bus', 'ferry']
+
+// gasto generado por cada reserva (enlace directo con highlight)
+const expenseByBooking = computed(() => {
+  const map = new Map<number, number>()
+  for (const e of expenses.items) if (e.booking_id != null) map.set(e.booking_id, e.id)
+  return map
+})
+
 
 const transportsByDay = computed(() => {
   const map = new Map<string, Booking[]>()
@@ -425,19 +436,47 @@ function onEventDrop(info: EventDropArg) {
           >
             <i class="mdi mdi-plane-train" /> Transporte
           </p>
-          <router-link
+          <div
             v-for="b in transportsByDay.get(day) ?? []"
             :key="`t-${b.id}`"
-            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-            class="flex items-center gap-3 px-4 py-1 text-sky-700 no-underline"
+            class="flex items-center gap-3 px-4 py-1 text-sky-700"
           >
             <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-xs w-4 text-center" />
             <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
               {{ transportTime(b) }}
             </span>
-            <span class="font-medium text-sm truncate">{{ transportLabel(b) }}</span>
-            <i class="pi pi-ticket text-[10px] ml-auto opacity-50" />
-          </router-link>
+            <router-link
+              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+              class="font-medium text-sm truncate text-inherit no-underline hover:underline"
+            >
+              {{ transportLabel(b) }}
+            </router-link>
+            <span class="ml-auto flex items-center gap-2.5 shrink-0">
+              <router-link
+                v-if="b.place_id"
+                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: b.place_id } }"
+                class="text-emerald-600"
+                v-tooltip.top="'Ver sitio'"
+              >
+                <i class="pi pi-map-marker text-[11px]" />
+              </router-link>
+              <router-link
+                v-if="expenseByBooking.get(b.id)"
+                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(b.id) } }"
+                class="text-amber-600"
+                v-tooltip.top="'Ver gasto'"
+              >
+                <i class="pi pi-wallet text-[11px]" />
+              </router-link>
+              <router-link
+                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+                class="text-inherit opacity-50 hover:opacity-100"
+                v-tooltip.top="'Ver reserva'"
+              >
+                <i class="pi pi-ticket text-[11px]" />
+              </router-link>
+            </span>
+          </div>
         </div>
 
         <!-- otras reservas del día (actividades, coche…) -->
@@ -450,19 +489,47 @@ function onEventDrop(info: EventDropArg) {
           >
             <i class="mdi mdi-ticket-outline" /> Reservas
           </p>
-          <router-link
+          <div
             v-for="b in otherBookingsByDay.get(day) ?? []"
             :key="`o-${b.id}`"
-            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-            class="flex items-center gap-3 px-4 py-1 text-amber-700 no-underline"
+            class="flex items-center gap-3 px-4 py-1 text-amber-700"
           >
             <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-xs w-4 text-center" />
             <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
               {{ transportTime(b) }}
             </span>
-            <span class="font-medium text-sm truncate">{{ b.title }}</span>
-            <i class="pi pi-ticket text-[10px] ml-auto opacity-50" />
-          </router-link>
+            <router-link
+              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+              class="font-medium text-sm truncate text-inherit no-underline hover:underline"
+            >
+              {{ b.title }}
+            </router-link>
+            <span class="ml-auto flex items-center gap-2.5 shrink-0">
+              <router-link
+                v-if="b.place_id"
+                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: b.place_id } }"
+                class="text-emerald-600"
+                v-tooltip.top="'Ver sitio'"
+              >
+                <i class="pi pi-map-marker text-[11px]" />
+              </router-link>
+              <router-link
+                v-if="expenseByBooking.get(b.id)"
+                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(b.id) } }"
+                class="text-inherit"
+                v-tooltip.top="'Ver gasto'"
+              >
+                <i class="pi pi-wallet text-[11px]" />
+              </router-link>
+              <router-link
+                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+                class="text-inherit opacity-50 hover:opacity-100"
+                v-tooltip.top="'Ver reserva'"
+              >
+                <i class="pi pi-ticket text-[11px]" />
+              </router-link>
+            </span>
+          </div>
         </div>
 
         <draggable
@@ -492,18 +559,35 @@ function onEventDrop(info: EventDropArg) {
                 >
                   {{ rangeNights(element) + 1 }} días · hasta el {{ fmtDayShort(element.end_day) }}
                 </span>
-                <span
+                <!-- enlaces compactos: solo icono, el detalle vive en el tooltip -->
+                <router-link
                   v-if="element.place_id && placeName(element.place_id)"
-                  class="ml-2 text-xs text-emerald-600"
+                  :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: element.place_id } }"
+                  class="ml-2 text-emerald-600 no-underline"
+                  v-tooltip.top="`Sitio: ${placeName(element.place_id)}`"
                 >
-                  <i class="pi pi-map-marker text-[10px]" /> {{ placeName(element.place_id) }}
-                </span>
-                <span
+                  <i class="pi pi-map-marker text-xs" />
+                </router-link>
+                <router-link
                   v-if="element.booking_id && bookingTitle(element.booking_id)"
-                  class="ml-2 text-xs text-violet-600"
+                  :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: element.booking_id } }"
+                  class="ml-2 text-violet-600 no-underline"
+                  v-tooltip.top="`Reserva: ${bookingTitle(element.booking_id)}`"
                 >
-                  <i class="pi pi-ticket text-[10px]" /> {{ bookingTitle(element.booking_id) }}
-                </span>
+                  <i class="pi pi-ticket text-xs" />
+                </router-link>
+                <router-link
+                  v-if="element.booking_id && expenseByBooking.get(element.booking_id)"
+                  :to="{
+                    name: 'trip-expenses',
+                    params: { id: trip.id },
+                    query: { expense: expenseByBooking.get(element.booking_id) },
+                  }"
+                  class="ml-2 text-amber-600 no-underline"
+                  v-tooltip.top="'Ver gasto'"
+                >
+                  <i class="pi pi-wallet text-xs" />
+                </router-link>
                 <p v-if="element.notes" class="text-xs text-slate-400 truncate">{{ element.notes }}</p>
               </div>
               <div class="flex gap-1 hover-actions">
@@ -533,19 +617,46 @@ function onEventDrop(info: EventDropArg) {
           >
             <i class="mdi mdi-bed" /> Alojamiento
           </p>
-          <router-link
+          <div
             v-for="b in lodgingByDay.get(day) ?? []"
             :key="`l-${b.id}`"
-            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-            class="flex items-center gap-3 px-4 py-1 text-violet-700 no-underline"
+            class="flex items-center gap-3 px-4 py-1 text-violet-700"
           >
-            <i class="mdi mdi-bed text-xs w-4 text-center" />
             <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
               {{ lodgingTimeLabel(b, day) }}
             </span>
-            <span class="font-medium text-sm truncate">{{ b.title }}</span>
-            <i class="pi pi-ticket text-[10px] ml-auto opacity-50" />
-          </router-link>
+            <router-link
+              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+              class="font-medium text-sm truncate text-inherit no-underline hover:underline"
+            >
+              {{ b.title }}
+            </router-link>
+            <span class="ml-auto flex items-center gap-2.5 shrink-0">
+              <router-link
+                v-if="b.place_id"
+                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: b.place_id } }"
+                class="text-emerald-600"
+                v-tooltip.top="'Ver sitio'"
+              >
+                <i class="pi pi-map-marker text-[11px]" />
+              </router-link>
+              <router-link
+                v-if="expenseByBooking.get(b.id)"
+                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(b.id) } }"
+                class="text-amber-600"
+                v-tooltip.top="'Ver gasto'"
+              >
+                <i class="pi pi-wallet text-[11px]" />
+              </router-link>
+              <router-link
+                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+                class="text-inherit opacity-50 hover:opacity-100"
+                v-tooltip.top="'Ver reserva'"
+              >
+                <i class="pi pi-ticket text-[11px]" />
+              </router-link>
+            </span>
+          </div>
         </div>
         <p
           v-if="

@@ -181,6 +181,83 @@ def test_booking_payer_inherited_by_expense(client, trip):
     assert updated["paid_by_id"] is None
 
 
+def test_booking_expense_two_way_sync(client, trip):
+    from conftest import add_traveler
+
+    ana = add_traveler(client, trip["id"], "Ana")
+    luis = add_traveler(client, trip["id"], "Luis")
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "hotel", "title": "Hotel A", "cost_amount": "100",
+            "cost_currency": "EUR", "start_dt": "2026-04-01T15:00:00",
+            "paid_by_id": ana["id"],
+        },
+    ).json()
+    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+
+    # reserva → gasto: título, fecha, importe y pagador se espejan
+    client.patch(
+        f"/api/v1/bookings/{booking['id']}",
+        json={
+            "title": "Hotel B", "cost_amount": "120",
+            "start_dt": "2026-04-02T15:00:00", "paid_by_id": luis["id"],
+        },
+    )
+    synced = next(
+        e for e in client.get(f"/api/v1/trips/{trip['id']}/expenses").json()
+        if e["id"] == expense["id"]
+    )
+    assert synced["description"] == "Hotel B"
+    assert synced["day"] == "2026-04-02"
+    assert synced["amount"] == 120.0
+    assert synced["amount_base"] == 120.0
+    assert synced["paid_by_id"] == luis["id"]
+
+    # gasto → reserva: importe y pagador vuelven a la reserva
+    client.patch(
+        f"/api/v1/expenses/{expense['id']}",
+        json={"amount": "80", "paid_by_common": True},
+    )
+    synced_booking = next(
+        b for b in client.get(f"/api/v1/trips/{trip['id']}/bookings").json()
+        if b["id"] == booking["id"]
+    )
+    assert synced_booking["cost_amount"] == 80.0
+    assert synced_booking["paid_by_common"] is True
+    assert synced_booking["paid_by_id"] is None
+
+
+def test_expense_day_moves_booking_dates(client, trip):
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "hotel", "title": "Hotel", "cost_amount": "100",
+            "cost_currency": "EUR", "start_dt": "2026-04-01T15:00:00",
+            "end_dt": "2026-04-03T11:00:00",
+        },
+    ).json()
+    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    assert expense["day"] == "2026-04-01"
+
+    # mover el día del gasto desplaza entrada Y salida (misma duración y horas)
+    client.patch(f"/api/v1/expenses/{expense['id']}", json={"day": "2026-04-05"})
+    moved = next(
+        b for b in client.get(f"/api/v1/trips/{trip['id']}/bookings").json()
+        if b["id"] == booking["id"]
+    )
+    assert moved["start_dt"] == "2026-04-05T15:00:00"
+    assert moved["end_dt"] == "2026-04-07T11:00:00"
+
+    # y la reserva sigue proyectando su entrada sobre el gasto
+    client.patch(f"/api/v1/bookings/{booking['id']}", json={"start_dt": "2026-04-10T15:00:00"})
+    synced = next(
+        e for e in client.get(f"/api/v1/trips/{trip['id']}/expenses").json()
+        if e["id"] == expense["id"]
+    )
+    assert synced["day"] == "2026-04-10"
+
+
 def test_booking_create_expense_requires_cost(client, trip):
     booking = client.post(
         f"/api/v1/trips/{trip['id']}/bookings",

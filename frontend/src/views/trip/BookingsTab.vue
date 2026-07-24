@@ -71,6 +71,7 @@ const memberById = computed(() => new Map(props.trip.travelers.map((t) => [t.id,
 const TYPE_ORDER: BookingType[] = [
   'flight', 'train', 'bus', 'ferry', 'car_rental', 'hotel', 'activity', 'other',
 ]
+const TRANSPORT_TYPES: BookingType[] = ['flight', 'train', 'bus', 'ferry']
 
 const grouped = computed(() =>
   TYPE_ORDER.map((type) => ({
@@ -185,15 +186,24 @@ function copyCode(code: string) {
                     @click="copyCode(booking.confirmation_code)"
                   />
                 </div>
-                <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-sm text-slate-500">
-                  <span v-if="booking.start_dt" class="flex items-center gap-1">
+                <!-- transporte: origen→destino y fechas en filas separadas (cada
+                     una ya lleva su flecha); el resto en línea compacta -->
+                <div
+                  class="mt-1.5 text-sm text-slate-500"
+                  :class="
+                    TRANSPORT_TYPES.includes(booking.type)
+                      ? 'flex flex-col gap-1 items-start'
+                      : 'flex flex-wrap gap-x-4 gap-y-1'
+                  "
+                >
+                  <span v-if="booking.origin || booking.destination" class="flex items-center gap-1.5">
+                    <i :class="BOOKING_TYPE_ICONS[booking.type]" class="text-xs" />
+                    {{ booking.origin ?? '?' }} → {{ booking.destination ?? '?' }}
+                  </span>
+                  <span v-if="booking.start_dt" class="flex items-center gap-1.5">
                     <i class="pi pi-calendar text-xs" />
                     {{ formatDateTime(booking.start_dt) }}
                     <template v-if="booking.end_dt"> → {{ formatDateTime(booking.end_dt) }}</template>
-                  </span>
-                  <span v-if="booking.origin || booking.destination" class="flex items-center gap-1">
-                    <i class="pi pi-arrow-right text-xs" />
-                    {{ booking.origin ?? '?' }} → {{ booking.destination ?? '?' }}
                   </span>
                   <!-- con sitio enlazado, el chip sustituye a la dirección en crudo
                        (el sitio ya la guarda y el display_name repite el nombre) -->
@@ -244,7 +254,11 @@ function copyCode(code: string) {
                 <template v-if="booking.cost_amount != null">
                   <router-link
                     v-if="expenseByBooking.has(booking.id)"
-                    :to="{ name: 'trip-expenses', params: { id: trip.id } }"
+                    :to="{
+                      name: 'trip-expenses',
+                      params: { id: trip.id },
+                      query: { expense: expenseByBooking.get(booking.id) },
+                    }"
                   >
                     <Button
                       label="Ver gasto"
@@ -275,12 +289,12 @@ function copyCode(code: string) {
       </section>
     </div>
 
-    <!-- el backend puede crear/enlazar un sitio al guardar: refresca Sitios -->
+    <!-- al guardar, el backend puede crear/enlazar sitio y sincronizar el gasto -->
     <BookingFormDialog
       v-model:visible="showForm"
       :trip="trip"
       :booking="editing"
-      @saved="places.load(trip.id)"
+      @saved="places.load(trip.id); expenses.load(trip.id)"
     />
   </div>
 </template>

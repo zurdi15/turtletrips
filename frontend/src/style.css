@@ -74,6 +74,17 @@ body {
   width: 100%;
 }
 
+/* DatePicker: altura estable del calendario. Los meses de 5 y 6 semanas miden
+   distinto y cada navegación hacía recolocar el overlay (saltaba de debajo a
+   encima del campo y vuelta). Con altura mínima de 6 semanas nunca cambia. */
+.p-datepicker-panel .p-datepicker-day-view {
+  min-height: 17.5rem;
+}
+/* el selector de rango usa celdas más grandes (2.5rem) */
+.tt-range-panel .p-datepicker-day-view {
+  min-height: 18.25rem;
+}
+
 /* utilería para barras con scroll horizontal sin scrollbar visible */
 .no-scrollbar {
   scrollbar-width: none;

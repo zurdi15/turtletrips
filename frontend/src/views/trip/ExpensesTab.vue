@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
@@ -74,10 +75,19 @@ watch(viewMode, (v) => {
   })
 })
 
+const route = useRoute()
+// llegar desde una reserva/sitio/itinerario (?expense=id) enciende ese gasto
+const highlightId = ref<number | null>(null)
+
 onMounted(() => {
   store.load(props.trip.id)
   categoriesStore.load('expense')
   places.load(props.trip.id)
+  const fromQuery = Number(route.query.expense)
+  if (fromQuery) {
+    highlightId.value = fromQuery
+    setTimeout(() => (highlightId.value = null), 4000)
+  }
 })
 watch(() => props.trip.id, (id) => {
   store.load(id)
@@ -324,6 +334,7 @@ function removeExpense(expense: Expense) {
           :placeById="placeById"
           :trip="trip"
           :catColor="catColor"
+          :highlightId="highlightId"
           @edit="openEdit"
           @remove="removeExpense"
         />

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { nextTick, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
@@ -17,6 +18,7 @@ const props = defineProps<{
   placeById: Map<number, Place>
   trip: Trip
   catColor: (name: string) => string
+  highlightId?: number | null
 }>()
 
 defineEmits<{ edit: [expense: Expense]; remove: [expense: Expense] }>()
@@ -54,11 +56,48 @@ function toggleGroup(row: ExpenseRow) {
     selected.value = [...selected.value, ...rows.filter((r) => !have.has(r.id))]
   }
 }
+
+// --- resaltar un gasto al llegar enlazado (?expense=id desde reserva/sitio/itinerario) ---
+
+const tableRef = ref<{ $el?: HTMLElement } | null>(null)
+const first = ref(0)
+const pageRows = ref(50)
+// las filas se recargan varias veces al montar: un solo scroll por gasto,
+// o el smooth-scroll se reinicia a mitad y "bota"
+let scrolledFor: number | null = null
+
+function rowClass(data: ExpenseRow): string {
+  return data.id === props.highlightId ? 'tt-row-flash' : ''
+}
+
+watch(
+  [() => props.highlightId, () => props.rows],
+  async () => {
+    const id = props.highlightId
+    if (id == null) {
+      scrolledFor = null
+      return
+    }
+    if (scrolledFor === id) return
+    const idx = props.rows.findIndex((r) => r.id === id)
+    if (idx < 0) return
+    scrolledFor = id
+    // saltar a la página donde vive el gasto y centrarlo
+    first.value = Math.floor(idx / pageRows.value) * pageRows.value
+    await nextTick()
+    tableRef.value?.$el
+      ?.querySelector('.tt-row-flash')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <DataTable
+    ref="tableRef"
     v-model:selection="selected"
+    v-model:first="first"
     :value="rows"
     dataKey="id"
     size="small"
@@ -67,6 +106,8 @@ function toggleGroup(row: ExpenseRow) {
     :rows="50"
     :rowsPerPageOptions="[25, 50, 100, 200]"
     :alwaysShowPaginator="false"
+    :rowClass="rowClass"
+    @page="(e) => (pageRows = e.rows)"
     :tableStyle="{ minWidth: '640px' }"
     :rowGroupMode="groupBy !== 'none' ? 'subheader' : undefined"
     :groupRowsBy="groupBy !== 'none' ? groupBy : undefined"
@@ -187,6 +228,14 @@ function toggleGroup(row: ExpenseRow) {
 .tt-grouped
   :deep(.p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:first-child) {
   padding-left: 1.75rem;
+}
+
+/* gasto enlazado desde otra pestaña: se enciende y se apaga suave al limpiar */
+:deep(.p-datatable-tbody > tr > td) {
+  transition: background-color 0.6s ease;
+}
+:deep(.p-datatable-tbody > tr.tt-row-flash > td) {
+  background: color-mix(in srgb, var(--p-primary-color) 14%, transparent) !important;
 }
 
 /* el contenedor interno solo necesita scroll horizontal (el vertical es de la
