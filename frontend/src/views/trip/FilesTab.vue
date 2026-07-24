@@ -41,7 +41,7 @@ function remove(id: number, name: string) {
 <template>
   <div>
     <div class="mb-4">
-      <p class="text-sm text-slate-500 mb-3">
+      <p class="text-sm text-ink-muted mb-3">
         Ficheros del viaje (billetes, seguros, documentación…). Los adjuntos de reservas también
         aparecen aquí.
       </p>
@@ -63,7 +63,7 @@ function remove(id: number, name: string) {
       size="small"
       stripedRows
       :tableStyle="{ minWidth: '560px' }"
-      class="bg-white rounded-xl overflow-hidden border border-slate-200"
+      class="bg-surface rounded-card overflow-hidden border border-line"
     >
       <Column header="Fichero">
         <template #body="{ data }">
@@ -73,7 +73,7 @@ function remove(id: number, name: string) {
               :href="store.downloadUrl(data.id, true)"
               target="_blank"
               rel="noopener"
-              class="text-slate-700 hover:text-sky-600 hover:underline"
+              class="text-ink hover:text-info hover:underline"
             >
               {{ data.original_name }}
             </a>
@@ -87,17 +87,17 @@ function remove(id: number, name: string) {
             :value="bookingTitle.get(data.booking_id)"
             severity="secondary"
           />
-          <span v-else class="text-xs text-slate-400">Nivel de viaje</span>
+          <span v-else class="text-xs text-ink-faint">Nivel de viaje</span>
         </template>
       </Column>
       <Column header="Tamaño" style="width: 6rem">
         <template #body="{ data }">
-          <span class="text-sm text-slate-500">{{ formatSize(data.size_bytes) }}</span>
+          <span class="text-sm text-ink-muted">{{ formatSize(data.size_bytes) }}</span>
         </template>
       </Column>
       <Column header="Subido" style="width: 8rem">
         <template #body="{ data }">
-          <span class="text-sm text-slate-500">{{ formatDate(data.created_at) }}</span>
+          <span class="text-sm text-ink-muted">{{ formatDate(data.created_at) }}</span>
         </template>
       </Column>
       <Column style="width: 6rem">

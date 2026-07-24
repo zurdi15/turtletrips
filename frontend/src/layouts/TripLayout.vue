@@ -82,7 +82,7 @@ function deleteTrip() {
 
 <template>
   <div>
-    <div v-if="notFound" class="text-center py-20 text-slate-500">
+    <div v-if="notFound" class="text-center py-20 text-ink-muted">
       Viaje no encontrado. <router-link to="/">Volver a la lista</router-link>
     </div>
     <div v-else-if="!store.current || store.current.id !== tripId" class="flex justify-center py-20">

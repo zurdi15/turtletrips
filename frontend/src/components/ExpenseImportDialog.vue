@@ -69,13 +69,13 @@ async function confirmImport() {
     @hide="reset"
   >
     <div v-if="!preview" class="flex flex-col gap-4">
-      <p class="text-sm text-slate-600">
+      <p class="text-sm text-ink-secondary">
         Sube un CSV exportado de Excel. Se reconocen columnas como
-        <code class="text-xs bg-slate-100 px-1 rounded">descripción, cantidad, categoría, pagado por, lugar, fecha, notas</code>
+        <code class="text-xs bg-surface-muted px-1 rounded">descripción, cantidad, categoría, pagado por, lugar, fecha, notas</code>
         (también en inglés), importes tipo
-        <code class="text-xs bg-slate-100 px-1 rounded">1.528,00 €</code> y fechas
-        <code class="text-xs bg-slate-100 px-1 rounded">dd/mm/aaaa</code> o
-        <code class="text-xs bg-slate-100 px-1 rounded">10 febrero 2026</code>. Las filas sin fecha
+        <code class="text-xs bg-surface-muted px-1 rounded">1.528,00 €</code> y fechas
+        <code class="text-xs bg-surface-muted px-1 rounded">dd/mm/aaaa</code> o
+        <code class="text-xs bg-surface-muted px-1 rounded">10 febrero 2026</code>. Las filas sin fecha
         heredan la de la fila anterior, y el lugar se guarda en las notas. Primero verás una
         previsualización; no se importa nada hasta que confirmes.
       </p>

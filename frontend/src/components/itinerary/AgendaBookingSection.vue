@@ -45,7 +45,7 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
     :class="[TONE_CLASSES[tone].band, position === 'bottom' ? 'border-t border-line-subtle' : 'border-b border-line-subtle']"
   >
     <p
-      class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1.5"
+      class="px-4 pb-0.5 text-2xs font-semibold uppercase tracking-wide flex items-center gap-1.5"
       :class="TONE_CLASSES[tone].header"
     >
       <i :class="icon" /> {{ title }}

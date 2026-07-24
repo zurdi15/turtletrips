@@ -31,11 +31,11 @@ defineEmits<{ edit: []; delete: [] }>()
     >
       <div>
         <div class="flex items-center gap-3 flex-wrap">
-          <h1 class="text-2xl font-bold text-slate-800">{{ trip.name }}</h1>
+          <h1 class="text-2xl font-bold text-ink-heading">{{ trip.name }}</h1>
           <StatusTag :status="trip.status" />
           <SettledPill v-if="trip.debts_settled" />
         </div>
-        <p class="text-slate-500 mt-1 flex items-center gap-3 flex-wrap text-sm">
+        <p class="text-ink-muted mt-1 flex items-center gap-3 flex-wrap text-sm">
           <!-- cada bandera junto al nombre de su país -->
           <span v-if="trip.countries.length" class="flex items-center gap-1.5 flex-wrap">
             <template v-for="(code, idx) in trip.countries" :key="code">
@@ -43,7 +43,7 @@ defineEmits<{ edit: []; delete: [] }>()
                 <span class="text-base">{{ flagEmoji(code) }}</span>
                 <span>{{ countryName(code) }}</span>
               </span>
-              <span v-if="idx < trip.countries.length - 1" class="text-slate-300">·</span>
+              <span v-if="idx < trip.countries.length - 1" class="text-ink-disabled">·</span>
             </template>
           </span>
           <span v-if="trip.start_date" class="flex items-center gap-1">

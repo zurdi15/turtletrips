@@ -13,11 +13,11 @@ const navItems = [
 </script>
 
 <template>
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-header">
+  <header class="bg-surface border-b border-line sticky top-0 z-header">
     <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 relative flex items-center gap-2 sm:gap-4">
       <router-link to="/" class="flex items-center gap-2 no-underline shrink-0">
-        <BrandMark class="h-8 w-8 text-slate-800" />
-        <span class="font-bold text-lg tracking-tight text-slate-800 hidden md:inline"
+        <BrandMark class="h-8 w-8 text-ink-heading" />
+        <span class="font-bold text-lg tracking-tight text-ink-heading hidden md:inline"
           >turtle<span class="text-emerald-500">trips</span></span
         >
       </router-link>
@@ -29,8 +29,8 @@ const navItems = [
           class="inline-flex items-center justify-center px-3 sm:px-3.5 py-2 rounded-lg text-sm font-medium no-underline transition-colors whitespace-nowrap"
           :class="
             item.match(route.path)
-              ? 'bg-slate-100 text-slate-900'
-              : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+              ? 'bg-surface-muted text-ink-strong'
+              : 'text-ink-muted hover:text-ink hover:bg-surface-hover'
           "
         >
           <i :class="item.icon" class="text-sm sm:mr-1.5" />
@@ -41,7 +41,7 @@ const navItems = [
       <router-link
         to="/settings"
         class="transition-colors"
-        :class="route.path.startsWith('/settings') ? 'text-slate-700' : 'text-slate-400 hover:text-slate-600'"
+        :class="route.path.startsWith('/settings') ? 'text-ink' : 'text-ink-faint hover:text-ink-secondary'"
         title="Ajustes"
       >
         <i class="pi pi-cog text-lg" />

@@ -239,7 +239,7 @@ const { saving, save } = useFormDialog({
         />
       </div>
       <template #hint>
-        <span class="text-xs text-slate-400">
+        <span class="text-xs text-ink-faint">
           Globales y reutilizables: marca quién viaja para poder repartir gastos
         </span>
       </template>
@@ -300,7 +300,7 @@ const { saving, save } = useFormDialog({
           @click="removeCover"
         />
       </div>
-      <span v-if="!trip.cover_url" class="text-xs text-slate-400">
+      <span v-if="!trip.cover_url" class="text-xs text-ink-faint">
         Sin foto se usa una imagen del país automáticamente
       </span>
 
@@ -320,7 +320,7 @@ const { saving, save } = useFormDialog({
             v-for="r in photoResults"
             :key="r.image_url"
             type="button"
-            class="relative aspect-video rounded-lg overflow-hidden border border-slate-200 hover:ring-2 hover:ring-[var(--p-primary-color)] cursor-pointer"
+            class="relative aspect-video rounded-lg overflow-hidden border border-line hover:ring-2 hover:ring-primary cursor-pointer"
             :title="r.title"
             @click="applyPhoto(r)"
           >
@@ -333,16 +333,16 @@ const { saving, save } = useFormDialog({
             </span>
           </button>
         </div>
-        <p v-else-if="photoSearched && !searchingPhotos" class="text-xs text-slate-400">
+        <p v-else-if="photoSearched && !searchingPhotos" class="text-xs text-ink-faint">
           Sin resultados: prueba con el nombre del país o la ciudad en inglés
         </p>
-        <p class="text-xs text-slate-400">Fotos de Wikimedia Commons</p>
+        <p class="text-xs text-ink-faint">Fotos de Wikimedia Commons</p>
       </div>
     </div>
     <FormField label="Álbum de fotos">
       <InputText v-model="albumUrl" type="url" placeholder="https://photos.app.goo.gl/…" />
       <template #hint>
-        <span class="text-xs text-slate-400">
+        <span class="text-xs text-ink-faint">
           Enlace externo (Google Photos, etc.), accesible desde la cabecera del viaje
         </span>
       </template>

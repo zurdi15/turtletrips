@@ -289,7 +289,7 @@ const {
       />
       <p
         v-else-if="renderedView !== 'balances' && !filtered.length"
-        class="text-center text-sm text-slate-400 py-10"
+        class="text-center text-sm text-ink-faint py-10"
       >
         Ningún gasto coincide con los filtros
       </p>

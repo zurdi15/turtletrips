@@ -38,7 +38,7 @@ const {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+  <div class="bg-surface rounded-card border border-line p-4 sm:p-5">
     <div class="flex flex-wrap items-center gap-2 mb-4">
       <SelectButton
         v-model="chartDim"
@@ -61,7 +61,7 @@ const {
         </template>
       </SelectButton>
     </div>
-    <p v-if="!chartSeries.length" class="text-sm text-slate-400 text-center py-10">
+    <p v-if="!chartSeries.length" class="text-sm text-ink-faint text-center py-10">
       Sin datos con los filtros actuales
     </p>
     <div
@@ -77,7 +77,7 @@ const {
         class="h-full [&_canvas]:!w-full"
       />
     </div>
-    <p class="text-xs text-slate-400 mt-3 text-center">
+    <p class="text-xs text-ink-faint mt-3 text-center">
       {{ formatMoney(chartTotal, trip.base_currency) }} en total
       <template v-if="excludedCategories.length"> · sin {{ excludedCategories.join(', ') }} </template>
     </p>

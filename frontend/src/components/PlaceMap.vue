@@ -114,7 +114,7 @@ defineExpose({ refresh })
     v-model:zoom="zoom"
     v-model:center="center"
     :useGlobalLeaflet="false"
-    class="w-full h-full rounded-xl"
+    class="w-full h-full rounded-card"
     @ready="onReady"
   >
     <LTileLayer
@@ -137,7 +137,7 @@ defineExpose({ refresh })
     >
       <LPopup>
         <div class="font-medium">{{ place.name }}</div>
-        <div class="text-xs text-slate-500">
+        <div class="text-xs text-ink-muted">
           {{ PLACE_CATEGORY_LABELS[place.category] }}
           <span v-if="place.visited"> · ✔ visitado</span>
         </div>
@@ -151,14 +151,14 @@ defineExpose({ refresh })
     >
       <LPopup>
         <div class="font-medium">{{ booking.title }}</div>
-        <div class="text-xs text-slate-500">
+        <div class="text-xs text-ink-muted">
           {{ BOOKING_TYPE_LABELS[booking.type] }}
           <template v-if="booking.start_dt">
             · {{ formatDate(booking.start_dt) }}
             <template v-if="booking.end_dt"> → {{ formatDate(booking.end_dt) }}</template>
           </template>
         </div>
-        <div v-if="booking.address" class="text-xs text-slate-400 max-w-52 mt-0.5">
+        <div v-if="booking.address" class="text-xs text-ink-faint max-w-52 mt-0.5">
           {{ booking.address }}
         </div>
       </LPopup>

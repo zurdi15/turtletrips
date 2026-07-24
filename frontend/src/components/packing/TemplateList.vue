@@ -18,24 +18,24 @@ function create() {
 </script>
 
 <template>
-  <div class="bg-white rounded-xl border border-slate-200 p-4">
+  <div class="bg-surface rounded-card border border-line p-4">
     <ul class="tt-stagger flex flex-col gap-1 mb-4">
       <li v-for="template in templates" :key="template.id">
         <button
           class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-colors"
           :class="
             selectedId === template.id
-              ? 'bg-slate-100 text-slate-900 font-medium'
-              : 'text-slate-600 hover:bg-slate-50'
+              ? 'bg-surface-muted text-ink-strong font-medium'
+              : 'text-ink-secondary hover:bg-surface-hover'
           "
           @click="$emit('select', template.id)"
         >
-          <i class="pi pi-briefcase text-xs text-slate-400" />
+          <i class="pi pi-briefcase text-xs text-ink-faint" />
           <span class="flex-1">{{ template.name }}</span>
-          <span class="text-xs text-slate-400">{{ template.item_count }}</span>
+          <span class="text-xs text-ink-faint">{{ template.item_count }}</span>
         </button>
       </li>
-      <li v-if="!templates.length && !loading" class="text-sm text-slate-400 px-3 py-2">
+      <li v-if="!templates.length && !loading" class="text-sm text-ink-faint px-3 py-2">
         Sin plantillas todavía
       </li>
     </ul>

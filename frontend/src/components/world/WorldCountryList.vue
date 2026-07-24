@@ -27,23 +27,23 @@ defineEmits<{
       title="Tu diario está vacío"
       subtitle="Marca tu primer país, busca una ciudad, o termina un viaje y aparecerá solo"
     />
-    <p v-else-if="noMatch" class="text-center text-sm text-slate-400 py-10">
+    <p v-else-if="noMatch" class="text-center text-sm text-ink-faint py-10">
       Nada coincide con los filtros
     </p>
     <section
       v-for="group in groups"
       :key="group.code ?? 'none'"
-      class="bg-white rounded-xl border border-slate-200 overflow-hidden"
+      class="bg-surface rounded-card border border-line overflow-hidden"
     >
-      <div class="px-4 py-3 bg-slate-100 border-b border-slate-100">
+      <div class="px-4 py-3 bg-surface-muted border-b border-line-subtle">
         <div class="flex items-center gap-2.5 flex-wrap">
           <span class="text-xl">{{ group.flag }}</span>
-          <span class="font-semibold text-slate-800">{{ group.title }}</span>
+          <span class="font-semibold text-ink-heading">{{ group.title }}</span>
           <Tag v-if="group.entry" value="visitado" severity="success" class="text-xs" />
-          <span v-if="group.entry?.origin" class="text-xs text-slate-400">
+          <span v-if="group.entry?.origin" class="text-xs text-ink-faint">
             viaje: {{ group.entry.origin }}
           </span>
-          <span class="text-xs text-slate-400">
+          <span class="text-xs text-ink-faint">
             {{ group.children.length ? `${group.children.length} lugares` : '' }}
           </span>
           <span class="flex-1" />
@@ -72,7 +72,7 @@ defineEmits<{
             />
           </div>
         </div>
-        <p v-if="group.entry?.note" class="text-sm text-slate-500 mt-1.5 whitespace-pre-wrap">
+        <p v-if="group.entry?.note" class="text-sm text-ink-muted mt-1.5 whitespace-pre-wrap">
           {{ group.entry.note }}
         </p>
       </div>
@@ -80,8 +80,8 @@ defineEmits<{
         <li
           v-for="place in group.children"
           :key="place.id"
-          class="px-4 py-2.5 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 cursor-pointer group"
-          :class="{ 'bg-sky-50': selectedId === place.id }"
+          class="px-4 py-2.5 border-b border-line-faint last:border-b-0 hover:bg-surface-hover cursor-pointer group"
+          :class="{ 'bg-info-tint': selectedId === place.id }"
           @click="$emit('fly-to', place)"
         >
           <div class="flex items-center gap-2.5">
@@ -90,8 +90,8 @@ defineEmits<{
               :style="{ background: KIND_COLORS[place.kind] }"
               v-tooltip.left="KIND_LABELS[place.kind]"
             />
-            <span class="font-medium text-slate-700">{{ place.name }}</span>
-            <span v-if="place.origin" class="text-xs text-slate-400">
+            <span class="font-medium text-ink">{{ place.name }}</span>
+            <span v-if="place.origin" class="text-xs text-ink-faint">
               viaje: {{ place.origin }}
             </span>
             <span class="flex-1" />
@@ -112,7 +112,7 @@ defineEmits<{
               />
             </div>
           </div>
-          <p v-if="place.note" class="text-sm text-slate-400 mt-1 pl-5 whitespace-pre-wrap">
+          <p v-if="place.note" class="text-sm text-ink-faint mt-1 pl-5 whitespace-pre-wrap">
             {{ place.note }}
           </p>
         </li>

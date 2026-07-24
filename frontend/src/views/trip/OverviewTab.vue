@@ -63,80 +63,80 @@ const initialLoading = computed(
   <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 flex flex-col gap-6">
       <div class="tt-stagger grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p class="text-2xl font-bold text-slate-800">{{ tripDays ?? '—' }}</p>
-          <p class="text-xs text-slate-400 mt-1">días de viaje</p>
+        <div class="bg-surface rounded-card border border-line p-4 text-center">
+          <p class="text-2xl font-bold text-ink-heading">{{ tripDays ?? '—' }}</p>
+          <p class="text-xs text-ink-faint mt-1">días de viaje</p>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p class="text-2xl font-bold" :class="daysToStart != null ? 'text-sky-600' : 'text-slate-800'">
+        <div class="bg-surface rounded-card border border-line p-4 text-center">
+          <p class="text-2xl font-bold" :class="daysToStart != null ? 'text-info' : 'text-ink-heading'">
             {{ daysToStart ?? '—' }}
           </p>
-          <p class="text-xs text-slate-400 mt-1">días para salir</p>
+          <p class="text-xs text-ink-faint mt-1">días para salir</p>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p class="text-2xl font-bold text-slate-800">{{ visitedCount }}/{{ places.items.length }}</p>
-          <p class="text-xs text-slate-400 mt-1">sitios visitados</p>
+        <div class="bg-surface rounded-card border border-line p-4 text-center">
+          <p class="text-2xl font-bold text-ink-heading">{{ visitedCount }}/{{ places.items.length }}</p>
+          <p class="text-xs text-ink-faint mt-1">sitios visitados</p>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
-          <p class="text-2xl font-bold text-slate-800">{{ bookings.items.length }}</p>
-          <p class="text-xs text-slate-400 mt-1">reservas</p>
+        <div class="bg-surface rounded-card border border-line p-4 text-center">
+          <p class="text-2xl font-bold text-ink-heading">{{ bookings.items.length }}</p>
+          <p class="text-xs text-ink-faint mt-1">reservas</p>
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-4">
+      <div class="bg-surface rounded-card border border-line p-4">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-semibold text-slate-600">Presupuesto</h3>
+          <h3 class="text-sm font-semibold text-ink-secondary">Presupuesto</h3>
           <router-link :to="{ name: 'trip-expenses', params: { id: trip.id } }">
             <Button label="Ver gastos" text size="small" icon="pi pi-arrow-right" iconPos="right" />
           </router-link>
         </div>
         <div class="flex items-baseline gap-2">
-          <span class="text-2xl font-bold text-slate-800">
+          <span class="text-2xl font-bold text-ink-heading">
             {{ formatMoney(expenses.summary?.total_base ?? 0, trip.base_currency) }}
           </span>
-          <span v-if="expenses.summary?.budget_amount" class="text-sm text-slate-400">
+          <span v-if="expenses.summary?.budget_amount" class="text-sm text-ink-faint">
             de {{ formatMoney(expenses.summary.budget_amount, trip.base_currency) }}
           </span>
         </div>
         <div v-if="budgetPct != null" class="mt-3">
           <ProgressMeter :value="budgetPct" thresholds size="md" />
         </div>
-        <p v-else class="text-xs text-slate-400 mt-2">
+        <p v-else class="text-xs text-ink-faint mt-2">
           Define un presupuesto al editar el viaje para ver el progreso.
         </p>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 p-4">
-        <h3 class="text-sm font-semibold text-slate-600 mb-3">Próximas reservas</h3>
+      <div class="bg-surface rounded-card border border-line p-4">
+        <h3 class="text-sm font-semibold text-ink-secondary mb-3">Próximas reservas</h3>
         <div v-if="nextBookings.length" class="tt-stagger flex flex-col gap-2">
           <div
             v-for="b in nextBookings"
             :key="b.id"
-            class="flex items-center gap-3 p-2 rounded-lg bg-slate-50"
+            class="flex items-center gap-3 p-2 rounded-lg bg-surface-soft"
           >
-            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-slate-400" />
+            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-ink-faint" />
             <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm text-slate-700 truncate">{{ b.title }}</p>
-              <p class="text-xs text-slate-400">
+              <p class="font-medium text-sm text-ink truncate">{{ b.title }}</p>
+              <p class="text-xs text-ink-faint">
                 {{ BOOKING_TYPE_LABELS[b.type] }} · {{ formatDateTime(b.start_dt) }}
               </p>
             </div>
-            <span v-if="b.confirmation_code" class="text-xs font-mono text-slate-400">
+            <span v-if="b.confirmation_code" class="text-xs font-mono text-ink-faint">
               {{ b.confirmation_code }}
             </span>
           </div>
         </div>
-        <p v-else class="text-sm text-slate-400">Nada próximo en la agenda.</p>
+        <p v-else class="text-sm text-ink-faint">Nada próximo en la agenda.</p>
       </div>
 
-      <div v-if="trip.notes" class="bg-white rounded-xl border border-slate-200 p-4">
-        <h3 class="text-sm font-semibold text-slate-600 mb-2">Notas</h3>
-        <p class="text-sm text-slate-600 whitespace-pre-wrap">{{ trip.notes }}</p>
+      <div v-if="trip.notes" class="bg-surface rounded-card border border-line p-4">
+        <h3 class="text-sm font-semibold text-ink-secondary mb-2">Notas</h3>
+        <p class="text-sm text-ink-secondary whitespace-pre-wrap">{{ trip.notes }}</p>
       </div>
     </div>
 
     <div class="flex flex-col gap-4">
-      <div class="bg-white rounded-xl border border-slate-200 p-2 h-80">
+      <div class="bg-surface rounded-card border border-line p-2 h-80">
         <PlaceMap
           :places="places.items"
           :bookings="bookings.items"

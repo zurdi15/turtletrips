@@ -40,7 +40,7 @@ defineProps<{ trip: Trip; image: string | null }>()
           </div>
           <div
             v-if="daysUntil(trip.start_date)"
-            class="text-center bg-white/15 backdrop-blur rounded-xl px-3 py-2 sm:px-5 sm:py-3"
+            class="text-center bg-white/15 backdrop-blur rounded-card px-3 py-2 sm:px-5 sm:py-3"
           >
             <p class="text-xl sm:text-3xl font-bold leading-none">{{ daysUntil(trip.start_date) }}</p>
             <p class="text-xs text-white/80 mt-1">días para salir</p>

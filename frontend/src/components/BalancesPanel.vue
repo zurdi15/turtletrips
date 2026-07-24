@@ -62,14 +62,14 @@ async function undo(settlementId: number) {
       {{ data.unassigned_count === 1 ? 'gasto sin pagador' : 'gastos sin pagador' }}
       ({{ money(data.unassigned_total_base) }}) no se incluyen en los saldos.
     </Message>
-    <p v-if="data.common_count > 0" class="text-xs text-slate-400 flex items-center gap-1.5">
+    <p v-if="data.common_count > 0" class="text-xs text-ink-faint flex items-center gap-1.5">
       <i class="pi pi-wallet" />
       {{ data.common_count }}
       {{ data.common_count === 1 ? 'gasto pagado' : 'gastos pagados' }} del fondo común
       ({{ money(data.common_total_base) }}): cuentan en los totales pero no generan deudas.
     </p>
 
-    <p v-if="!data.balances.length" class="text-center text-sm text-slate-400 py-10">
+    <p v-if="!data.balances.length" class="text-center text-sm text-ink-faint py-10">
       Añade viajeros al viaje y asigna pagadores a los gastos para ver los saldos.
     </p>
 
@@ -78,7 +78,7 @@ async function undo(settlementId: number) {
         :value="data.balances"
         dataKey="traveler_id"
         size="small"
-        class="bg-white rounded-xl overflow-hidden border border-slate-200"
+        class="bg-surface rounded-card overflow-hidden border border-line"
       >
         <Column header="Viajero">
           <template #body="{ data: b }">
@@ -102,7 +102,7 @@ async function undo(settlementId: number) {
             <span
               class="font-semibold tabular-nums"
               :class="
-                b.net_base > 0 ? 'text-emerald-600' : b.net_base < 0 ? 'text-red-600' : 'text-slate-400'
+                b.net_base > 0 ? 'text-brand' : b.net_base < 0 ? 'text-red-600' : 'text-ink-faint'
               "
             >
               {{ b.net_base > 0 ? '+' : '' }}{{ money(b.net_base) }}
@@ -113,25 +113,25 @@ async function undo(settlementId: number) {
 
       <div
         v-if="data.debts_settled"
-        class="tt-pop-in rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-2 text-emerald-700 font-medium"
+        class="tt-pop-in rounded-card border border-emerald-200 bg-brand-tint p-4 flex items-center gap-2 text-brand-strong font-medium"
       >
         <i class="pi pi-check-circle" />
         Deudas saldadas
       </div>
 
-      <div v-else class="bg-white rounded-xl border border-slate-200 p-4">
-        <h3 class="text-sm font-semibold text-slate-700 mb-3">Liquidación sugerida</h3>
-        <p v-if="!data.settlements.length" class="text-sm text-slate-400 flex items-center gap-1.5">
+      <div v-else class="bg-surface rounded-card border border-line p-4">
+        <h3 class="text-sm font-semibold text-ink mb-3">Liquidación sugerida</h3>
+        <p v-if="!data.settlements.length" class="text-sm text-ink-faint flex items-center gap-1.5">
           <i class="pi pi-check-circle text-emerald-500" /> Todo cuadra: nadie debe nada.
         </p>
         <TransitionGroup v-else tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li
             v-for="t in data.settlements"
             :key="`${t.from_id}-${t.to_id}`"
-            class="flex items-center gap-2 text-sm text-slate-700"
+            class="flex items-center gap-2 text-sm text-ink"
           >
             <span class="font-medium">{{ t.from_name }}</span>
-            <i class="pi pi-arrow-right text-xs text-slate-400" />
+            <i class="pi pi-arrow-right text-xs text-ink-faint" />
             <span class="font-medium">{{ t.to_name }}</span>
             <span class="ml-auto font-semibold tabular-nums">{{ money(t.amount_base) }}</span>
             <Button
@@ -147,19 +147,19 @@ async function undo(settlementId: number) {
         </TransitionGroup>
       </div>
 
-      <div v-if="data.paid_settlements.length" class="bg-white rounded-xl border border-slate-200 p-4">
-        <h3 class="text-sm font-semibold text-slate-700 mb-3">Pagos registrados</h3>
+      <div v-if="data.paid_settlements.length" class="bg-surface rounded-card border border-line p-4">
+        <h3 class="text-sm font-semibold text-ink mb-3">Pagos registrados</h3>
         <TransitionGroup tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li
             v-for="s in data.paid_settlements"
             :key="s.id"
-            class="flex items-center gap-2 text-sm text-slate-600"
+            class="flex items-center gap-2 text-sm text-ink-secondary"
           >
             <i class="pi pi-check-circle text-emerald-500 text-xs" />
             <span>{{ s.from_name }}</span>
-            <i class="pi pi-arrow-right text-xs text-slate-400" />
+            <i class="pi pi-arrow-right text-xs text-ink-faint" />
             <span>{{ s.to_name }}</span>
-            <span class="text-xs text-slate-400">{{ formatDate(s.created_at) }}</span>
+            <span class="text-xs text-ink-faint">{{ formatDate(s.created_at) }}</span>
             <span class="ml-auto font-medium tabular-nums">{{ money(s.amount_base) }}</span>
             <Button
               icon="pi pi-times"

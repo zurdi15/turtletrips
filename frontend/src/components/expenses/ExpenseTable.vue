@@ -113,7 +113,7 @@ watch(
     :tableStyle="{ minWidth: '640px' }"
     :rowGroupMode="groupBy !== 'none' ? 'subheader' : undefined"
     :groupRowsBy="groupBy !== 'none' ? groupBy : undefined"
-    class="bg-white rounded-xl overflow-hidden border border-slate-200"
+    class="bg-surface rounded-card overflow-hidden border border-line"
     :class="{ 'tt-grouped': groupBy !== 'none' }"
   >
     <Column selectionMode="multiple" headerStyle="width: 2.5rem" />
@@ -126,11 +126,11 @@ watch(
           @update:modelValue="toggleGroup(data)"
           @click.stop
         />
-        <span class="font-semibold text-slate-700">{{ groupLabel(data) }}</span>
-        <span class="text-xs text-slate-400">
+        <span class="font-semibold text-ink">{{ groupLabel(data) }}</span>
+        <span class="text-xs text-ink-faint">
           {{ groupTotals.get(groupKey(data))?.count }} gastos
         </span>
-        <span class="ml-auto font-semibold text-slate-700">
+        <span class="ml-auto font-semibold text-ink">
           {{ formatMoney(groupTotals.get(groupKey(data))?.total ?? 0, trip.base_currency) }}
         </span>
       </div>
@@ -166,7 +166,7 @@ watch(
             :tooltip="`Sitio: ${placeById.get(data.place_id)!.name}`"
           />
         </span>
-        <p v-if="data.notes" class="mt-1.5 text-xs text-slate-400 truncate max-w-[16rem]">
+        <p v-if="data.notes" class="mt-1.5 text-xs text-ink-faint truncate max-w-[16rem]">
           {{ data.notes }}
         </p>
       </template>
@@ -175,7 +175,7 @@ watch(
       <template #body="{ data }">
         <div class="text-right">
           <div class="font-medium">{{ formatMoney(data.amount_base, trip.base_currency) }}</div>
-          <div v-if="data.currency !== trip.base_currency" class="text-xs text-slate-400">
+          <div v-if="data.currency !== trip.base_currency" class="text-xs text-ink-faint">
             {{ formatMoney(data.amount, data.currency) }}
           </div>
         </div>
@@ -195,7 +195,7 @@ watch(
           v-else-if="data.paid_by_id != null && memberById.get(data.paid_by_id)"
           :member="memberById.get(data.paid_by_id)!"
         />
-        <span v-else class="text-slate-300 text-xs">—</span>
+        <span v-else class="text-ink-disabled text-xs">—</span>
       </template>
     </Column>
     <Column style="width: 5.5rem">

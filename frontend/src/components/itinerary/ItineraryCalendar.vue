@@ -93,7 +93,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
     wrap.className = 'flex items-center gap-1 overflow-hidden px-0.5'
     if (icon) {
       const i = document.createElement('i')
-      i.className = `${icon} text-[11px] shrink-0`
+      i.className = `${icon} text-2xs shrink-0`
       wrap.append(i)
     }
     const text = document.createElement('span')

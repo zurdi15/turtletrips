@@ -19,7 +19,7 @@ const country = defineModel<string>('country', { required: true })
 <template>
   <!-- controles de búsqueda y filtrado (colapsados por defecto);
        en móvil el buscador ocupa su propia línea, en desktop todo en una fila -->
-  <div class="flex flex-wrap items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-3">
+  <div class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3">
     <InputText
       v-model="search"
       placeholder="Buscar viaje o país…"

@@ -62,6 +62,6 @@ const to = computed(() => ({
     v-tooltip.top="tooltip ?? meta.tooltip"
     @click.stop
   >
-    <i :class="[meta.icon, size === '2xs' ? 'text-[11px]' : 'text-xs']" />
+    <i :class="[meta.icon, size === '2xs' ? 'text-2xs' : 'text-xs']" />
   </router-link>
 </template>

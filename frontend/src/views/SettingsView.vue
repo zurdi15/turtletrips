@@ -133,9 +133,9 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
     <PageHeader title="Ajustes" class="mb-6" />
 
     <div class="flex flex-col gap-6">
-      <section class="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 class="font-semibold text-slate-700 mb-1">Apariencia</h2>
-        <p class="text-xs text-slate-400 mb-4">Tema de la interfaz.</p>
+      <section class="bg-surface rounded-card border border-line p-5">
+        <h2 class="font-semibold text-ink mb-1">Apariencia</h2>
+        <p class="text-xs text-ink-faint mb-4">Tema de la interfaz.</p>
         <SelectButton
           v-model="theme"
           :options="themeOptions"
@@ -156,10 +156,10 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
       <section
         v-for="section in sections"
         :key="section.kind"
-        class="bg-white rounded-xl border border-slate-200 p-5"
+        class="bg-surface rounded-card border border-line p-5"
       >
-        <h2 class="font-semibold text-slate-700 mb-1">{{ section.title }}</h2>
-        <p class="text-xs text-slate-400 mb-4">{{ section.hint }}</p>
+        <h2 class="font-semibold text-ink mb-1">{{ section.title }}</h2>
+        <p class="text-xs text-ink-faint mb-4">{{ section.hint }}</p>
         <ul class="flex flex-col gap-1.5 mb-4">
           <EditableListItem
             v-for="category in categories[section.kind]"
@@ -188,9 +188,9 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
         </div>
       </section>
 
-      <section class="bg-white rounded-xl border border-slate-200 p-5">
-        <h2 class="font-semibold text-slate-700 mb-1">Copia de seguridad</h2>
-        <p class="text-xs text-slate-400 mb-4">
+      <section class="bg-surface rounded-card border border-line p-5">
+        <h2 class="font-semibold text-ink mb-1">Copia de seguridad</h2>
+        <p class="text-xs text-ink-faint mb-4">
           La copia incluye la base de datos completa y todos los adjuntos.
         </p>
         <div class="flex flex-wrap gap-2">

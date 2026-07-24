@@ -48,7 +48,7 @@ function copy() {
     header="Suscribirse al calendario"
     class="w-full max-w-lg mx-4"
   >
-    <div class="flex flex-col gap-4 text-sm text-slate-600">
+    <div class="flex flex-col gap-4 text-sm text-ink-secondary">
       <p>
         Suscríbete desde tu calendario y el itinerario se actualizará solo, sin volver a
         importar: en Google Calendar ve a

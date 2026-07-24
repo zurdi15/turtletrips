@@ -138,7 +138,7 @@ const {
         optionValue="value"
         :allowEmpty="false"
       />
-      <span class="shrink-0 text-sm text-slate-400 hidden sm:block">
+      <span class="shrink-0 text-sm text-ink-faint hidden sm:block">
         {{ store.items.filter((p) => p.visited).length }}/{{ store.items.length }} visitados
       </span>
     </div>
@@ -173,7 +173,7 @@ const {
           title="Sin sitios guardados"
           subtitle="Añade los sitios que quieres ver en este viaje"
         />
-        <p v-else-if="!filtered.length" class="text-center text-sm text-slate-400 py-8">
+        <p v-else-if="!filtered.length" class="text-center text-sm text-ink-faint py-8">
           Ningún sitio coincide con los filtros
         </p>
       </div>

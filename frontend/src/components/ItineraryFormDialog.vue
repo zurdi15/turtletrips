@@ -185,14 +185,14 @@ const { saving, save } = useFormDialog({
         <template #option="{ option }">
           <div class="flex flex-col">
             <span>{{ option.label }}</span>
-            <span v-if="option.sub" class="text-xs text-slate-400 truncate max-w-96">
+            <span v-if="option.sub" class="text-xs text-ink-faint truncate max-w-96">
               {{ option.sub }}
             </span>
           </div>
         </template>
       </AutoComplete>
       <template #hint>
-        <p class="text-xs text-slate-400">
+        <p class="text-xs text-ink-faint">
           Los lugares nuevos se añaden automáticamente a la pestaña Sitios.
         </p>
       </template>
@@ -211,7 +211,7 @@ const { saving, save } = useFormDialog({
         <DatePicker v-model="endTime" timeOnly hourFormat="24" />
       </FormField>
     </div>
-    <p class="text-xs text-slate-400 -mt-2">
+    <p class="text-xs text-ink-faint -mt-2">
       Deja "Hasta" vacío para actividades de un solo día; rellénalo para estancias (p. ej. una ciudad del 3 al 6).
     </p>
     <FormField label="Reserva enlazada">

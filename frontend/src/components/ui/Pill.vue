@@ -22,7 +22,7 @@ const COLOR_CLASSES: Record<PillColor, string> = {
     class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
     :class="[COLOR_CLASSES[color], popIn ? 'tt-pop-in' : '']"
   >
-    <i v-if="icon" :class="icon" class="text-[10px]" />
+    <i v-if="icon" :class="icon" class="text-3xs" />
     <slot />
   </span>
 </template>

@@ -137,11 +137,11 @@ function tripImage(trip: Trip): string | null {
       </div>
 
       <!-- Grupos -->
-      <p v-if="!filtered.length" class="text-center text-slate-400 py-10">
+      <p v-if="!filtered.length" class="text-center text-ink-faint py-10">
         Ningún viaje coincide con los filtros
       </p>
       <section v-for="group in groups" :key="group.key">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-faint mb-3">
           {{ group.title }}
           <span class="font-normal normal-case">· {{ group.trips.length }}</span>
         </h2>

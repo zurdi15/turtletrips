@@ -77,7 +77,7 @@ defineExpose({ flyTo, fitAll })
 </script>
 
 <template>
-  <div class="relative h-[68vh] lg:h-[74vh] rounded-xl overflow-hidden border border-slate-200">
+  <div class="relative h-[68vh] lg:h-[74vh] rounded-card overflow-hidden border border-line">
     <LMap
       ref="mapRef"
       v-model:zoom="zoom"
@@ -102,11 +102,11 @@ defineExpose({ flyTo, fitAll })
         >
           <LPopup>
             <div class="font-medium">{{ displayName(place) }}</div>
-            <div v-if="place.origin" class="text-xs text-slate-400">Viaje: {{ place.origin }}</div>
-            <div v-if="place.note" class="text-xs text-slate-500 max-w-52 whitespace-pre-wrap mt-1">
+            <div v-if="place.origin" class="text-xs text-ink-faint">Viaje: {{ place.origin }}</div>
+            <div v-if="place.note" class="text-xs text-ink-muted max-w-52 whitespace-pre-wrap mt-1">
               {{ place.note }}
             </div>
-            <button class="text-xs text-sky-600 hover:underline mt-1" @click="emit('edit', place)">
+            <button class="text-xs text-info hover:underline mt-1" @click="emit('edit', place)">
               Editar nota
             </button>
           </LPopup>
@@ -123,15 +123,15 @@ defineExpose({ flyTo, fitAll })
         >
           <LPopup>
             <div class="font-medium">{{ place.name }}</div>
-            <div class="text-xs text-slate-500">
+            <div class="text-xs text-ink-muted">
               {{ KIND_LABELS[place.kind] }}
               <template v-if="place.country_code"> · {{ countryName(place.country_code) }}</template>
             </div>
-            <div v-if="place.origin" class="text-xs text-slate-400">Viaje: {{ place.origin }}</div>
-            <div v-if="place.note" class="text-xs text-slate-500 max-w-52 whitespace-pre-wrap mt-1">
+            <div v-if="place.origin" class="text-xs text-ink-faint">Viaje: {{ place.origin }}</div>
+            <div v-if="place.note" class="text-xs text-ink-muted max-w-52 whitespace-pre-wrap mt-1">
               {{ place.note }}
             </div>
-            <button class="text-xs text-sky-600 hover:underline mt-1" @click="emit('edit', place)">
+            <button class="text-xs text-info hover:underline mt-1" @click="emit('edit', place)">
               Editar nota
             </button>
           </LPopup>
@@ -141,13 +141,13 @@ defineExpose({ flyTo, fitAll })
     <!-- pista flotante cuando el diario está vacío -->
     <div
       v-if="showEmptyHint"
-      class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[500] pointer-events-none"
+      class="absolute bottom-6 left-1/2 -translate-x-1/2 z-map-overlay pointer-events-none"
     >
       <div
-        class="bg-white/95 backdrop-blur rounded-xl border border-slate-200 shadow-lg px-4 py-3 text-center"
+        class="bg-white/95 backdrop-blur rounded-card border border-line shadow-lg px-4 py-3 text-center"
       >
-        <p class="font-medium text-slate-700">🌍 Tu diario está vacío</p>
-        <p class="text-xs text-slate-500 mt-0.5">
+        <p class="font-medium text-ink">🌍 Tu diario está vacío</p>
+        <p class="text-xs text-ink-muted mt-0.5">
           Busca una ciudad, marca un país visitado o termina un viaje y aparecerá solo
         </p>
       </div>

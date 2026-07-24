@@ -41,7 +41,7 @@ function save() {
 
 <template>
   <li
-    class="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 group/item text-sm"
+    class="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b border-line-faint last:border-b-0 hover:bg-surface-hover group/item text-sm"
   >
     <template v-if="editing">
       <InputText v-model="editName" size="small" class="flex-1" @keyup.enter="save" />
@@ -58,14 +58,14 @@ function save() {
       <Button icon="pi pi-times" text size="small" severity="secondary" @click="editing = false" />
     </template>
     <template v-else>
-      <span class="flex-1 text-slate-700">
+      <span class="flex-1 text-ink">
         {{ item.name }}
         <a
           v-if="item.url"
           :href="item.url"
           target="_blank"
           rel="noopener"
-          class="ml-1 text-sky-600 hover:underline text-xs"
+          class="ml-1 text-info hover:underline text-xs"
           v-tooltip.top="'Enlace de compra'"
         >
           <i class="pi pi-shopping-cart" />

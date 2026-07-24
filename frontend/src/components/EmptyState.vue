@@ -4,9 +4,9 @@ defineProps<{ icon: string; title: string; subtitle?: string }>()
 
 <template>
   <div class="tt-empty flex flex-col items-center justify-center py-14 text-center">
-    <i :class="icon" class="tt-empty-icon text-4xl text-slate-300 mb-3" />
-    <p class="font-medium text-slate-600">{{ title }}</p>
-    <p v-if="subtitle" class="text-sm text-slate-400 mt-1">{{ subtitle }}</p>
+    <i :class="icon" class="tt-empty-icon text-4xl text-ink-disabled mb-3" />
+    <p class="font-medium text-ink-secondary">{{ title }}</p>
+    <p v-if="subtitle" class="text-sm text-ink-faint mt-1">{{ subtitle }}</p>
     <div class="mt-4">
       <slot />
     </div>

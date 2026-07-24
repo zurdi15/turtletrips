@@ -16,23 +16,23 @@ const active = defineModel<number | null>('active', { required: true })
     <button
       v-for="bag in bags"
       :key="bag.travelerId ?? 'common'"
-      class="flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-colors"
+      class="flex items-center gap-2 px-3.5 py-2 rounded-card border transition-colors"
       :class="
         active === bag.travelerId
-          ? 'border-[var(--p-primary-color)] bg-brand-tint text-slate-900'
-          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+          ? 'border-primary bg-brand-tint text-ink-strong'
+          : 'border-line bg-surface text-ink-secondary hover:border-line-strong'
       "
       @click="active = bag.travelerId"
     >
       <span v-if="bag.color" class="w-2.5 h-2.5 rounded-full" :style="{ background: bag.color }" />
-      <i v-else class="pi pi-briefcase text-xs text-slate-400" />
+      <i v-else class="pi pi-briefcase text-xs text-ink-faint" />
       <span class="font-medium">{{ bag.label }}</span>
       <span
         class="text-xs px-1.5 py-0.5 rounded-full"
         :class="
           bag.total && bag.done === bag.total
             ? 'bg-brand-tint-strong text-brand-strong'
-            : 'bg-slate-100 text-slate-500'
+            : 'bg-surface-muted text-ink-muted'
         "
       >
         {{ bag.done }}/{{ bag.total }}

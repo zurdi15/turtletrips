@@ -8,6 +8,8 @@ export default {
       // así que estas clases son dark-correctas sin variantes dark:.
       // Ojo: son colores completos → los modificadores de opacidad (/50) no aplican.
       colors: {
+        // el primary de PrimeVue (emerald de Aura), para acentos interactivos
+        primary: 'var(--p-primary-color)',
         page: 'var(--tt-page-bg)',
         surface: {
           DEFAULT: 'var(--tt-surface)',

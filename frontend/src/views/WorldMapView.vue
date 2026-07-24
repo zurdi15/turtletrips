@@ -168,17 +168,17 @@ function removePlace(place: WorldPlace) {
     />
 
     <!-- estadísticas de diario -->
-    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-sm text-slate-500">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-sm text-ink-muted">
       <span>
-        🌍 <span class="font-semibold text-slate-700">{{ stats.countries }}</span> países
-        <span class="text-slate-400">({{ stats.worldPct }}% del mundo)</span>
+        🌍 <span class="font-semibold text-ink">{{ stats.countries }}</span> países
+        <span class="text-ink-faint">({{ stats.worldPct }}% del mundo)</span>
       </span>
-      <span>🏙 <span class="font-semibold text-slate-700">{{ stats.cities }}</span> ciudades</span>
+      <span>🏙 <span class="font-semibold text-ink">{{ stats.cities }}</span> ciudades</span>
       <span>
         <i class="pi pi-map-marker text-xs" />
-        <span class="font-semibold text-slate-700">{{ stats.places }}</span> sitios
+        <span class="font-semibold text-ink">{{ stats.places }}</span> sitios
       </span>
-      <span>💬 <span class="font-semibold text-slate-700">{{ stats.notes }}</span> notas</span>
+      <span>💬 <span class="font-semibold text-ink">{{ stats.notes }}</span> notas</span>
       <ProgressMeter :value="stats.worldPct" color="warn" size="xs" class="w-full sm:w-56" />
     </div>
 
@@ -234,14 +234,14 @@ function removePlace(place: WorldPlace) {
         optionLabel="label"
         optionValue="value"
         filter
-        class="flex-1 min-w-[9rem] sm:flex-none sm:w-52"
+        class="flex-1 min-w-menu sm:flex-none sm:w-52"
       />
       <Select
         v-model="filters.source"
         :options="sourceFilterOptions"
         optionLabel="label"
         optionValue="value"
-        class="flex-1 min-w-[9rem] sm:flex-none sm:w-48"
+        class="flex-1 min-w-menu sm:flex-none sm:w-48"
       />
     </div>
 

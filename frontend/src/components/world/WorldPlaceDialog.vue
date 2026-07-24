@@ -123,7 +123,7 @@ const { saving, save } = useFormDialog({
         placeholder="Lo que quieras recordar de este lugar…"
       />
     </FormField>
-    <p v-if="place?.auto" class="text-xs text-slate-400">
+    <p v-if="place?.auto" class="text-xs text-ink-faint">
       <i class="pi pi-info-circle" /> Añadido automáticamente desde el viaje
       "{{ place.origin }}".
     </p>

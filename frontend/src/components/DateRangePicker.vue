@@ -116,41 +116,41 @@ function onDayHover(meta: DayMeta) {
   <div ref="wrapEl" class="grid grid-cols-2 gap-2">
     <button
       type="button"
-      class="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-white w-full text-left transition-colors focus:outline-none border-slate-200 hover:border-slate-300"
+      class="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface w-full text-left transition-colors focus:outline-none border-line hover:border-line-strong"
       :class="{ '!border-emerald-500 ring-1 !ring-emerald-500': open && active === 'start' }"
       @click="openFor('start', $event)"
     >
       <span class="flex-1 min-w-0">
-        <span class="block text-xs text-slate-400">{{ startLabel }}</span>
-        <span class="block text-sm truncate" :class="start ? 'text-slate-700' : 'text-slate-400'">
+        <span class="block text-xs text-ink-faint">{{ startLabel }}</span>
+        <span class="block text-sm truncate" :class="start ? 'text-ink' : 'text-ink-faint'">
           {{ start ? fmt(start) : 'Elegir fecha' }}
         </span>
       </span>
       <i
         v-if="start && clearable"
-        class="pi pi-times-circle text-slate-400 hover:text-slate-600 shrink-0"
+        class="pi pi-times-circle text-ink-faint hover:text-ink-secondary shrink-0"
         @click.stop="clearStart"
       />
-      <i v-else class="pi pi-calendar text-slate-400 shrink-0" />
+      <i v-else class="pi pi-calendar text-ink-faint shrink-0" />
     </button>
     <button
       type="button"
-      class="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-white w-full text-left transition-colors focus:outline-none border-slate-200 hover:border-slate-300"
+      class="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-surface w-full text-left transition-colors focus:outline-none border-line hover:border-line-strong"
       :class="{ '!border-emerald-500 ring-1 !ring-emerald-500': open && active === 'end' }"
       @click="openFor('end', $event)"
     >
       <span class="flex-1 min-w-0">
-        <span class="block text-xs text-slate-400">{{ endLabel }}</span>
-        <span class="block text-sm truncate" :class="end ? 'text-slate-700' : 'text-slate-400'">
+        <span class="block text-xs text-ink-faint">{{ endLabel }}</span>
+        <span class="block text-sm truncate" :class="end ? 'text-ink' : 'text-ink-faint'">
           {{ end ? fmt(end) : 'Elegir fecha' }}
         </span>
       </span>
       <i
         v-if="end"
-        class="pi pi-times-circle text-slate-400 hover:text-slate-600 shrink-0"
+        class="pi pi-times-circle text-ink-faint hover:text-ink-secondary shrink-0"
         @click.stop="clearEnd"
       />
-      <i v-else class="pi pi-calendar text-slate-400 shrink-0" />
+      <i v-else class="pi pi-calendar text-ink-faint shrink-0" />
     </button>
 
     <Popover ref="op" @show="open = true" @hide="((open = false), (hoverKey = null))">
@@ -169,7 +169,7 @@ function onDayHover(meta: DayMeta) {
           </template>
         </DatePicker>
         <div class="flex items-center justify-between gap-2 pt-1">
-          <span class="text-xs text-slate-400">
+          <span class="text-xs text-ink-faint">
             {{ active === 'start' ? 'Elige la fecha de inicio' : 'Elige la fecha de fin' }}
           </span>
           <Button label="Aplicar" size="small" @click="close" />

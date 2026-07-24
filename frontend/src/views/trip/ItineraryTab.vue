@@ -217,12 +217,12 @@ function openNew(day?: string) {
       <div
         v-for="day in days"
         :key="day"
-        class="bg-white rounded-xl border border-slate-200 overflow-hidden"
+        class="bg-surface rounded-card border border-line overflow-hidden"
       >
-        <div class="flex items-center justify-between px-4 py-2.5 bg-slate-100 border-b border-slate-100">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-surface-muted border-b border-line-subtle">
           <div class="flex items-baseline gap-2">
-            <span class="font-semibold text-slate-700">{{ dayLabel(day).title }}</span>
-            <span class="text-sm text-slate-400 capitalize">{{ dayLabel(day).sub }}</span>
+            <span class="font-semibold text-ink">{{ dayLabel(day).title }}</span>
+            <span class="text-sm text-ink-faint capitalize">{{ dayLabel(day).sub }}</span>
           </div>
           <Button
             icon="pi pi-plus"
@@ -276,7 +276,7 @@ function openNew(day?: string) {
         <div
           v-for="cont in continuations.get(day) ?? []"
           :key="`cont-${cont.id}`"
-          class="flex items-center gap-3 px-4 py-1.5 border-b border-slate-50 last:border-b-0 text-sm text-teal-700/70 cursor-pointer hover:bg-teal-50/50"
+          class="flex items-center gap-3 px-4 py-1.5 border-b border-line-faint last:border-b-0 text-sm text-nature-strong opacity-70 cursor-pointer hover:bg-nature-tint-hover"
           @click="openEdit(cont)"
         >
           <i class="pi pi-arrow-down-right text-xs w-4 text-center" />
@@ -301,14 +301,14 @@ function openNew(day?: string) {
             !(otherBookingsByDay.get(day) ?? []).length &&
             !(lodgingByDay.get(day) ?? []).length
           "
-          class="px-4 pb-3 pt-1 text-xs text-slate-300"
+          class="px-4 pb-3 pt-1 text-xs text-ink-disabled"
         >
           Sin actividades
         </p>
       </div>
     </div>
 
-    <div v-else class="bg-white rounded-xl border border-slate-200 p-4">
+    <div v-else class="bg-surface rounded-card border border-line p-4">
       <ItineraryCalendar :trip="trip" :bookings="bookings.items" @edit="openEdit" />
     </div>
 

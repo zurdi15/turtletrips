@@ -286,8 +286,8 @@ const { saving, save } = useFormDialog({
         @item-select="onAddressSelect"
       />
       <template #hint>
-        <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
-          <i class="pi pi-map-marker text-[10px]" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
+        <p v-if="lat != null && lon != null" class="text-xs text-ink-faint">
+          <i class="pi pi-map-marker text-3xs" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
         </p>
       </template>
     </FormField>
@@ -345,7 +345,7 @@ const { saving, save } = useFormDialog({
         <FormField label="Pagado por">
           <PayerSelect v-model="paidById" :travelers="trip.travelers" />
           <template #hint>
-            <p class="text-xs text-slate-400">
+            <p class="text-xs text-ink-faint">
               Con coste, la reserva crea su gasto automáticamente y hereda este pagador
             </p>
           </template>

@@ -26,7 +26,7 @@ watch(
 </script>
 
 <template>
-  <nav class="flex gap-1 border-b border-slate-200 mb-6 mt-4 overflow-x-auto no-scrollbar">
+  <nav class="flex gap-1 border-b border-line mb-6 mt-4 overflow-x-auto no-scrollbar">
     <!-- el color activo se aplica SIN transición (una transición de color se
          congela si el hilo principal está montando la tab) y el subrayado
          crece con transform, que anima en el compositor -->
@@ -37,8 +37,8 @@ watch(
       class="tt-tab px-3 py-2 text-sm font-medium no-underline whitespace-nowrap"
       :class="
         activeTab === tab.name
-          ? 'tt-tab-active text-[var(--p-primary-color)]'
-          : 'text-slate-500 hover:text-slate-700'
+          ? 'tt-tab-active text-primary'
+          : 'text-ink-muted hover:text-ink'
       "
       @click="pendingTab = tab.name"
     >

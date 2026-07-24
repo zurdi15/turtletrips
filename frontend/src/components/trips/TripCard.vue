@@ -10,8 +10,8 @@ defineProps<{ trip: Trip; image: string | null }>()
 
 <template>
   <router-link :to="`/trips/${trip.id}/overview`" class="no-underline">
-    <div class="tt-lift bg-white rounded-xl border border-slate-200 overflow-hidden h-full group">
-      <div class="relative h-32 bg-slate-200 overflow-hidden">
+    <div class="tt-lift bg-surface rounded-card border border-line overflow-hidden h-full group">
+      <div class="relative h-32 bg-surface-strong overflow-hidden">
         <img
           v-if="image"
           :src="image"
@@ -26,24 +26,24 @@ defineProps<{ trip: Trip; image: string | null }>()
           <template v-if="trip.countries.length">
             {{ trip.countries.map(flagEmoji).join(' ') }}
           </template>
-          <i v-else class="mdi mdi-bag-suitcase-outline text-slate-400" />
+          <i v-else class="mdi mdi-bag-suitcase-outline text-ink-faint" />
         </div>
         <div class="absolute top-2 right-2">
           <StatusTag :status="trip.status" />
         </div>
       </div>
       <div class="p-3.5">
-        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+        <h3 class="font-semibold text-ink-heading flex items-center gap-2">
           {{ trip.name }}
           <span class="text-sm">{{ trip.countries.map(flagEmoji).join(' ') }}</span>
           <SettledPill v-if="trip.debts_settled" />
         </h3>
-        <p class="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+        <p class="text-sm text-ink-muted mt-1 flex items-center gap-1.5">
           <i class="pi pi-calendar text-xs" /> {{ tripDateRange(trip) }}
         </p>
         <p
           v-if="trip.travelers.length"
-          class="text-xs text-slate-400 mt-1.5 flex items-center gap-1"
+          class="text-xs text-ink-faint mt-1.5 flex items-center gap-1"
         >
           <i class="pi pi-users" /> {{ trip.travelers.map((t) => t.name).join(', ') }}
         </p>

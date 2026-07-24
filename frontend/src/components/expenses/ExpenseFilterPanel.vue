@@ -25,7 +25,7 @@ defineEmits<{ clear: [] }>()
 
 <template>
   <div
-    class="flex flex-wrap items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-3 mb-4"
+    class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3 mb-4"
   >
     <InputText
       v-model="filters.searchText"
@@ -45,7 +45,7 @@ defineEmits<{ clear: [] }>()
       :options="categoryOptions"
       optionLabel="label"
       optionValue="value"
-      class="flex-1 min-w-[9rem] sm:flex-none sm:w-48"
+      class="flex-1 min-w-menu sm:flex-none sm:w-48"
     />
     <MultiSelect
       v-model="filters.excludedCategories"
@@ -54,14 +54,14 @@ defineEmits<{ clear: [] }>()
       optionValue="value"
       placeholder="Excluir categorías…"
       display="chip"
-      class="flex-1 min-w-[9rem] sm:flex-none sm:w-52"
+      class="flex-1 min-w-menu sm:flex-none sm:w-52"
     />
     <Select
       v-model="filters.payer"
       :options="payerOptions"
       optionLabel="label"
       optionValue="value"
-      class="flex-1 min-w-[9rem] sm:flex-none sm:w-44"
+      class="flex-1 min-w-menu sm:flex-none sm:w-44"
     />
     <Select
       v-model="filters.place"
@@ -69,7 +69,7 @@ defineEmits<{ clear: [] }>()
       optionLabel="label"
       optionValue="value"
       filter
-      class="flex-1 min-w-[9rem] sm:flex-none sm:w-44"
+      class="flex-1 min-w-menu sm:flex-none sm:w-44"
     />
     <Button
       v-if="activeFilterCount"

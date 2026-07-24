@@ -35,7 +35,7 @@ function optionFor(value: PayerValue): PayerOption | undefined {
       <Pill v-if="option.value === 'common'" color="warn" icon="pi pi-wallet">
         {{ option.label }}
       </Pill>
-      <span v-else-if="option.value === null" class="text-slate-400">
+      <span v-else-if="option.value === null" class="text-ink-faint">
         {{ option.label }}
       </span>
       <span v-else class="inline-flex items-center gap-1.5">
@@ -48,7 +48,7 @@ function optionFor(value: PayerValue): PayerOption | undefined {
     </template>
     <template #value="{ value }">
       <Pill v-if="value === 'common'" color="warn" icon="pi pi-wallet">Fondo común</Pill>
-      <span v-else-if="value == null" class="text-slate-400">Sin asignar</span>
+      <span v-else-if="value == null" class="text-ink-faint">Sin asignar</span>
       <span v-else class="inline-flex items-center gap-1.5">
         <span
           class="w-2 h-2 rounded-full shrink-0"

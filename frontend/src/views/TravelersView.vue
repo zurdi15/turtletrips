@@ -68,7 +68,7 @@ function remove(traveler: Traveler) {
       class="mb-6"
     />
 
-    <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <div class="bg-surface rounded-card border border-line p-5">
       <ul class="tt-stagger flex flex-col gap-1.5 mb-4">
         <EditableListItem
           v-for="traveler in travelers.items"
@@ -80,7 +80,7 @@ function remove(traveler: Traveler) {
           @remove="remove(traveler)"
           @pick-color="(event) => openColorPicker(event, traveler.id)"
         />
-        <li v-if="!travelers.items.length" class="text-sm text-slate-400 px-3 py-4 text-center">
+        <li v-if="!travelers.items.length" class="text-sm text-ink-faint px-3 py-4 text-center">
           Sin viajeros todavía: añade el primero abajo
         </li>
       </ul>

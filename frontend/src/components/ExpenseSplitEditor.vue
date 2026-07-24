@@ -124,9 +124,9 @@ function fmt(v: number): string {
 </script>
 
 <template>
-  <div class="rounded-lg bg-slate-50 border border-slate-200 p-3">
+  <div class="rounded-lg bg-surface-soft border border-line p-3">
     <div class="flex items-center gap-2">
-      <span class="text-sm text-slate-600">
+      <span class="text-sm text-ink-secondary">
         <i class="pi pi-users text-xs mr-1" />Reparto: {{ summary }}
       </span>
       <span class="flex-1" />
@@ -140,7 +140,7 @@ function fmt(v: number): string {
       />
       <Button v-else label="Restablecer" size="small" text severity="secondary" @click="reset" />
     </div>
-    <p v-if="!travelers.length" class="text-xs text-slate-400 mt-1">
+    <p v-if="!travelers.length" class="text-xs text-ink-faint mt-1">
       Añade viajeros al viaje para repartir el gasto.
     </p>
 
@@ -161,7 +161,7 @@ function fmt(v: number): string {
             :inputId="`split-${t.id}`"
             @update:modelValue="toggle(t.id)"
           />
-          <label :for="`split-${t.id}`" class="text-sm text-slate-700 flex-1 cursor-pointer">
+          <label :for="`split-${t.id}`" class="text-sm text-ink flex-1 cursor-pointer">
             {{ t.name }}
           </label>
           <InputNumber
@@ -178,7 +178,7 @@ function fmt(v: number): string {
         </div>
       </div>
       <div v-if="isCustomValues" class="flex items-center gap-2 text-xs">
-        <span :class="pending === 0 ? 'text-emerald-600' : 'text-amber-600'">
+        <span :class="pending === 0 ? 'text-brand' : 'text-warn'">
           Suman {{ fmt(currentSum) }} de {{ fmt(expectedTotal) }}
           <template v-if="pending !== 0"> — faltan {{ fmt(pending) }}</template>
         </span>

@@ -209,7 +209,7 @@ const { saving, save } = useFormDialog({
       </FormField>
     </div>
 
-    <div v-if="isForeign" class="rounded-lg bg-slate-50 border border-slate-200 p-3">
+    <div v-if="isForeign" class="rounded-lg bg-surface-soft border border-line p-3">
       <div class="flex items-end gap-3">
         <div class="flex flex-col gap-1 flex-1">
           <label class="text-sm font-medium">
@@ -231,10 +231,10 @@ const { saving, save } = useFormDialog({
           @click="fetchRate"
         />
       </div>
-      <p v-if="converted != null" class="text-sm text-slate-600 mt-2">
+      <p v-if="converted != null" class="text-sm text-ink-secondary mt-2">
         ≈ <strong>{{ formatMoney(converted, trip.base_currency) }}</strong>
-        <span v-if="rateSource === 'cache'" class="text-slate-400"> (tasa cacheada)</span>
-        <span v-else-if="rateSource === 'api'" class="text-slate-400"> (tasa del BCE)</span>
+        <span v-if="rateSource === 'cache'" class="text-ink-faint"> (tasa cacheada)</span>
+        <span v-else-if="rateSource === 'api'" class="text-ink-faint"> (tasa del BCE)</span>
       </p>
       <Message v-if="rateSource === 'error'" severity="warn" size="small" class="mt-2">
         No se pudo obtener la tasa automáticamente; introdúcela a mano.
@@ -263,7 +263,7 @@ const { saving, save } = useFormDialog({
       :amount="amount"
       :currency="currency"
     />
-    <p v-else class="text-xs text-slate-400 rounded-lg bg-slate-50 border border-slate-200 p-3">
+    <p v-else class="text-xs text-ink-faint rounded-lg bg-surface-soft border border-line p-3">
       <i class="pi pi-wallet mr-1" />Pagado del fondo común: cuenta en los totales pero no
       genera deudas entre viajeros.
     </p>

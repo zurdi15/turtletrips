@@ -97,8 +97,8 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
         @item-select="onGeocodeSelect"
       />
       <template #hint>
-        <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
-          <i class="pi pi-map-marker text-[10px]" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
+        <p v-if="lat != null && lon != null" class="text-xs text-ink-faint">
+          <i class="pi pi-map-marker text-3xs" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
         </p>
       </template>
     </FormField>

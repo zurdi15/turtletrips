@@ -36,8 +36,8 @@ function onPayer(value: number | 'none' | 'common' | null) {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2 bg-sky-50 border border-sky-200 rounded-xl p-3 mb-3">
-    <span class="text-sm font-semibold text-sky-700">{{ count }} seleccionados</span>
+  <div class="flex flex-wrap items-center gap-2 bg-info-tint border border-info-edge rounded-card p-3 mb-3">
+    <span class="text-sm font-semibold text-info-strong">{{ count }} seleccionados</span>
     <span class="flex-1 sm:hidden" />
     <Select
       v-model="bulkCategory"

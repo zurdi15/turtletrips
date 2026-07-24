@@ -25,11 +25,11 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
 
 <template>
   <div
-    class="tt-lift bg-white rounded-xl border p-3 cursor-pointer"
+    class="tt-lift bg-surface rounded-card border p-3 cursor-pointer"
     :class="
       selected
-        ? 'border-[var(--p-primary-color)] ring-1 ring-[var(--p-primary-color)]'
-        : 'border-slate-200 hover:border-slate-300'
+        ? 'border-primary ring-1 ring-primary'
+        : 'border-line hover:border-line-strong'
     "
     @click="$emit('select')"
   >
@@ -80,16 +80,16 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
             />
           </span>
         </div>
-        <p v-if="place.notes" class="text-sm text-slate-500 mt-0.5 truncate">{{ place.notes }}</p>
+        <p v-if="place.notes" class="text-sm text-ink-muted mt-0.5 truncate">{{ place.notes }}</p>
         <a
           v-if="place.url"
           :href="place.url"
           target="_blank"
           rel="noopener"
-          class="text-xs text-sky-600 hover:underline"
+          class="text-xs text-info hover:underline"
           @click.stop
         >
-          <i class="pi pi-external-link text-[10px]" /> enlace
+          <i class="pi pi-external-link text-3xs" /> enlace
         </a>
       </div>
       <!-- .stop: las acciones no deben seleccionar la tarjeta -->

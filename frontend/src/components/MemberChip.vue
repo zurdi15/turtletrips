@@ -6,7 +6,7 @@ defineProps<{ member: Traveler }>()
 
 <template>
   <span
-    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700"
+    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-muted text-ink"
   >
     <span
       class="w-2 h-2 rounded-full"

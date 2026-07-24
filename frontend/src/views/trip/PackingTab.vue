@@ -165,19 +165,19 @@ async function saveTemplate() {
   <div>
     <!-- selector de maleta: común + una por viajero -->
     <BagSelector v-model:active="activeTraveler" :bags="bags" class="mb-4">
-      <p v-if="!trip.travelers.length" class="text-xs text-slate-400 ml-2">
+      <p v-if="!trip.travelers.length" class="text-xs text-ink-faint ml-2">
         Añade viajeros al viaje para que cada uno tenga su maleta
       </p>
     </BagSelector>
 
     <!-- barra de la maleta activa: plantilla + progreso -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+    <div class="bg-surface rounded-card border border-line p-4 mb-4">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-sm font-semibold text-slate-600 mr-1">
+        <span class="text-sm font-semibold text-ink-secondary mr-1">
           Maleta de {{ activeBagLabel }}
         </span>
-        <span v-if="activeTemplateName" class="text-xs px-2 py-0.5 rounded-full bg-sky-50 text-sky-700">
-          <i class="pi pi-briefcase text-[10px]" /> plantilla: {{ activeTemplateName }}
+        <span v-if="activeTemplateName" class="text-xs px-2 py-0.5 rounded-full bg-info-tint text-info-strong">
+          <i class="pi pi-briefcase text-3xs" /> plantilla: {{ activeTemplateName }}
         </span>
         <span class="flex-1" />
         <Select
@@ -220,7 +220,7 @@ async function saveTemplate() {
       </div>
       <div v-if="activeProgress.total" class="mt-3">
         <ProgressMeter :value="activeProgress.pct" />
-        <p class="text-xs text-slate-400 mt-1">
+        <p class="text-xs text-ink-faint mt-1">
           {{ activeProgress.done }}/{{ activeProgress.total }} preparado · {{ activeProgress.pct }}%
         </p>
       </div>
@@ -254,12 +254,12 @@ async function saveTemplate() {
         <li
           v-for="item in group.items"
           :key="item.id"
-          class="flex items-center gap-3 px-4 py-2 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 group/item"
+          class="flex items-center gap-3 px-4 py-2 border-b border-line-faint last:border-b-0 hover:bg-surface-hover group/item"
         >
           <Checkbox :modelValue="item.checked" binary @update:modelValue="store.toggle(item)" />
           <span
             class="flex-1 transition-colors duration-200"
-            :class="{ 'line-through text-slate-400': item.checked }"
+            :class="{ 'line-through text-ink-faint': item.checked }"
           >
             {{ item.name }}
             <a
@@ -267,7 +267,7 @@ async function saveTemplate() {
               :href="item.url"
               target="_blank"
               rel="noopener"
-              class="ml-1 text-sky-600 hover:underline text-xs"
+              class="ml-1 text-info hover:underline text-xs"
               v-tooltip.top="'Enlace de compra'"
               @click.stop
             >
@@ -294,7 +294,7 @@ async function saveTemplate() {
       width="md"
       @save="saveTemplate"
     >
-      <p class="text-sm text-slate-500">
+      <p class="text-sm text-ink-muted">
         Se guardan los {{ activeItems.length }} elementos de la maleta de
         <strong>{{ activeBagLabel }}</strong> (sin marcar) como plantilla reutilizable.
       </p>

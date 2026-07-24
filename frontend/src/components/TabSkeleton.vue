@@ -13,7 +13,7 @@ withDefaults(
 <template>
   <!-- stats: rejilla de métricas (gastos) -->
   <div v-if="variant === 'stats'" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-    <div v-for="i in 6" :key="i" class="bg-white rounded-xl border border-slate-200 p-3.5">
+    <div v-for="i in 6" :key="i" class="bg-surface rounded-card border border-line p-3.5">
       <Skeleton width="60%" height="0.6rem" class="mb-3" />
       <Skeleton width="80%" height="1.25rem" class="mb-2" />
       <Skeleton width="40%" height="0.6rem" />
@@ -23,7 +23,7 @@ withDefaults(
   <!-- table: tarjeta con filas tipo tabla -->
   <div
     v-else-if="variant === 'table'"
-    class="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-3.5"
+    class="bg-surface rounded-card border border-line p-4 flex flex-col gap-3.5"
   >
     <div v-for="i in rows" :key="i" class="flex items-center gap-3">
       <Skeleton shape="circle" size="1.25rem" class="shrink-0" />
@@ -35,7 +35,7 @@ withDefaults(
 
   <!-- cards: tarjetas apiladas (reservas, sitios…) -->
   <div v-else-if="variant === 'cards'" class="flex flex-col gap-4">
-    <div v-for="i in rows" :key="i" class="bg-white rounded-xl border border-slate-200 p-4">
+    <div v-for="i in rows" :key="i" class="bg-surface rounded-card border border-line p-4">
       <div class="flex items-center gap-3 mb-3">
         <Skeleton shape="circle" size="2rem" class="shrink-0" />
         <Skeleton :width="i % 2 ? '30%' : '45%'" height="1rem" />

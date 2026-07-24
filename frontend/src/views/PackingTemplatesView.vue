@@ -110,7 +110,7 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
           title="Elige una plantilla"
           subtitle="Selecciona una maleta de la lista o crea una nueva para editar su contenido"
         />
-        <div v-else class="bg-white rounded-xl border border-slate-200 p-5">
+        <div v-else class="bg-surface rounded-card border border-line p-5">
           <div class="flex items-center gap-2 mb-4">
             <template v-if="renaming">
               <InputText
@@ -124,7 +124,7 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
               <Button icon="pi pi-times" text severity="secondary" @click="renaming = false" />
             </template>
             <template v-else>
-              <h2 class="text-lg font-semibold text-slate-800 flex-1">{{ store.detail.name }}</h2>
+              <h2 class="text-lg font-semibold text-ink-heading flex-1">{{ store.detail.name }}</h2>
               <Button
                 icon="pi pi-pencil"
                 text
@@ -151,7 +151,7 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
             class="mb-4"
           />
 
-          <p v-if="!store.detail.items.length" class="text-sm text-slate-400 py-4 text-center">
+          <p v-if="!store.detail.items.length" class="text-sm text-ink-faint py-4 text-center">
             Plantilla vacía: añade elementos aquí o guárdala desde la maleta de un viaje.
           </p>
 

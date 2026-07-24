@@ -27,19 +27,19 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
 <template>
   <div
     :id="`booking-${booking.id}`"
-    class="bg-white rounded-xl border p-4 transition-shadow duration-500"
+    class="bg-surface rounded-card border p-4 transition-shadow duration-500"
     :class="
       highlighted
-        ? 'border-[var(--p-primary-color)] ring-2 ring-[var(--p-primary-color)]'
-        : 'border-slate-200'
+        ? 'border-primary ring-2 ring-primary'
+        : 'border-line'
     "
   >
     <div class="flex items-start gap-3">
       <!-- izquierda: título y detalles (encoge y trunca, nunca empuja las acciones) -->
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 flex-wrap">
-          <h3 class="font-semibold text-slate-800">{{ booking.title }}</h3>
-          <span v-if="booking.provider" class="text-sm text-slate-400">
+          <h3 class="font-semibold text-ink-heading">{{ booking.title }}</h3>
+          <span v-if="booking.provider" class="text-sm text-ink-faint">
             · {{ booking.provider }}
           </span>
           <Tag
@@ -62,7 +62,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
         <!-- transporte: origen→destino y fechas en filas separadas (cada
              una ya lleva su flecha); el resto en línea compacta -->
         <div
-          class="mt-1.5 text-sm text-slate-500"
+          class="mt-1.5 text-sm text-ink-muted"
           :class="
             isTransport(booking.type)
               ? 'flex flex-col gap-1 items-start'
@@ -102,7 +102,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
           />
           <EntityLink v-if="expenseId" type="expense" :tripId="trip.id" :targetId="expenseId" />
         </div>
-        <p v-if="booking.notes" class="text-sm text-slate-400 mt-1">{{ booking.notes }}</p>
+        <p v-if="booking.notes" class="text-sm text-ink-faint mt-1">{{ booking.notes }}</p>
       </div>
 
       <!-- derecha: importe + acciones en una línea, y el gasto debajo -->
@@ -110,7 +110,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
         <div class="flex items-center gap-1">
           <span
             v-if="booking.cost_amount != null"
-            class="font-semibold text-slate-800 mr-1.5 whitespace-nowrap"
+            class="font-semibold text-ink-heading mr-1.5 whitespace-nowrap"
           >
             {{ formatMoney(booking.cost_amount, booking.cost_currency ?? trip.base_currency) }}
           </span>
@@ -139,7 +139,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
         />
       </div>
     </div>
-    <div class="mt-3 pt-3 border-t border-slate-100">
+    <div class="mt-3 pt-3 border-t border-line-subtle">
       <AttachmentList :bookingId="booking.id" />
     </div>
   </div>
