@@ -4,9 +4,10 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
-import Dialog from 'primevue/dialog'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
+import FormDialog from '../../components/ui/FormDialog.vue'
+import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
@@ -31,10 +32,7 @@ const newUrl = ref('')
 const showUrlField = ref(false)
 
 const editing = ref<PackingItem | null>(null)
-const editName = ref('')
-const editCategory = ref('')
-const editUrl = ref('')
-const editTraveler = ref<number | null>(null)
+const showEdit = ref(false)
 
 const showSaveTemplate = ref(false)
 const templateName = ref('')
@@ -125,21 +123,7 @@ async function addItem() {
 
 function openEdit(item: PackingItem) {
   editing.value = item
-  editName.value = item.name
-  editCategory.value = item.category
-  editUrl.value = item.url ?? ''
-  editTraveler.value = item.traveler_id
-}
-
-async function saveEdit() {
-  if (!editing.value || !editName.value.trim()) return
-  await store.update(editing.value.id, {
-    name: editName.value.trim(),
-    category: editCategory.value,
-    url: editUrl.value.trim() || null,
-    traveler_id: editTraveler.value,
-  })
-  editing.value = null
+  showEdit.value = true
 }
 
 function removeItem(item: PackingItem) {
@@ -389,57 +373,21 @@ async function saveTemplate() {
     </div>
 
     <!-- diálogo editar (permite mover entre maletas) -->
-    <Dialog
-      :visible="editing != null"
-      modal
-      header="Editar elemento"
-      class="w-full max-w-md mx-4"
-      @update:visible="editing = null"
-    >
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Nombre</label>
-          <InputText v-model="editName" />
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">Categoría</label>
-            <Select
-              v-model="editCategory"
-              :options="categoryOptions"
-              optionLabel="label"
-              optionValue="value"
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-sm font-medium">Maleta de</label>
-            <Select
-              v-model="editTraveler"
-              :options="bagMoveOptions"
-              optionLabel="label"
-              optionValue="value"
-            />
-          </div>
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Enlace de compra</label>
-          <InputText v-model="editUrl" placeholder="https://…" />
-        </div>
-      </div>
-      <template #footer>
-        <Button label="Cancelar" severity="secondary" text @click="editing = null" />
-        <Button label="Guardar" @click="saveEdit" />
-      </template>
-    </Dialog>
+    <PackingItemDialog
+      v-model:visible="showEdit"
+      :item="editing"
+      :categoryOptions="categoryOptions"
+      :bagOptions="bagMoveOptions"
+    />
 
     <!-- diálogo guardar plantilla nueva -->
-    <Dialog
+    <FormDialog
       v-model:visible="showSaveTemplate"
-      modal
       header="Guardar como plantilla nueva"
-      class="w-full max-w-md mx-4"
+      width="md"
+      @save="saveTemplate"
     >
-      <p class="text-sm text-slate-500 mb-3">
+      <p class="text-sm text-slate-500">
         Se guardan los {{ activeItems.length }} elementos de la maleta de
         <strong>{{ activeBagLabel }}</strong> (sin marcar) como plantilla reutilizable.
       </p>
@@ -453,6 +401,6 @@ async function saveTemplate() {
         <Button label="Cancelar" severity="secondary" text @click="showSaveTemplate = false" />
         <Button label="Guardar plantilla" icon="pi pi-save" @click="saveTemplate" />
       </template>
-    </Dialog>
+    </FormDialog>
   </div>
 </template>

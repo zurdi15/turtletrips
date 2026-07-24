@@ -6,16 +6,16 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
-import { useToast } from 'primevue/usetoast'
 import type { ImportResult, Trip } from '../api/types'
 import { useExpensesStore } from '../stores/expenses'
 import { formatDate, formatMoney } from '../composables/useMoney'
+import { useNotify } from '../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ imported: [count: number] }>()
 
-const toast = useToast()
+const notify = useNotify()
 const store = useExpensesStore()
 
 const file = ref<File | null>(null)
@@ -38,7 +38,7 @@ async function onFileChosen(event: Event) {
   try {
     preview.value = await store.importCsv(chosen, true)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error leyendo el CSV', detail: String(err), life: 5000 })
+    notify.error('Error leyendo el CSV', err)
     reset()
   } finally {
     loading.value = false
@@ -51,16 +51,12 @@ async function confirmImport() {
   importing.value = true
   try {
     const result = await store.importCsv(file.value, false)
-    toast.add({
-      severity: 'success',
-      summary: `${result.imported} gastos importados`,
-      life: 4000,
-    })
+    notify.success(`${result.imported} gastos importados`)
     emit('imported', result.imported)
     visible.value = false
     reset()
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error al importar', detail: String(err), life: 5000 })
+    notify.error('Error al importar', err)
   } finally {
     importing.value = false
   }

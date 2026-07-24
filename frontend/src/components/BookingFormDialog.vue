@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
-import Button from 'primevue/button'
 import AutoComplete from 'primevue/autocomplete'
 import DateRangePicker from './DateRangePicker.vue'
 import PayerSelect, { type PayerValue } from './PayerSelect.vue'
-import { useToast } from 'primevue/usetoast'
+import FormDialog from './ui/FormDialog.vue'
+import FormField from './ui/FormField.vue'
 import type { Booking, BookingType, GeocodeResult, Trip } from '../api/types'
-import { BOOKING_TYPE_LABELS, CURRENCIES, toSelectOptions } from '../constants'
+import {
+  BOOKING_TYPE_LABELS,
+  CURRENCIES,
+  isTransport as isTransportType,
+  toSelectOptions,
+} from '../constants'
 import { useBookingsStore } from '../stores/bookings'
+import { useFormDialog } from '../composables/useFormDialog'
 import { useGeocodeSearch } from '../composables/useGeocode'
 import { toIsoDate } from '../composables/useMoney'
 import { flagEmoji } from '../countries'
@@ -22,7 +27,6 @@ const props = defineProps<{ trip: Trip; booking?: Booking | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
-const toast = useToast()
 const store = useBookingsStore()
 const { results: geoResults, search: geoSearch } = useGeocodeSearch()
 
@@ -46,7 +50,6 @@ const costAmount = ref<number | null>(null)
 const costCurrency = ref<string | null>(null)
 const paidById = ref<PayerValue>(null)
 const notes = ref('')
-const saving = ref(false)
 
 function addressText(): string {
   return typeof address.value === 'string' ? address.value : address.value.display_name
@@ -72,7 +75,7 @@ watch(address, () => {
 
 const typeOptions = toSelectOptions(BOOKING_TYPE_LABELS)
 
-const isTransport = computed(() => ['flight', 'train', 'bus', 'ferry'].includes(type.value))
+const isTransport = computed(() => isTransportType(type.value))
 const isFlight = computed(() => type.value === 'flight')
 
 // vuelos: buscador de aeropuertos (IATA) — dataset lazy, solo se carga al usarlo
@@ -154,44 +157,39 @@ watch(type, (t, prev) => {
   }
 })
 
-watch(visible, (open) => {
-  if (!open) return
-  const b = props.booking
-  type.value = b?.type ?? 'hotel'
-  title.value = b?.title ?? ''
-  provider.value = b?.provider ?? ''
-  confirmationCode.value = b?.confirmation_code ?? ''
-  flightNumber.value = b?.flight_number ?? ''
-  const start = b?.start_dt ? new Date(b.start_dt) : null
-  const end = b?.end_dt ? new Date(b.end_dt) : null
-  startDate.value = start
-  endDate.value = end
-  startTime.value = start ? timeOf(start) : null
-  endTime.value = end ? timeOf(end) : null
-  if (!b) {
-    // reserva nueva: arranca como hotel, con sus horas por defecto
-    startTime.value = timeAt(15)
-    endTime.value = timeAt(11)
-  }
-  origin.value = b?.origin ?? ''
-  destination.value = b?.destination ?? ''
-  address.value = b?.address ?? ''
-  lat.value = b?.lat ?? null
-  lon.value = b?.lon ?? null
-  locatedAddress.value = b?.lat != null ? (b?.address ?? null) : null
-  costAmount.value = b?.cost_amount ?? null
-  costCurrency.value = b?.cost_currency ?? props.trip.base_currency
-  paidById.value = b?.paid_by_common ? 'common' : (b?.paid_by_id ?? null)
-  notes.value = b?.notes ?? ''
-})
-
-async function save() {
-  if (!title.value.trim()) {
-    toast.add({ severity: 'warn', summary: 'El título es obligatorio', life: 3000 })
-    return
-  }
-  saving.value = true
-  try {
+const { saving, save } = useFormDialog({
+  visible,
+  entity: () => props.booking,
+  reset(b) {
+    type.value = b?.type ?? 'hotel'
+    title.value = b?.title ?? ''
+    provider.value = b?.provider ?? ''
+    confirmationCode.value = b?.confirmation_code ?? ''
+    flightNumber.value = b?.flight_number ?? ''
+    const start = b?.start_dt ? new Date(b.start_dt) : null
+    const end = b?.end_dt ? new Date(b.end_dt) : null
+    startDate.value = start
+    endDate.value = end
+    startTime.value = start ? timeOf(start) : null
+    endTime.value = end ? timeOf(end) : null
+    if (!b) {
+      // reserva nueva: arranca como hotel, con sus horas por defecto
+      startTime.value = timeAt(15)
+      endTime.value = timeAt(11)
+    }
+    origin.value = b?.origin ?? ''
+    destination.value = b?.destination ?? ''
+    address.value = b?.address ?? ''
+    lat.value = b?.lat ?? null
+    lon.value = b?.lon ?? null
+    locatedAddress.value = b?.lat != null ? (b?.address ?? null) : null
+    costAmount.value = b?.cost_amount ?? null
+    costCurrency.value = b?.cost_currency ?? props.trip.base_currency
+    paidById.value = b?.paid_by_common ? 'common' : (b?.paid_by_id ?? null)
+    notes.value = b?.notes ?? ''
+  },
+  validate: () => (title.value.trim() ? null : 'El título es obligatorio'),
+  submit() {
     const payload = {
       type: type.value,
       title: title.value.trim(),
@@ -211,171 +209,151 @@ async function save() {
       paid_by_common: paidById.value === 'common',
       notes: notes.value || null,
     }
-    if (props.booking) await store.update(props.booking.id, payload)
-    else await store.create(payload)
-    visible.value = false
-    emit('saved')
-  } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error al guardar', detail: String(err), life: 5000 })
-  } finally {
-    saving.value = false
-  }
-}
+    return props.booking ? store.update(props.booking.id, payload) : store.create(payload)
+  },
+  onSaved: () => emit('saved'),
+})
 </script>
 
 <template>
-  <Dialog
+  <FormDialog
     v-model:visible="visible"
-    modal
     :header="booking ? 'Editar reserva' : 'Nueva reserva'"
-    class="w-full max-w-lg mx-4"
+    :saving="saving"
+    :saveLabel="booking ? 'Guardar' : 'Añadir reserva'"
+    @save="save"
   >
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Tipo</label>
-        <Select v-model="type" :options="typeOptions" optionLabel="label" optionValue="value" />
-      </div>
+    <FormField label="Tipo">
+      <Select v-model="type" :options="typeOptions" optionLabel="label" optionValue="value" />
+    </FormField>
 
-      <!-- lo primero es el lugar, como en Sitios: la selección autorellena el título -->
-      <div v-if="isTransport" class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Origen</label>
-          <AutoComplete
-            v-if="isFlight"
-            v-model="origin"
-            :suggestions="airportOptions"
-            optionLabel="code"
-            placeholder="MAD, Madrid…"
-            dropdown
-            fluid
-            @complete="searchAirports"
-            @item-select="origin = $event.value.code"
-          >
-            <template #option="{ option }">
-              <div class="flex items-center gap-2 w-full min-w-0">
-                <span class="font-mono font-semibold text-xs w-9 shrink-0">{{ option.code }}</span>
-                <span class="truncate text-sm">{{ option.city || option.name }}</span>
-                <span class="ml-auto shrink-0 text-sm">{{ flagEmoji(option.country) }}</span>
-              </div>
-            </template>
-          </AutoComplete>
-          <InputText v-else v-model="origin" placeholder="Madrid" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Destino</label>
-          <AutoComplete
-            v-if="isFlight"
-            v-model="destination"
-            :suggestions="airportOptions"
-            optionLabel="code"
-            placeholder="NRT, Tokio…"
-            dropdown
-            fluid
-            @complete="searchAirports"
-            @item-select="destination = $event.value.code"
-          >
-            <template #option="{ option }">
-              <div class="flex items-center gap-2 w-full min-w-0">
-                <span class="font-mono font-semibold text-xs w-9 shrink-0">{{ option.code }}</span>
-                <span class="truncate text-sm">{{ option.city || option.name }}</span>
-                <span class="ml-auto shrink-0 text-sm">{{ flagEmoji(option.country) }}</span>
-              </div>
-            </template>
-          </AutoComplete>
-          <InputText v-else v-model="destination" placeholder="Tokio" />
-        </div>
-      </div>
-      <div v-else class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Dirección</label>
+    <!-- lo primero es el lugar, como en Sitios: la selección autorellena el título -->
+    <div v-if="isTransport" class="grid grid-cols-2 gap-3">
+      <FormField label="Origen">
         <AutoComplete
-          v-model="address"
-          :suggestions="geoResults"
-          optionLabel="display_name"
-          placeholder="Busca un lugar o dirección…"
+          v-if="isFlight"
+          v-model="origin"
+          :suggestions="airportOptions"
+          optionLabel="code"
+          placeholder="MAD, Madrid…"
+          dropdown
           fluid
-          autofocus
-          @complete="(e) => geoSearch(e.query)"
-          @item-select="onAddressSelect"
-        />
+          @complete="searchAirports"
+          @item-select="origin = $event.value.code"
+        >
+          <template #option="{ option }">
+            <div class="flex items-center gap-2 w-full min-w-0">
+              <span class="font-mono font-semibold text-xs w-9 shrink-0">{{ option.code }}</span>
+              <span class="truncate text-sm">{{ option.city || option.name }}</span>
+              <span class="ml-auto shrink-0 text-sm">{{ flagEmoji(option.country) }}</span>
+            </div>
+          </template>
+        </AutoComplete>
+        <InputText v-else v-model="origin" placeholder="Madrid" />
+      </FormField>
+      <FormField label="Destino">
+        <AutoComplete
+          v-if="isFlight"
+          v-model="destination"
+          :suggestions="airportOptions"
+          optionLabel="code"
+          placeholder="NRT, Tokio…"
+          dropdown
+          fluid
+          @complete="searchAirports"
+          @item-select="destination = $event.value.code"
+        >
+          <template #option="{ option }">
+            <div class="flex items-center gap-2 w-full min-w-0">
+              <span class="font-mono font-semibold text-xs w-9 shrink-0">{{ option.code }}</span>
+              <span class="truncate text-sm">{{ option.city || option.name }}</span>
+              <span class="ml-auto shrink-0 text-sm">{{ flagEmoji(option.country) }}</span>
+            </div>
+          </template>
+        </AutoComplete>
+        <InputText v-else v-model="destination" placeholder="Tokio" />
+      </FormField>
+    </div>
+    <FormField v-else label="Dirección">
+      <AutoComplete
+        v-model="address"
+        :suggestions="geoResults"
+        optionLabel="display_name"
+        placeholder="Busca un lugar o dirección…"
+        fluid
+        autofocus
+        @complete="(e) => geoSearch(e.query)"
+        @item-select="onAddressSelect"
+      />
+      <template #hint>
         <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
           <i class="pi pi-map-marker text-[10px]" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
         </p>
-      </div>
+      </template>
+    </FormField>
 
-      <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Título *</label>
-          <InputText v-model="title" placeholder="Hotel Gracery Shinjuku" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Proveedor</label>
-          <InputText v-model="provider" placeholder="Booking.com, Iberia…" />
-        </div>
-      </div>
-      <!-- en vuelos: código de reserva (booking) + número de vuelo -->
-      <div v-if="isFlight" class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Código de reserva</label>
-          <InputText v-model="confirmationCode" placeholder="ABC123" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Código de vuelo</label>
-          <InputText v-model="flightNumber" placeholder="IB6801" class="font-mono" />
-        </div>
-      </div>
-      <div v-else class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Código de confirmación</label>
-        <InputText v-model="confirmationCode" />
-      </div>
-      <DateRangePicker
-        v-model:start="startDate"
-        v-model:end="endDate"
-        :startLabel="dateLabels.start"
-        :endLabel="dateLabels.end"
-        clearable
-      />
-      <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Hora {{ dateLabels.start.toLowerCase() }}</label>
-          <DatePicker v-model="startTime" timeOnly hourFormat="24" placeholder="—" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Hora {{ dateLabels.end.toLowerCase() }}</label>
-          <DatePicker v-model="endTime" timeOnly hourFormat="24" placeholder="—" />
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Coste</label>
-          <InputNumber
-            v-model="costAmount"
-            :minFractionDigits="0"
-            :maxFractionDigits="2"
-            locale="es-ES"
-            :min="0"
-            placeholder="Opcional"
-          />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Moneda</label>
-          <Select v-model="costCurrency" :options="CURRENCIES" filter />
-        </div>
-        <div class="flex flex-col gap-1 col-span-2">
-          <label class="text-sm font-medium">Pagado por</label>
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label="Título" required>
+        <InputText v-model="title" placeholder="Hotel Gracery Shinjuku" />
+      </FormField>
+      <FormField label="Proveedor">
+        <InputText v-model="provider" placeholder="Booking.com, Iberia…" />
+      </FormField>
+    </div>
+    <!-- en vuelos: código de reserva (booking) + número de vuelo -->
+    <div v-if="isFlight" class="grid grid-cols-2 gap-3">
+      <FormField label="Código de reserva">
+        <InputText v-model="confirmationCode" placeholder="ABC123" />
+      </FormField>
+      <FormField label="Código de vuelo">
+        <InputText v-model="flightNumber" placeholder="IB6801" class="font-mono" />
+      </FormField>
+    </div>
+    <FormField v-else label="Código de confirmación">
+      <InputText v-model="confirmationCode" />
+    </FormField>
+    <DateRangePicker
+      v-model:start="startDate"
+      v-model:end="endDate"
+      :startLabel="dateLabels.start"
+      :endLabel="dateLabels.end"
+      clearable
+    />
+    <div class="grid grid-cols-2 gap-3">
+      <FormField :label="`Hora ${dateLabels.start.toLowerCase()}`">
+        <DatePicker v-model="startTime" timeOnly hourFormat="24" placeholder="—" />
+      </FormField>
+      <FormField :label="`Hora ${dateLabels.end.toLowerCase()}`">
+        <DatePicker v-model="endTime" timeOnly hourFormat="24" placeholder="—" />
+      </FormField>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <FormField label="Coste">
+        <InputNumber
+          v-model="costAmount"
+          :minFractionDigits="0"
+          :maxFractionDigits="2"
+          locale="es-ES"
+          :min="0"
+          placeholder="Opcional"
+        />
+      </FormField>
+      <FormField label="Moneda">
+        <Select v-model="costCurrency" :options="CURRENCIES" filter />
+      </FormField>
+      <div class="col-span-2">
+        <FormField label="Pagado por">
           <PayerSelect v-model="paidById" :travelers="trip.travelers" />
-          <p class="text-xs text-slate-400">
-            Con coste, la reserva crea su gasto automáticamente y hereda este pagador
-          </p>
-        </div>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Notas</label>
-        <Textarea v-model="notes" rows="2" autoResize />
+          <template #hint>
+            <p class="text-xs text-slate-400">
+              Con coste, la reserva crea su gasto automáticamente y hereda este pagador
+            </p>
+          </template>
+        </FormField>
       </div>
     </div>
-    <template #footer>
-      <Button label="Cancelar" severity="secondary" text @click="visible = false" />
-      <Button :label="booking ? 'Guardar' : 'Añadir reserva'" :loading="saving" @click="save" />
-    </template>
-  </Dialog>
+    <FormField label="Notas">
+      <Textarea v-model="notes" rows="2" autoResize />
+    </FormField>
+  </FormDialog>
 </template>

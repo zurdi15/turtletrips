@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
+import { computed, ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
-import { useToast } from 'primevue/usetoast'
+import FormDialog from '../ui/FormDialog.vue'
+import FormField from '../ui/FormField.vue'
 import type { WorldPlace, WorldPlaceKind } from '../../api/types'
 import { COUNTRY_OPTIONS } from '../../countries'
 import { displayName } from '../../utils/worldGrouping'
 import { useWorldPlacesStore } from '../../stores/worldPlaces'
+import { useFormDialog } from '../../composables/useFormDialog'
 
 export interface WorldPlacePrefill {
   name: string
@@ -31,7 +31,6 @@ const emit = defineEmits<{ saved: [created: boolean] }>()
 const visible = defineModel<boolean>('visible', { required: true })
 
 const store = useWorldPlacesStore()
-const toast = useToast()
 
 const formName = ref('')
 const formKind = ref<WorldPlaceKind>('city')
@@ -51,99 +50,82 @@ const dialogCountryOptions = computed(() => [
   ...COUNTRY_OPTIONS.map((o) => ({ code: o.code as string | null, label: o.label })),
 ])
 
-watch(visible, (open) => {
-  if (!open) return
-  if (props.place) {
-    formName.value = displayName(props.place)
-    formKind.value = props.place.kind
-    formNote.value = props.place.note ?? ''
-    formLat.value = props.place.lat
-    formLon.value = props.place.lon
-    formCountry.value = props.place.country_code
-  } else {
-    formName.value = props.prefill?.name ?? ''
-    formKind.value = props.prefill?.kind ?? 'city'
-    formNote.value = ''
-    formLat.value = props.prefill?.lat ?? null
-    formLon.value = props.prefill?.lon ?? null
-    formCountry.value = props.prefill?.country_code ?? null
-  }
+const { saving, save } = useFormDialog({
+  visible,
+  entity: () => props.place,
+  reset(place) {
+    if (place) {
+      formName.value = displayName(place)
+      formKind.value = place.kind
+      formNote.value = place.note ?? ''
+      formLat.value = place.lat
+      formLon.value = place.lon
+      formCountry.value = place.country_code
+    } else {
+      formName.value = props.prefill?.name ?? ''
+      formKind.value = props.prefill?.kind ?? 'city'
+      formNote.value = ''
+      formLat.value = props.prefill?.lat ?? null
+      formLon.value = props.prefill?.lon ?? null
+      formCountry.value = props.prefill?.country_code ?? null
+    }
+  },
+  validate: () => (formName.value.trim() ? null : 'El nombre es obligatorio'),
+  submit() {
+    const payload = {
+      name: formName.value.trim(),
+      kind: formKind.value,
+      note: formNote.value.trim() || null,
+      lat: formLat.value,
+      lon: formLon.value,
+      country_code:
+        formKind.value === 'country'
+          ? (formCountry.value ?? props.place?.country_code)
+          : formCountry.value,
+    }
+    return props.place ? store.update(props.place.id, payload) : store.create(payload)
+  },
+  onSaved: () => emit('saved', !props.place),
 })
-
-async function save() {
-  if (!formName.value.trim()) return
-  const payload = {
-    name: formName.value.trim(),
-    kind: formKind.value,
-    note: formNote.value.trim() || null,
-    lat: formLat.value,
-    lon: formLon.value,
-    country_code:
-      formKind.value === 'country'
-        ? (formCountry.value ?? props.place?.country_code)
-        : formCountry.value,
-  }
-  try {
-    if (props.place) await store.update(props.place.id, payload)
-    else await store.create(payload)
-    visible.value = false
-    emit('saved', !props.place)
-  } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error al guardar', detail: String(err), life: 4000 })
-  }
-}
 </script>
 
 <template>
-  <Dialog
+  <FormDialog
     v-model:visible="visible"
-    modal
     :header="place ? 'Editar lugar' : 'Añadir al mapa'"
-    class="w-full max-w-md mx-4"
+    width="md"
+    :saving="saving"
+    :saveLabel="place ? 'Guardar' : 'Añadir'"
+    @save="save"
   >
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Nombre *</label>
-        <InputText v-model="formName" autofocus />
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Tipo</label>
-          <Select
-            v-model="formKind"
-            :options="kindOptions"
-            optionLabel="label"
-            optionValue="value"
-          />
-        </div>
-        <div v-if="formKind !== 'country'" class="flex flex-col gap-1">
-          <label class="text-sm font-medium">País</label>
-          <Select
-            v-model="formCountry"
-            :options="dialogCountryOptions"
-            optionLabel="label"
-            optionValue="code"
-            filter
-          />
-        </div>
-      </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Nota</label>
-        <Textarea
-          v-model="formNote"
-          rows="3"
-          autoResize
-          placeholder="Lo que quieras recordar de este lugar…"
+    <FormField label="Nombre" required>
+      <InputText v-model="formName" autofocus />
+    </FormField>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <FormField label="Tipo">
+        <Select v-model="formKind" :options="kindOptions" optionLabel="label" optionValue="value" />
+      </FormField>
+      <FormField v-if="formKind !== 'country'" label="País">
+        <Select
+          v-model="formCountry"
+          :options="dialogCountryOptions"
+          optionLabel="label"
+          optionValue="code"
+          filter
         />
-      </div>
-      <p v-if="place?.auto" class="text-xs text-slate-400">
-        <i class="pi pi-info-circle" /> Añadido automáticamente desde el viaje
-        "{{ place.origin }}".
-      </p>
+      </FormField>
     </div>
-    <template #footer>
-      <Button label="Cancelar" severity="secondary" text @click="visible = false" />
-      <Button :label="place ? 'Guardar' : 'Añadir'" @click="save" />
-    </template>
-  </Dialog>
+    <FormField label="Nota">
+      <Textarea
+        v-model="formNote"
+        rows="3"
+        autoResize
+        placeholder="Lo que quieras recordar de este lugar…"
+      />
+    </FormField>
+    <p v-if="place?.auto" class="text-xs text-slate-400">
+      <i class="pi pi-info-circle" /> Añadido automáticamente desde el viaje
+      "{{ place.origin }}".
+    </p>
+  </FormDialog>
 </template>
