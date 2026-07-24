@@ -8,7 +8,9 @@ import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
 import { useExpensesStore } from '../../stores/expenses'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
-import { formatDateTime, formatMoney, parseIsoDate } from '../../composables/useMoney'
+import { formatDateTime, formatMoney } from '../../composables/useMoney'
+import { DAY_MS, daysBetween, daysUntil } from '../../utils/dates'
+import { budgetPercent } from '../../utils/expenses'
 
 const props = defineProps<{ trip: Trip }>()
 const expenses = useExpensesStore()
@@ -23,36 +25,21 @@ function loadAll(tripId: number) {
 onMounted(() => loadAll(props.trip.id))
 watch(() => props.trip.id, loadAll)
 
-const daysToStart = computed(() => {
-  if (!props.trip.start_date) return null
-  const diff = Math.ceil(
-    (parseIsoDate(props.trip.start_date).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
-  )
-  return diff > 0 ? diff : null
-})
+const daysToStart = computed(() => daysUntil(props.trip.start_date))
 
 const tripDays = computed(() => {
   if (!props.trip.start_date || !props.trip.end_date) return null
-  return (
-    Math.round(
-      (parseIsoDate(props.trip.end_date).getTime() - parseIsoDate(props.trip.start_date).getTime()) /
-        86400000,
-    ) + 1
-  )
+  return daysBetween(props.trip.start_date, props.trip.end_date) + 1
 })
 
-const budgetPct = computed(() => {
-  const s = expenses.summary
-  if (!s?.budget_amount) return null
-  return Math.min(100, Math.round((s.total_base / s.budget_amount) * 100))
-})
+const budgetPct = computed(() => budgetPercent(expenses.summary))
 
 const visitedCount = computed(() => places.items.filter((p) => p.visited).length)
 
 const nextBookings = computed(() => {
   const now = Date.now()
   return bookings.items
-    .filter((b) => b.start_dt && new Date(b.start_dt).getTime() >= now - 86400000)
+    .filter((b) => b.start_dt && new Date(b.start_dt).getTime() >= now - DAY_MS)
     .slice(0, 4)
 })
 

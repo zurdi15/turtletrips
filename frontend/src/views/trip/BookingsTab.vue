@@ -12,7 +12,8 @@ import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import { api } from '../../api/client'
 import type { Booking, BookingType, RateRead, Trip } from '../../api/types'
-import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
+import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS, TRANSPORT_TYPES } from '../../constants'
+import { expenseIdByBooking } from '../../utils/expenses'
 import { useBookingsStore } from '../../stores/bookings'
 import { useAttachmentsStore } from '../../stores/attachments'
 import { useExpensesStore } from '../../stores/expenses'
@@ -59,11 +60,7 @@ onMounted(async () => {
 watch(() => props.trip.id, loadAll)
 
 // gasto ya generado desde cada reserva: bloquea el botón "Crear gasto"
-const expenseByBooking = computed(() => {
-  const map = new Map<number, number>()
-  for (const e of expenses.items) if (e.booking_id != null) map.set(e.booking_id, e.id)
-  return map
-})
+const expenseByBooking = computed(() => expenseIdByBooking(expenses.items))
 
 const placeById = computed(() => new Map(places.items.map((p) => [p.id, p])))
 const memberById = computed(() => new Map(props.trip.travelers.map((t) => [t.id, t])))
@@ -71,7 +68,6 @@ const memberById = computed(() => new Map(props.trip.travelers.map((t) => [t.id,
 const TYPE_ORDER: BookingType[] = [
   'flight', 'train', 'bus', 'ferry', 'car_rental', 'hotel', 'activity', 'other',
 ]
-const TRANSPORT_TYPES: BookingType[] = ['flight', 'train', 'bus', 'ferry']
 
 const grouped = computed(() =>
   TYPE_ORDER.map((type) => ({

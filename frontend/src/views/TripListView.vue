@@ -10,9 +10,10 @@ import TripFormDialog from '../components/TripFormDialog.vue'
 import EmptyState from '../components/EmptyState.vue'
 import { useTripsStore } from '../stores/trips'
 import { useCountryImage } from '../composables/useCountryImage'
-import { formatDate, parseIsoDate } from '../composables/useMoney'
 import { countryLabel, countryName, flagEmoji } from '../countries'
 import { TRIP_STATUS_LABELS } from '../constants'
+import { daysUntil } from '../utils/dates'
+import { groupTrips, pickHeroTrip, tripDateRange } from '../utils/trips'
 import type { Trip, TripStatus } from '../api/types'
 
 const store = useTripsStore()
@@ -75,69 +76,12 @@ const filtered = computed(() =>
   }),
 )
 
-// orden por fecha de mayor a menor (los próximos antes que los terminados)
-function byDateDesc(trips: Trip[]): Trip[] {
-  return [...trips].sort((a, b) => {
-    if (!a.start_date && !b.start_date) return b.id - a.id
-    if (!a.start_date) return 1
-    if (!b.start_date) return -1
-    return b.start_date.localeCompare(a.start_date)
-  })
-}
+const groups = computed(() => groupTrips(filtered.value, grouping.value))
 
-const STATUS_ORDER: TripStatus[] = ['ongoing', 'upcoming', 'planning', 'done']
-
-const groups = computed<{ key: string; title: string; trips: Trip[] }[]>(() => {
-  if (grouping.value === 'status') {
-    return STATUS_ORDER.filter((s) => filtered.value.some((t) => t.status === s)).map(
-      (status) => ({
-        key: status,
-        title: TRIP_STATUS_LABELS[status],
-        trips: byDateDesc(filtered.value.filter((t) => t.status === status)),
-      }),
-    )
-  }
-  const byYear = new Map<string, Trip[]>()
-  for (const trip of filtered.value) {
-    const year = trip.start_date ? trip.start_date.slice(0, 4) : 'Sin fecha'
-    byYear.set(year, [...(byYear.get(year) ?? []), trip])
-  }
-  return [...byYear.entries()]
-    .sort((a, b) => {
-      if (a[0] === 'Sin fecha') return 1
-      if (b[0] === 'Sin fecha') return -1
-      return b[0].localeCompare(a[0]) // años recientes primero
-    })
-    .map(([year, trips]) => ({ key: year, title: year, trips: byDateDesc(trips) }))
-})
-
-// hero: viaje en curso, o el próximo MÁS CERCANO en fecha
-const heroTrip = computed<Trip | null>(() => {
-  const ongoing = store.trips.filter((t) => t.status === 'ongoing')
-  if (ongoing.length) return ongoing[0]
-  const upcoming = store.trips
-    .filter((t) => t.status === 'upcoming' && t.start_date)
-    .sort((a, b) => a.start_date!.localeCompare(b.start_date!))
-  return upcoming[0] ?? null
-})
+const heroTrip = computed<Trip | null>(() => pickHeroTrip(store.trips))
 
 function tripImage(trip: Trip): string | null {
   return trip.cover_url ?? imageFor(trip.countries[0])
-}
-
-function daysUntil(trip: Trip): number | null {
-  if (!trip.start_date) return null
-  const diff = Math.ceil(
-    (parseIsoDate(trip.start_date).getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000,
-  )
-  return diff > 0 ? diff : null
-}
-
-function dateRange(trip: Trip): string {
-  if (!trip.start_date) return 'Sin fechas'
-  let s = formatDate(trip.start_date)
-  if (trip.end_date) s += ` → ${formatDate(trip.end_date)}`
-  return s
 }
 </script>
 
@@ -190,13 +134,13 @@ function dateRange(trip: Trip): string {
                     {{ heroTrip.countries.map(flagEmoji).join(' ') }}
                   </span>
                 </h2>
-                <p class="text-white/80 mt-1 text-xs sm:text-sm">{{ dateRange(heroTrip) }}</p>
+                <p class="text-white/80 mt-1 text-xs sm:text-sm">{{ tripDateRange(heroTrip) }}</p>
               </div>
               <div
-                v-if="daysUntil(heroTrip)"
+                v-if="daysUntil(heroTrip.start_date)"
                 class="text-center bg-white/15 backdrop-blur rounded-xl px-3 py-2 sm:px-5 sm:py-3"
               >
-                <p class="text-xl sm:text-3xl font-bold leading-none">{{ daysUntil(heroTrip) }}</p>
+                <p class="text-xl sm:text-3xl font-bold leading-none">{{ daysUntil(heroTrip.start_date) }}</p>
                 <p class="text-xs text-white/80 mt-1">días para salir</p>
               </div>
             </div>
@@ -323,7 +267,7 @@ function dateRange(trip: Trip): string {
                   </span>
                 </h3>
                 <p class="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
-                  <i class="pi pi-calendar text-xs" /> {{ dateRange(trip) }}
+                  <i class="pi pi-calendar text-xs" /> {{ tripDateRange(trip) }}
                 </p>
                 <p
                   v-if="trip.travelers.length"

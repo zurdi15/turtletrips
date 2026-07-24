@@ -22,6 +22,7 @@ import { useCategoriesStore } from '../../stores/categories'
 import { usePlacesStore } from '../../stores/places'
 import { useExpenseFilters } from '../../composables/useExpenseFilters'
 import {
+  budgetPercent,
   buildRows,
   computeStats,
   currencyBreakdown,
@@ -129,11 +130,7 @@ const stats = computed(() =>
   ),
 )
 const breakdown = computed(() => currencyBreakdown(filtered.value, props.trip.base_currency))
-const budgetPct = computed(() => {
-  const s = store.summary
-  if (!s?.budget_amount) return null
-  return Math.min(100, Math.round((s.total_base / s.budget_amount) * 100))
-})
+const budgetPct = computed(() => budgetPercent(store.summary))
 
 // ---- tabla ----
 const rows = computed(() =>

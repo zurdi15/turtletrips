@@ -12,6 +12,7 @@ import type { Trip } from '../../api/types'
 import { useAttachmentsStore } from '../../stores/attachments'
 import { useBookingsStore } from '../../stores/bookings'
 import { formatDate } from '../../composables/useMoney'
+import { fileIcon, formatSize } from '../../utils/files'
 
 const props = defineProps<{ trip: Trip }>()
 const store = useAttachmentsStore()
@@ -26,18 +27,6 @@ onMounted(() => loadAll(props.trip.id))
 watch(() => props.trip.id, loadAll)
 
 const bookingTitle = computed(() => new Map(bookings.items.map((b) => [b.id, b.title])))
-
-function fileIcon(contentType: string): string {
-  if (contentType === 'application/pdf') return 'pi pi-file-pdf text-red-500'
-  if (contentType.startsWith('image/')) return 'pi pi-image text-sky-500'
-  return 'pi pi-file text-slate-400'
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}
 
 function remove(id: number, name: string) {
   confirm.require({

@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState.vue'
 import type { PackingTemplateItem } from '../api/types'
 import { usePackingTemplatesStore } from '../stores/packingTemplates'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { groupPackingItems } from '../utils/packing'
 
 const store = usePackingTemplatesStore()
 const categories = useCategoriesStore()
@@ -38,24 +39,13 @@ const categoryOptions = computed(() =>
   categories.packing.map((c) => ({ value: c.name, label: c.name })),
 )
 
-const grouped = computed(() => {
-  if (!store.detail) return []
-  const names = [
-    ...categories.packing.map((c) => c.name),
-    ...new Set(
-      store.detail.items
-        .map((i) => i.category)
-        .filter((c) => !categories.packing.some((k) => k.name === c)),
-    ),
-  ]
-  return names
-    .map((name) => ({
-      name,
-      color: categories.colorOf('packing', name),
-      items: store.detail!.items.filter((i) => i.category === name),
-    }))
-    .filter((g) => g.items.length)
-})
+const grouped = computed(() =>
+  groupPackingItems(
+    store.detail?.items ?? [],
+    categories.packing.map((c) => c.name),
+    (name) => categories.colorOf('packing', name),
+  ),
+)
 
 async function createTemplate() {
   const name = newTemplateName.value.trim()

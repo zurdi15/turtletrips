@@ -64,6 +64,13 @@ export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
   other: 'Otro',
 }
 
+// reservas que son desplazamientos (cabecera azul en la agenda, día de salida)
+export const TRANSPORT_TYPES: BookingType[] = ['flight', 'train', 'bus', 'ferry']
+
+export function isTransport(type: BookingType): boolean {
+  return TRANSPORT_TYPES.includes(type)
+}
+
 // MDI para lo que PrimeIcons no cubre bien (cama, avión, tren, ferry…)
 export const BOOKING_TYPE_ICONS: Record<BookingType, string> = {
   hotel: 'mdi mdi-bed',

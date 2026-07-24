@@ -12,6 +12,7 @@ import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
+import { groupPackingItems } from '../../utils/packing'
 
 const props = defineProps<{ trip: Trip }>()
 const store = usePackingStore()
@@ -95,23 +96,13 @@ const activeTemplateName = computed(() => {
   return store.templates.find((t) => t.id === id)?.name ?? null
 })
 
-const grouped = computed(() => {
-  const names = [
-    ...categories.packing.map((c) => c.name),
-    ...new Set(
-      activeItems.value
-        .map((i) => i.category)
-        .filter((c) => !categories.packing.some((k) => k.name === c)),
-    ),
-  ]
-  return names
-    .map((name) => ({
-      name,
-      color: categories.colorOf('packing', name),
-      items: activeItems.value.filter((i) => i.category === name),
-    }))
-    .filter((g) => g.items.length)
-})
+const grouped = computed(() =>
+  groupPackingItems(
+    activeItems.value,
+    categories.packing.map((c) => c.name),
+    (name) => categories.colorOf('packing', name),
+  ),
+)
 
 async function addItem() {
   const name = newName.value.trim()

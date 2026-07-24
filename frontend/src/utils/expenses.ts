@@ -1,5 +1,6 @@
 import type { Expense } from '../api/types'
 import { toIsoDate } from '../composables/useMoney'
+import { daysBetween } from './dates'
 
 export interface ExpenseFilterState {
   searchText: string
@@ -87,12 +88,25 @@ export function tripDayCount(
   filtered: Expense[],
 ): number | null {
   if (startDate && endDate) {
-    const from = new Date(`${startDate.slice(0, 10)}T00:00:00`)
-    const to = new Date(`${endDate.slice(0, 10)}T00:00:00`)
-    return Math.round((to.getTime() - from.getTime()) / 86400000) + 1
+    return daysBetween(startDate, endDate) + 1
   }
   const days = new Set(filtered.map((e) => e.day))
   return days.size || null
+}
+
+/** % de presupuesto consumido (capado a 100); null sin presupuesto definido. */
+export function budgetPercent(
+  summary: { total_base: number; budget_amount: number | null } | null | undefined,
+): number | null {
+  if (!summary?.budget_amount) return null
+  return Math.min(100, Math.round((summary.total_base / summary.budget_amount) * 100))
+}
+
+/** Gasto ya generado desde cada reserva (booking_id → expense_id). */
+export function expenseIdByBooking(expenses: Expense[]): Map<number, number> {
+  const map = new Map<number, number>()
+  for (const e of expenses) if (e.booking_id != null) map.set(e.booking_id, e.id)
+  return map
 }
 
 export function computeStats(
