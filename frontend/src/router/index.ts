@@ -30,7 +30,8 @@ export const router = createRouter({
     },
     {
       path: '/trips/:id',
-      component: () => import('../views/TripDetailView.vue'),
+      // layout del viaje: cabecera + tabs; las vistas hijas van dentro
+      component: () => import('../layouts/TripLayout.vue'),
       props: true,
       children: [
         { path: '', redirect: { name: 'trip-overview' } },
