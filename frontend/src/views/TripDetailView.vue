@@ -9,6 +9,7 @@ import StatusTag from '../components/StatusTag.vue'
 import MemberChip from '../components/MemberChip.vue'
 import TripFormDialog from '../components/TripFormDialog.vue'
 import TravelersDialog from '../components/TravelersDialog.vue'
+import TabSkeleton from '../components/TabSkeleton.vue'
 import { useTripsStore } from '../stores/trips'
 import { formatDate } from '../composables/useMoney'
 import { useCountryImage } from '../composables/useCountryImage'
@@ -54,6 +55,46 @@ const tabs = [
   { name: 'trip-packing', label: 'Maleta', icon: 'pi pi-briefcase' },
   { name: 'trip-files', label: 'Ficheros', icon: 'pi pi-paperclip' },
 ]
+
+// cambio de tab en dos fases: primero se pinta la nav + skeleton (frame
+// inmediato) y la tab pesada se monta en el siguiente frame — así el click
+// responde al instante aunque la tab tarde en renderizar
+const tabReady = ref(true)
+// la tab clicada se marca activa al momento (optimista), sin esperar al router
+const pendingTab = ref<string | null>(null)
+const activeTab = computed(() => pendingTab.value ?? String(route.name))
+watch(
+  () => route.name,
+  () => {
+    pendingTab.value = null
+    tabReady.value = false
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        tabReady.value = true
+      })
+    })
+  },
+)
+
+interface TabSkeletonSpec {
+  stats?: boolean
+  main: 'table' | 'cards' | 'list'
+  rows: number
+}
+// espejo del skeleton de primera carga de cada tab, para que recargar y
+// cambiar de tab se vean igual
+const TAB_SKELETON: Record<string, TabSkeletonSpec> = {
+  'trip-overview': { stats: true, main: 'cards', rows: 2 },
+  'trip-places': { main: 'cards', rows: 4 },
+  'trip-itinerary': { main: 'cards', rows: 3 },
+  'trip-bookings': { main: 'cards', rows: 3 },
+  'trip-expenses': { stats: true, main: 'table', rows: 8 },
+  'trip-packing': { main: 'list', rows: 8 },
+  'trip-files': { main: 'table', rows: 4 },
+}
+const tabSkeleton = computed(
+  () => TAB_SKELETON[String(route.name)] ?? { main: 'table' as const, rows: 6 },
+)
 
 function deleteTrip() {
   confirm.require({
@@ -182,16 +223,21 @@ function deleteTrip() {
           :to="{ name: tab.name, params: { id } }"
           class="px-3 py-2 text-sm font-medium no-underline whitespace-nowrap border-b-2 -mb-px transition-colors"
           :class="
-            route.name === tab.name
+            activeTab === tab.name
               ? 'border-[var(--p-primary-color)] text-[var(--p-primary-color)]'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           "
+          @click="pendingTab = tab.name"
         >
           <i :class="tab.icon" class="mr-1.5 text-xs" />{{ tab.label }}
         </router-link>
       </nav>
 
-      <router-view :trip="store.current" />
+      <div v-if="!tabReady" class="flex flex-col gap-5">
+        <TabSkeleton v-if="tabSkeleton.stats" variant="stats" />
+        <TabSkeleton :variant="tabSkeleton.main" :rows="tabSkeleton.rows" />
+      </div>
+      <router-view v-else :trip="store.current" />
 
       <TripFormDialog v-model:visible="showEdit" :trip="store.current" />
       <TravelersDialog v-model:visible="showTravelers" :trip-id="tripId" />
