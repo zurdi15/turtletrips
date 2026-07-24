@@ -152,10 +152,11 @@ watch(
     <Column header="Descripción" field="description">
       <template #body="{ data }">
         <span>{{ data.description }}</span>
-        <!-- reserva y sitio como iconos agrupados (saltan de línea juntos) -->
+        <!-- reserva y sitio como iconos agrupados: fila propia en móvil
+             (como en las tarjetas de reserva), en línea desde sm -->
         <span
           v-if="data.booking_id || (data.place_id && placeById.get(data.place_id))"
-          class="inline-flex items-center gap-2 ml-2 align-middle"
+          class="mt-1.5 flex items-center gap-2 sm:mt-0 sm:ml-2 sm:inline-flex sm:align-middle"
         >
           <EntityLink v-if="data.booking_id" type="booking" :tripId="trip.id" :targetId="data.booking_id" />
           <EntityLink
