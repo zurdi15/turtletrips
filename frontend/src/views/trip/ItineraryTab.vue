@@ -3,24 +3,21 @@ import { computed, reactive, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import draggable from 'vuedraggable'
-import FullCalendar from '@fullcalendar/vue3'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import esLocale from '@fullcalendar/core/locales/es'
-import type { CalendarOptions, EventDropArg } from '@fullcalendar/core'
 import ItineraryFormDialog from '../../components/ItineraryFormDialog.vue'
 import CalendarSubscribeDialog from '../../components/CalendarSubscribeDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
+import ItineraryCalendar from '../../components/itinerary/ItineraryCalendar.vue'
+import AgendaBookingSection, {
+  type AgendaRow,
+} from '../../components/itinerary/AgendaBookingSection.vue'
+import AgendaItemRow from '../../components/itinerary/AgendaItemRow.vue'
 import { API_BASE } from '../../api/client'
 import type { ItineraryItem, Trip } from '../../api/types'
-import { BOOKING_TYPE_ICONS, isTransport } from '../../constants'
 import { useItineraryStore } from '../../stores/itinerary'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
-import { parseIsoDate, toIsoDate } from '../../composables/useMoney'
 import { useCrudView } from '../../composables/useCrudView'
 import { useTripTabData } from '../../composables/useTripTabData'
 import { expenseIdByBooking } from '../../utils/expenses'
@@ -32,10 +29,7 @@ import {
   buildLodgingByDay,
   buildOtherBookingsByDay,
   buildTransportsByDay,
-  fmtDayShort,
-  fmtTime,
   lodgingHead,
-  rangeNights,
   transportHead,
   transportLabel,
 } from '../../utils/itinerary'
@@ -119,6 +113,41 @@ function bookingTitle(id: number | null): string | null {
   return id == null ? null : (bookings.items.find((b) => b.id === id)?.title ?? null)
 }
 
+// filas de las tres bandas de reservas, ya etiquetadas para AgendaBookingSection
+function transportRows(day: string): AgendaRow[] {
+  return (transportsByDay.value.get(day) ?? []).map((e) => ({
+    key: `t-${e.b.id}-${e.arrival ? 'a' : 's'}`,
+    head: transportHead(e),
+    label: transportLabel(e),
+    bookingId: e.b.id,
+    placeId: e.b.place_id,
+    expenseId: expenseByBooking.value.get(e.b.id) ?? null,
+  }))
+}
+
+function otherBookingRows(day: string): AgendaRow[] {
+  return (otherBookingsByDay.value.get(day) ?? []).map((b) => ({
+    key: `o-${b.id}`,
+    head: bookingHead(b),
+    label: b.title,
+    bookingId: b.id,
+    placeId: b.place_id,
+    expenseId: expenseByBooking.value.get(b.id) ?? null,
+    expenseInherit: true,
+  }))
+}
+
+function lodgingRows(day: string): AgendaRow[] {
+  return (lodgingByDay.value.get(day) ?? []).map((b) => ({
+    key: `l-${b.id}`,
+    head: lodgingHead(b, day),
+    label: b.title,
+    bookingId: b.id,
+    placeId: b.place_id,
+    expenseId: expenseByBooking.value.get(b.id) ?? null,
+  }))
+}
+
 const crud = useCrudView<ItineraryItem>({
   confirm: (item) => ({
     message: `¿Eliminar "${item.title}" del itinerario?`,
@@ -133,126 +162,6 @@ function openNew(day?: string) {
   crud.openNew()
 }
 
-// ---- Calendario ----
-
-const calendarOptions = computed<CalendarOptions>(() => ({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
-  initialView: 'dayGridMonth',
-  initialDate: props.trip.start_date ?? undefined,
-  locale: esLocale,
-  firstDay: 1,
-  headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-  height: 'auto',
-  editable: true,
-  events: [
-    ...store.items.map((item) => {
-      // items de varios días: evento all-day con fin exclusivo (día siguiente al último)
-      if (item.end_day && item.end_day > item.day) {
-        const endExclusive = parseIsoDate(item.end_day)
-        endExclusive.setDate(endExclusive.getDate() + 1)
-        return {
-          id: `i-${item.id}`,
-          title: item.title,
-          start: item.day,
-          end: toIsoDate(endExclusive),
-          allDay: true,
-          backgroundColor: '#0f766e',
-          borderColor: '#0f766e',
-        }
-      }
-      return {
-        id: `i-${item.id}`,
-        title: item.title,
-        start: item.start_time ? `${item.day}T${item.start_time}` : item.day,
-        end: item.start_time && item.end_time ? `${item.day}T${item.end_time}` : undefined,
-        allDay: !item.start_time,
-        backgroundColor: 'var(--p-primary-color)',
-        borderColor: 'var(--p-primary-color)',
-      }
-    }),
-    ...bookings.items
-      .filter((b) => b.start_dt)
-      .map((b) => {
-        // hoteles: banda all-day del check-in al check-out
-        if (b.type === 'hotel' && b.end_dt && b.end_dt.slice(0, 10) > b.start_dt!.slice(0, 10)) {
-          const endExclusive = parseIsoDate(b.end_dt.slice(0, 10))
-          endExclusive.setDate(endExclusive.getDate() + 1)
-          return {
-            id: `b-${b.id}`,
-            title: b.title,
-            start: b.start_dt!.slice(0, 10),
-            end: toIsoDate(endExclusive),
-            allDay: true,
-            editable: false,
-            backgroundColor: '#7c3aed',
-            borderColor: '#7c3aed',
-            extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
-          }
-        }
-        const transport = isTransport(b.type)
-        const color = b.type === 'hotel' ? '#7c3aed' : transport ? '#0284c7' : '#94a3b8'
-        return {
-          id: `b-${b.id}`,
-          title: transport ? transportLabel({ b, arrival: false }) : b.title,
-          start: b.start_dt!,
-          end: b.end_dt ?? undefined,
-          editable: false,
-          backgroundColor: color,
-          borderColor: color,
-          extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
-        }
-      }),
-  ],
-  // icono (mdi/pi) delante del título — los eventos de reservas lo declaran
-  // en extendedProps.icon; los de itinerario se renderizan igual pero sin él
-  eventContent: (arg) => {
-    const icon = arg.event.extendedProps.icon as string | undefined
-    const wrap = document.createElement('div')
-    wrap.className = 'flex items-center gap-1 overflow-hidden px-0.5'
-    if (icon) {
-      const i = document.createElement('i')
-      i.className = `${icon} text-[11px] shrink-0`
-      wrap.append(i)
-    }
-    const text = document.createElement('span')
-    text.className = 'truncate'
-    text.textContent = arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title
-    wrap.append(text)
-    return { domNodes: [wrap] }
-  },
-  eventDrop: onEventDrop,
-  eventClick: (info) => {
-    if (!info.event.id.startsWith('i-')) return
-    const item = store.items.find((i) => i.id === Number(info.event.id.slice(2)))
-    if (item) openEdit(item)
-  },
-}))
-
-function onEventDrop(info: EventDropArg) {
-  if (!info.event.id.startsWith('i-') || !info.event.start) {
-    info.revert()
-    return
-  }
-  const id = Number(info.event.id.slice(2))
-  const item = store.items.find((i) => i.id === id)
-  const start = info.event.start
-  const newDay = toIsoDate(start)
-  const payload: { day: string; end_day?: string | null; start_time?: string | null } = {
-    day: newDay,
-  }
-  // desplazar también el fin del rango manteniendo la duración
-  if (item?.end_day && item.end_day > item.day) {
-    const shifted = parseIsoDate(newDay)
-    shifted.setDate(shifted.getDate() + rangeNights(item))
-    payload.end_day = toIsoDate(shifted)
-  }
-  if (!info.event.allDay) {
-    payload.start_time = `${String(start.getHours()).padStart(2, '0')}:${String(
-      start.getMinutes(),
-    ).padStart(2, '0')}:00`
-  }
-  store.update(id, payload).catch(() => info.revert())
-}
 </script>
 
 <template>
@@ -325,108 +234,24 @@ function onEventDrop(info: EventDropArg) {
           />
         </div>
         <!-- transportes del día: sección propia con cabecera -->
-        <div
-          v-if="(transportsByDay.get(day) ?? []).length"
-          class="bg-sky-100 border-b border-slate-100 py-1.5"
-        >
-          <p
-            class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-sky-600 flex items-center gap-1.5"
-          >
-            <i class="mdi mdi-plane-train" /> Transporte
-          </p>
-          <div
-            v-for="e in transportsByDay.get(day) ?? []"
-            :key="`t-${e.b.id}-${e.arrival ? 'a' : 's'}`"
-            class="flex items-center gap-3 px-4 py-1 text-sky-700"
-          >
-            <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
-              {{ transportHead(e) }}
-            </span>
-            <router-link
-              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: e.b.id } }"
-              class="font-medium text-sm truncate text-inherit no-underline hover:underline"
-            >
-              {{ transportLabel(e) }}
-            </router-link>
-            <span class="ml-auto flex items-center gap-2.5 shrink-0">
-              <router-link
-                v-if="e.b.place_id"
-                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: e.b.place_id } }"
-                class="text-emerald-600"
-                v-tooltip.top="'Ver sitio'"
-              >
-                <i class="pi pi-map-marker text-[11px]" />
-              </router-link>
-              <router-link
-                v-if="expenseByBooking.get(e.b.id)"
-                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(e.b.id) } }"
-                class="text-amber-600"
-                v-tooltip.top="'Ver gasto'"
-              >
-                <i class="pi pi-wallet text-[11px]" />
-              </router-link>
-              <router-link
-                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: e.b.id } }"
-                class="text-inherit opacity-50 hover:opacity-100"
-                v-tooltip.top="'Ver reserva'"
-              >
-                <i class="pi pi-ticket text-[11px]" />
-              </router-link>
-            </span>
-          </div>
-        </div>
+        <AgendaBookingSection
+          v-if="transportRows(day).length"
+          tone="info"
+          title="Transporte"
+          icon="mdi mdi-plane-train"
+          :tripId="trip.id"
+          :rows="transportRows(day)"
+        />
 
         <!-- otras reservas del día (actividades, coche…) -->
-        <div
-          v-if="(otherBookingsByDay.get(day) ?? []).length"
-          class="bg-amber-100 border-b border-slate-100 py-1.5"
-        >
-          <p
-            class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 flex items-center gap-1.5"
-          >
-            <i class="mdi mdi-ticket-outline" /> Reservas
-          </p>
-          <div
-            v-for="b in otherBookingsByDay.get(day) ?? []"
-            :key="`o-${b.id}`"
-            class="flex items-center gap-3 px-4 py-1 text-amber-700"
-          >
-            <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
-              {{ bookingHead(b) }}
-            </span>
-            <router-link
-              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-              class="font-medium text-sm truncate text-inherit no-underline hover:underline"
-            >
-              {{ b.title }}
-            </router-link>
-            <span class="ml-auto flex items-center gap-2.5 shrink-0">
-              <router-link
-                v-if="b.place_id"
-                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: b.place_id } }"
-                class="text-emerald-600"
-                v-tooltip.top="'Ver sitio'"
-              >
-                <i class="pi pi-map-marker text-[11px]" />
-              </router-link>
-              <router-link
-                v-if="expenseByBooking.get(b.id)"
-                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(b.id) } }"
-                class="text-inherit"
-                v-tooltip.top="'Ver gasto'"
-              >
-                <i class="pi pi-wallet text-[11px]" />
-              </router-link>
-              <router-link
-                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-                class="text-inherit opacity-50 hover:opacity-100"
-                v-tooltip.top="'Ver reserva'"
-              >
-                <i class="pi pi-ticket text-[11px]" />
-              </router-link>
-            </span>
-          </div>
-        </div>
+        <AgendaBookingSection
+          v-if="otherBookingRows(day).length"
+          tone="warn"
+          title="Reservas"
+          icon="mdi mdi-ticket-outline"
+          :tripId="trip.id"
+          :rows="otherBookingRows(day)"
+        />
 
         <draggable
           :list="lists[day]"
@@ -437,60 +262,15 @@ function onEventDrop(info: EventDropArg) {
           @end="persistOrder"
         >
           <template #item="{ element }">
-            <div
-              class="flex items-center gap-3 px-4 py-2.5 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 group"
-            >
-              <i class="pi pi-bars drag-handle cursor-grab text-slate-300 group-hover:text-slate-400" />
-              <span class="text-xs sm:text-sm font-mono text-slate-400 w-16 sm:w-24 shrink-0">
-                <template v-if="element.start_time">
-                  {{ fmtTime(element.start_time) }}<template v-if="element.end_time">–{{ fmtTime(element.end_time) }}</template>
-                </template>
-                <template v-else>—</template>
-              </span>
-              <div class="flex-1 min-w-0">
-                <span class="font-medium text-slate-700">{{ element.title }}</span>
-                <span
-                  v-if="element.end_day && element.end_day > element.day"
-                  class="ml-2 text-xs px-1.5 py-0.5 rounded bg-teal-50 text-teal-700"
-                >
-                  {{ rangeNights(element) + 1 }} días · hasta el {{ fmtDayShort(element.end_day) }}
-                </span>
-                <!-- enlaces compactos: solo icono, el detalle vive en el tooltip -->
-                <router-link
-                  v-if="element.place_id && placeName(element.place_id)"
-                  :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: element.place_id } }"
-                  class="ml-2 text-emerald-600 no-underline"
-                  v-tooltip.top="`Sitio: ${placeName(element.place_id)}`"
-                >
-                  <i class="pi pi-map-marker text-xs" />
-                </router-link>
-                <router-link
-                  v-if="element.booking_id && bookingTitle(element.booking_id)"
-                  :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: element.booking_id } }"
-                  class="ml-2 text-violet-600 no-underline"
-                  v-tooltip.top="`Reserva: ${bookingTitle(element.booking_id)}`"
-                >
-                  <i class="pi pi-ticket text-xs" />
-                </router-link>
-                <router-link
-                  v-if="element.booking_id && expenseByBooking.get(element.booking_id)"
-                  :to="{
-                    name: 'trip-expenses',
-                    params: { id: trip.id },
-                    query: { expense: expenseByBooking.get(element.booking_id) },
-                  }"
-                  class="ml-2 text-amber-600 no-underline"
-                  v-tooltip.top="'Ver gasto'"
-                >
-                  <i class="pi pi-wallet text-xs" />
-                </router-link>
-                <p v-if="element.notes" class="text-xs text-slate-400 truncate">{{ element.notes }}</p>
-              </div>
-              <div class="flex gap-1 hover-actions">
-                <Button icon="pi pi-pencil" text size="small" severity="secondary" @click="openEdit(element)" />
-                <Button icon="pi pi-trash" text size="small" severity="danger" @click="removeItem(element)" />
-              </div>
-            </div>
+            <AgendaItemRow
+              :item="element"
+              :tripId="trip.id"
+              :placeName="placeName(element.place_id)"
+              :bookingTitle="bookingTitle(element.booking_id)"
+              :expenseId="element.booking_id ? (expenseByBooking.get(element.booking_id) ?? null) : null"
+              @edit="openEdit(element)"
+              @remove="removeItem(element)"
+            />
           </template>
         </draggable>
         <div
@@ -504,56 +284,15 @@ function onEventDrop(info: EventDropArg) {
           <span class="italic">{{ cont.title }}</span>
         </div>
         <!-- dónde se duerme esa noche: sección propia al pie del día -->
-        <div
-          v-if="(lodgingByDay.get(day) ?? []).length"
-          class="bg-violet-100 border-t border-slate-100 py-1.5"
-        >
-          <p
-            class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-600 flex items-center gap-1.5"
-          >
-            <i class="mdi mdi-bed" /> Alojamiento
-          </p>
-          <div
-            v-for="b in lodgingByDay.get(day) ?? []"
-            :key="`l-${b.id}`"
-            class="flex items-center gap-3 px-4 py-1 text-violet-700"
-          >
-            <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
-              {{ lodgingHead(b, day) }}
-            </span>
-            <router-link
-              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-              class="font-medium text-sm truncate text-inherit no-underline hover:underline"
-            >
-              {{ b.title }}
-            </router-link>
-            <span class="ml-auto flex items-center gap-2.5 shrink-0">
-              <router-link
-                v-if="b.place_id"
-                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: b.place_id } }"
-                class="text-emerald-600"
-                v-tooltip.top="'Ver sitio'"
-              >
-                <i class="pi pi-map-marker text-[11px]" />
-              </router-link>
-              <router-link
-                v-if="expenseByBooking.get(b.id)"
-                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(b.id) } }"
-                class="text-amber-600"
-                v-tooltip.top="'Ver gasto'"
-              >
-                <i class="pi pi-wallet text-[11px]" />
-              </router-link>
-              <router-link
-                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-                class="text-inherit opacity-50 hover:opacity-100"
-                v-tooltip.top="'Ver reserva'"
-              >
-                <i class="pi pi-ticket text-[11px]" />
-              </router-link>
-            </span>
-          </div>
-        </div>
+        <AgendaBookingSection
+          v-if="lodgingRows(day).length"
+          tone="lodging"
+          title="Alojamiento"
+          icon="mdi mdi-bed"
+          :tripId="trip.id"
+          :rows="lodgingRows(day)"
+          position="bottom"
+        />
         <p
           v-if="
             !lists[day]?.length &&
@@ -570,7 +309,7 @@ function onEventDrop(info: EventDropArg) {
     </div>
 
     <div v-else class="bg-white rounded-xl border border-slate-200 p-4">
-      <FullCalendar :options="calendarOptions" />
+      <ItineraryCalendar :trip="trip" :bookings="bookings.items" @edit="openEdit" />
     </div>
 
     <ItineraryFormDialog v-model:visible="showForm" :item="editing" :presetDay="presetDay" />

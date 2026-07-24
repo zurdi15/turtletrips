@@ -12,10 +12,12 @@ const props = withDefaults(
     tooltip?: string
     /** hereda el color del texto (chips dentro de bandas coloreadas) */
     inheritColor?: boolean
+    /** atenuado hasta pasar el ratón (el chip "volver a la reserva" de las bandas) */
+    dimmed?: boolean
     /** tamaño del icono */
     size?: 'xs' | '2xs'
   }>(),
-  { inheritColor: false, size: 'xs' },
+  { inheritColor: false, dimmed: false, size: 'xs' },
 )
 
 // enlaces cruzados sitio/reserva/gasto: cada tipo lleva su pestaña, su query
@@ -56,7 +58,7 @@ const to = computed(() => ({
   <router-link
     :to="to"
     class="no-underline"
-    :class="inheritColor ? 'text-inherit' : meta.color"
+    :class="[inheritColor ? 'text-inherit' : meta.color, dimmed ? 'opacity-50 hover:opacity-100' : '']"
     v-tooltip.top="tooltip ?? meta.tooltip"
     @click.stop
   >

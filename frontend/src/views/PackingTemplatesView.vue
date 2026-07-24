@@ -5,9 +5,13 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import EmptyState from '../components/EmptyState.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import PackingAddBar from '../components/packing/PackingAddBar.vue'
+import PackingCategoryCard from '../components/packing/PackingCategoryCard.vue'
+import TemplateList from '../components/packing/TemplateList.vue'
+import TemplateItemRow from '../components/packing/TemplateItemRow.vue'
 import type { PackingTemplateItem } from '../api/types'
 import { usePackingTemplatesStore } from '../stores/packingTemplates'
-import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { useCategoriesStore } from '../stores/categories'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
 import { groupPackingItems } from '../utils/packing'
@@ -17,19 +21,8 @@ const categories = useCategoriesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
 
-const newTemplateName = ref('')
 const renaming = ref(false)
 const renameValue = ref('')
-
-const newItemName = ref('')
-const newItemCategory = ref('Ropa')
-const newItemUrl = ref('')
-const showUrlField = ref(false)
-
-const editingItem = ref<PackingTemplateItem | null>(null)
-const editName = ref('')
-const editCategory = ref('')
-const editUrl = ref('')
 
 onMounted(() => {
   store.load()
@@ -48,12 +41,9 @@ const grouped = computed(() =>
   ),
 )
 
-async function createTemplate() {
-  const name = newTemplateName.value.trim()
-  if (!name) return
+async function createTemplate(name: string) {
   try {
     const template = await store.create(name)
-    newTemplateName.value = ''
     await store.select(template.id)
   } catch (err) {
     notify.error('Error al crear', err)
@@ -79,38 +69,18 @@ function removeTemplate() {
   })
 }
 
-async function addItem() {
-  const name = newItemName.value.trim()
-  if (!name || !store.detail) return
+async function addItem(payload: { name: string; category: string; url: string | null }) {
+  if (!store.detail) return
   try {
-    await store.addItem({
-      name,
-      category: newItemCategory.value,
-      url: newItemUrl.value.trim() || null,
-    })
-    newItemName.value = ''
-    newItemUrl.value = ''
-    showUrlField.value = false
+    await store.addItem(payload)
   } catch (err) {
     notify.error('Error al añadir', err)
+    throw err // PackingAddBar conserva el texto si falla
   }
 }
 
-function openEdit(item: PackingTemplateItem) {
-  editingItem.value = item
-  editName.value = item.name
-  editCategory.value = item.category
-  editUrl.value = item.url ?? ''
-}
-
-async function saveEdit() {
-  if (!editingItem.value || !editName.value.trim()) return
-  await store.updateItem(editingItem.value.id, {
-    name: editName.value.trim(),
-    category: editCategory.value,
-    url: editUrl.value.trim() || null,
-  })
-  editingItem.value = null
+function saveItem(item: PackingTemplateItem, payload: { name: string; category: string; url: string | null }) {
+  store.updateItem(item.id, payload)
 }
 </script>
 
@@ -124,38 +94,13 @@ async function saveEdit() {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- lista de plantillas -->
-      <div class="bg-white rounded-xl border border-slate-200 p-4">
-        <ul class="tt-stagger flex flex-col gap-1 mb-4">
-          <li v-for="template in store.templates" :key="template.id">
-            <button
-              class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-colors"
-              :class="
-                store.detail?.id === template.id
-                  ? 'bg-slate-100 text-slate-900 font-medium'
-                  : 'text-slate-600 hover:bg-slate-50'
-              "
-              @click="store.select(template.id)"
-            >
-              <i class="pi pi-briefcase text-xs text-slate-400" />
-              <span class="flex-1">{{ template.name }}</span>
-              <span class="text-xs text-slate-400">{{ template.item_count }}</span>
-            </button>
-          </li>
-          <li v-if="!store.templates.length && !store.loading" class="text-sm text-slate-400 px-3 py-2">
-            Sin plantillas todavía
-          </li>
-        </ul>
-        <div class="flex gap-2">
-          <InputText
-            v-model="newTemplateName"
-            placeholder="Nueva plantilla…"
-            class="flex-1"
-            size="small"
-            @keyup.enter="createTemplate"
-          />
-          <Button icon="pi pi-plus" size="small" @click="createTemplate" />
-        </div>
-      </div>
+      <TemplateList
+        :templates="store.templates"
+        :selectedId="store.detail?.id ?? null"
+        :loading="store.loading"
+        @select="store.select"
+        @create="createTemplate"
+      />
 
       <!-- detalle -->
       <div class="lg:col-span-2">
@@ -199,101 +144,35 @@ async function saveEdit() {
             </template>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2 mb-4">
-            <InputText
-              v-model="newItemName"
-              placeholder="Añadir elemento…"
-              class="w-full sm:w-52"
-              @keyup.enter="addItem"
-            />
-            <Select
-              v-model="newItemCategory"
-              :options="categoryOptions"
-              optionLabel="label"
-              optionValue="value"
-              class="flex-1 sm:flex-none sm:w-40"
-            />
-            <Button
-              icon="pi pi-link"
-              severity="secondary"
-              :outlined="!showUrlField"
-              v-tooltip.top="'Añadir enlace de compra'"
-              @click="showUrlField = !showUrlField"
-            />
-            <InputText
-              v-if="showUrlField"
-              v-model="newItemUrl"
-              placeholder="https://…"
-              class="w-full sm:w-56"
-              @keyup.enter="addItem"
-            />
-            <Button
-              label="Añadir"
-              icon="pi pi-plus"
-              class="shrink-0 max-sm:[&_.p-button-label]:hidden"
-              @click="addItem"
-            />
-          </div>
+          <PackingAddBar
+            placeholder="Añadir elemento…"
+            :categoryOptions="categoryOptions"
+            :onAdd="addItem"
+            class="mb-4"
+          />
 
           <p v-if="!store.detail.items.length" class="text-sm text-slate-400 py-4 text-center">
             Plantilla vacía: añade elementos aquí o guárdala desde la maleta de un viaje.
           </p>
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            <div
+            <PackingCategoryCard
               v-for="group in grouped"
               :key="group.name"
-              class="rounded-lg border border-slate-200 overflow-hidden"
+              :name="group.name"
+              :color="group.color"
+              :count="String(group.items.length)"
+              size="sm"
             >
-              <div
-                class="px-3 py-2 border-b border-slate-100 flex items-center gap-2 text-sm"
-                :style="{ borderTop: `3px solid ${group.color ?? FALLBACK_CATEGORY_COLOR}` }"
-              >
-                <span class="font-semibold text-slate-700">{{ group.name }}</span>
-                <span class="text-xs text-slate-400">{{ group.items.length }}</span>
-              </div>
-              <ul>
-                <li
-                  v-for="item in group.items"
-                  :key="item.id"
-                  class="flex flex-wrap items-center gap-2 px-3 py-1.5 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 group/item text-sm"
-                >
-                  <template v-if="editingItem?.id === item.id">
-                    <InputText v-model="editName" size="small" class="flex-1" @keyup.enter="saveEdit" />
-                    <Select
-                      v-model="editCategory"
-                      :options="categoryOptions"
-                      optionLabel="label"
-                      optionValue="value"
-                      size="small"
-                      class="w-32"
-                    />
-                    <InputText v-model="editUrl" size="small" placeholder="https://…" class="w-32" />
-                    <Button icon="pi pi-check" text size="small" @click="saveEdit" />
-                    <Button icon="pi pi-times" text size="small" severity="secondary" @click="editingItem = null" />
-                  </template>
-                  <template v-else>
-                    <span class="flex-1 text-slate-700">
-                      {{ item.name }}
-                      <a
-                        v-if="item.url"
-                        :href="item.url"
-                        target="_blank"
-                        rel="noopener"
-                        class="ml-1 text-sky-600 hover:underline text-xs"
-                        v-tooltip.top="'Enlace de compra'"
-                      >
-                        <i class="pi pi-shopping-cart" />
-                      </a>
-                    </span>
-                    <div class="flex gap-1 hover-actions">
-                      <Button icon="pi pi-pencil" text size="small" severity="secondary" @click="openEdit(item)" />
-                      <Button icon="pi pi-trash" text size="small" severity="danger" @click="store.removeItem(item.id)" />
-                    </div>
-                  </template>
-                </li>
-              </ul>
-            </div>
+              <TemplateItemRow
+                v-for="item in group.items"
+                :key="item.id"
+                :item="item"
+                :categoryOptions="categoryOptions"
+                @save="(payload) => saveItem(item, payload)"
+                @remove="store.removeItem(item.id)"
+              />
+            </PackingCategoryCard>
           </div>
         </div>
       </div>

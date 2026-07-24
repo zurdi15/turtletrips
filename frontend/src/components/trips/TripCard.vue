@@ -1,0 +1,53 @@
+<script setup lang="ts">
+import StatusTag from '../StatusTag.vue'
+import SettledPill from '../trip/SettledPill.vue'
+import type { Trip } from '../../api/types'
+import { tripDateRange } from '../../utils/trips'
+import { flagEmoji } from '../../countries'
+
+defineProps<{ trip: Trip; image: string | null }>()
+</script>
+
+<template>
+  <router-link :to="`/trips/${trip.id}/overview`" class="no-underline">
+    <div class="tt-lift bg-white rounded-xl border border-slate-200 overflow-hidden h-full group">
+      <div class="relative h-32 bg-slate-200 overflow-hidden">
+        <img
+          v-if="image"
+          :src="image"
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          alt=""
+          loading="lazy"
+        />
+        <div
+          v-else
+          class="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-media-ph-start to-media-ph-end"
+        >
+          <template v-if="trip.countries.length">
+            {{ trip.countries.map(flagEmoji).join(' ') }}
+          </template>
+          <i v-else class="mdi mdi-bag-suitcase-outline text-slate-400" />
+        </div>
+        <div class="absolute top-2 right-2">
+          <StatusTag :status="trip.status" />
+        </div>
+      </div>
+      <div class="p-3.5">
+        <h3 class="font-semibold text-slate-800 flex items-center gap-2">
+          {{ trip.name }}
+          <span class="text-sm">{{ trip.countries.map(flagEmoji).join(' ') }}</span>
+          <SettledPill v-if="trip.debts_settled" />
+        </h3>
+        <p class="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+          <i class="pi pi-calendar text-xs" /> {{ tripDateRange(trip) }}
+        </p>
+        <p
+          v-if="trip.travelers.length"
+          class="text-xs text-slate-400 mt-1.5 flex items-center gap-1"
+        >
+          <i class="pi pi-users" /> {{ trip.travelers.map((t) => t.name).join(', ') }}
+        </p>
+      </div>
+    </div>
+  </router-link>
+</template>

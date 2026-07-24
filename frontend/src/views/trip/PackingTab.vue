@@ -8,10 +8,14 @@ import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import FormDialog from '../../components/ui/FormDialog.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
+import RowActions from '../../components/ui/RowActions.vue'
+import BagSelector, { type BagOption } from '../../components/packing/BagSelector.vue'
+import PackingAddBar from '../../components/packing/PackingAddBar.vue'
+import PackingCategoryCard from '../../components/packing/PackingCategoryCard.vue'
 import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
-import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
+import { useCategoriesStore } from '../../stores/categories'
 import { useConfirmDelete } from '../../composables/useConfirmDelete'
 import { useNotify } from '../../composables/useNotify'
 import { useTripTabData } from '../../composables/useTripTabData'
@@ -26,11 +30,6 @@ const notify = useNotify()
 // maleta activa: null = común, número = viajero
 const activeTraveler = ref<number | null>(null)
 const selectedTemplate = ref<number | null>(null)
-
-const newName = ref('')
-const newCategory = ref('Ropa')
-const newUrl = ref('')
-const showUrlField = ref(false)
 
 const editing = ref<PackingItem | null>(null)
 const showEdit = ref(false)
@@ -52,21 +51,17 @@ function syncSelectedTemplate() {
 watch(activeTraveler, syncSelectedTemplate)
 watch(() => store.selections, syncSelectedTemplate, { deep: true })
 
-interface BagOption {
-  travelerId: number | null
-  label: string
-  color: string | null
-}
-
-const bags = computed<BagOption[]>(() => [
-  { travelerId: null, label: 'Común', color: null },
-  ...props.trip.travelers.map((t) => ({ travelerId: t.id, label: t.name, color: t.color })),
-])
-
 function bagProgress(travelerId: number | null): { done: number; total: number } {
   const items = store.itemsFor(travelerId)
   return { done: items.filter((i) => i.checked).length, total: items.length }
 }
+
+const bags = computed<BagOption[]>(() =>
+  [
+    { travelerId: null as number | null, label: 'Común', color: null as string | null },
+    ...props.trip.travelers.map((t) => ({ travelerId: t.id, label: t.name, color: t.color })),
+  ].map((b) => ({ ...b, ...bagProgress(b.travelerId) })),
+)
 
 const activeItems = computed(() => store.itemsFor(activeTraveler.value))
 
@@ -104,21 +99,12 @@ const grouped = computed(() =>
   ),
 )
 
-async function addItem() {
-  const name = newName.value.trim()
-  if (!name) return
+async function addItem(payload: { name: string; category: string; url: string | null }) {
   try {
-    await store.create({
-      name,
-      category: newCategory.value,
-      url: newUrl.value.trim() || null,
-      traveler_id: activeTraveler.value,
-    })
-    newName.value = ''
-    newUrl.value = ''
-    showUrlField.value = false
+    await store.create({ ...payload, traveler_id: activeTraveler.value })
   } catch (err) {
     notify.error('Error al añadir', err)
+    throw err // PackingAddBar conserva el texto si falla
   }
 }
 
@@ -178,41 +164,11 @@ async function saveTemplate() {
 <template>
   <div>
     <!-- selector de maleta: común + una por viajero -->
-    <div class="flex flex-wrap items-center gap-2 mb-4">
-      <button
-        v-for="bag in bags"
-        :key="bag.travelerId ?? 'common'"
-        class="flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-colors"
-        :class="
-          activeTraveler === bag.travelerId
-            ? 'border-[var(--p-primary-color)] bg-[var(--p-primary-50)] text-slate-900'
-            : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-        "
-        @click="activeTraveler = bag.travelerId"
-      >
-        <span
-          v-if="bag.color"
-          class="w-2.5 h-2.5 rounded-full"
-          :style="{ background: bag.color }"
-        />
-        <i v-else class="pi pi-briefcase text-xs text-slate-400" />
-        <span class="font-medium">{{ bag.label }}</span>
-        <span
-          class="text-xs px-1.5 py-0.5 rounded-full"
-          :class="
-            bagProgress(bag.travelerId).total &&
-            bagProgress(bag.travelerId).done === bagProgress(bag.travelerId).total
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-slate-100 text-slate-500'
-          "
-        >
-          {{ bagProgress(bag.travelerId).done }}/{{ bagProgress(bag.travelerId).total }}
-        </span>
-      </button>
+    <BagSelector v-model:active="activeTraveler" :bags="bags" class="mb-4">
       <p v-if="!trip.travelers.length" class="text-xs text-slate-400 ml-2">
         Añade viajeros al viaje para que cada uno tenga su maleta
       </p>
-    </div>
+    </BagSelector>
 
     <!-- barra de la maleta activa: plantilla + progreso -->
     <div class="bg-white rounded-xl border border-slate-200 p-4 mb-4">
@@ -271,41 +227,12 @@ async function saveTemplate() {
     </div>
 
     <!-- añadir elemento a la maleta activa -->
-    <div class="flex flex-wrap items-center gap-2 mb-5">
-      <InputText
-        v-model="newName"
-        :placeholder="`Añadir a la maleta de ${activeBagLabel}…`"
-        class="w-full sm:w-64"
-        @keyup.enter="addItem"
-      />
-      <Select
-        v-model="newCategory"
-        :options="categoryOptions"
-        optionLabel="label"
-        optionValue="value"
-        class="flex-1 sm:flex-none sm:w-40"
-      />
-      <Button
-        icon="pi pi-link"
-        severity="secondary"
-        :outlined="!showUrlField"
-        v-tooltip.top="'Añadir enlace de compra'"
-        @click="showUrlField = !showUrlField"
-      />
-      <InputText
-        v-if="showUrlField"
-        v-model="newUrl"
-        placeholder="https://… (enlace de compra)"
-        class="w-full sm:w-64"
-        @keyup.enter="addItem"
-      />
-      <Button
-        label="Añadir"
-        icon="pi pi-plus"
-        class="shrink-0 max-sm:[&_.p-button-label]:hidden"
-        @click="addItem"
-      />
-    </div>
+    <PackingAddBar
+      :placeholder="`Añadir a la maleta de ${activeBagLabel}…`"
+      :categoryOptions="categoryOptions"
+      :onAdd="addItem"
+      class="mb-5"
+    />
 
     <TabSkeleton v-if="store.loading && !store.items.length" variant="list" :rows="8" />
 
@@ -317,55 +244,39 @@ async function saveTemplate() {
     />
 
     <div v-else class="tt-stagger grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
-      <div
+      <PackingCategoryCard
         v-for="group in grouped"
         :key="group.name"
-        class="bg-white rounded-xl border border-slate-200 overflow-hidden"
+        :name="group.name"
+        :color="group.color"
+        :count="`${group.items.filter((i) => i.checked).length}/${group.items.length}`"
       >
-        <div
-          class="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2"
-          :style="{ borderTop: `3px solid ${group.color ?? FALLBACK_CATEGORY_COLOR}` }"
+        <li
+          v-for="item in group.items"
+          :key="item.id"
+          class="flex items-center gap-3 px-4 py-2 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 group/item"
         >
-          <span class="font-semibold text-slate-700">{{ group.name }}</span>
-          <span class="text-xs text-slate-400">
-            {{ group.items.filter((i) => i.checked).length }}/{{ group.items.length }}
-          </span>
-        </div>
-        <ul>
-          <li
-            v-for="item in group.items"
-            :key="item.id"
-            class="flex items-center gap-3 px-4 py-2 border-b border-slate-50 last:border-b-0 hover:bg-slate-50 group/item"
+          <Checkbox :modelValue="item.checked" binary @update:modelValue="store.toggle(item)" />
+          <span
+            class="flex-1 transition-colors duration-200"
+            :class="{ 'line-through text-slate-400': item.checked }"
           >
-            <Checkbox
-              :modelValue="item.checked"
-              binary
-              @update:modelValue="store.toggle(item)"
-            />
-            <span
-              class="flex-1 transition-colors duration-200"
-              :class="{ 'line-through text-slate-400': item.checked }"
+            {{ item.name }}
+            <a
+              v-if="item.url"
+              :href="item.url"
+              target="_blank"
+              rel="noopener"
+              class="ml-1 text-sky-600 hover:underline text-xs"
+              v-tooltip.top="'Enlace de compra'"
+              @click.stop
             >
-              {{ item.name }}
-              <a
-                v-if="item.url"
-                :href="item.url"
-                target="_blank"
-                rel="noopener"
-                class="ml-1 text-sky-600 hover:underline text-xs"
-                v-tooltip.top="'Enlace de compra'"
-                @click.stop
-              >
-                <i class="pi pi-shopping-cart" />
-              </a>
-            </span>
-            <div class="flex gap-1 hover-actions">
-              <Button icon="pi pi-pencil" text size="small" severity="secondary" @click="openEdit(item)" />
-              <Button icon="pi pi-trash" text size="small" severity="danger" @click="removeItem(item)" />
-            </div>
-          </li>
-        </ul>
-      </div>
+              <i class="pi pi-shopping-cart" />
+            </a>
+          </span>
+          <RowActions @edit="openEdit(item)" @remove="removeItem(item)" />
+        </li>
+      </PackingCategoryCard>
     </div>
 
     <!-- diálogo editar (permite mover entre maletas) -->
