@@ -10,7 +10,7 @@ from ..schemas.misc import TripSummary
 from ..schemas.trip import TripCreate, TripRead, TripUpdate, TravelerRead
 from ..services import files
 from ..services.summary import trip_summary
-from .common import apply_updates, get_or_404
+from .common import delete_by_id, get_or_404, save_new, save_updates
 
 router = APIRouter(tags=["trips"])
 
@@ -29,12 +29,7 @@ def create_trip(payload: TripCreate, db: Session = Depends(get_db)):
     data = payload.model_dump()
     if not data.get("base_currency"):
         data["base_currency"] = get_settings().default_currency
-    trip = Trip()
-    apply_updates(trip, data)
-    db.add(trip)
-    db.commit()
-    db.refresh(trip)
-    return trip
+    return save_new(db, Trip(), data)
 
 
 @router.get("/trips/{trip_id}", response_model=TripRead)
@@ -45,17 +40,12 @@ def get_trip(trip_id: int, db: Session = Depends(get_db)):
 @router.patch("/trips/{trip_id}", response_model=TripRead)
 def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db)):
     trip = get_or_404(db, Trip, trip_id)
-    apply_updates(trip, payload.model_dump(exclude_unset=True))
-    db.commit()
-    db.refresh(trip)
-    return trip
+    return save_updates(db, trip, payload.model_dump(exclude_unset=True))
 
 
 @router.delete("/trips/{trip_id}", status_code=204)
 def delete_trip(trip_id: int, db: Session = Depends(get_db)):
-    trip = get_or_404(db, Trip, trip_id)
-    db.delete(trip)
-    db.commit()
+    delete_by_id(db, Trip, trip_id)
     files.delete_trip_files(trip_id)
 
 

@@ -1,46 +1,62 @@
-import unicodedata
 from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
 from fastapi.responses import Response
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from ..db import get_db
-from ..models import Expense, Place, Trip
-from ..schemas.expense import ExpenseCreate, ExpenseRead, ExpenseUpdate, ImportResult
+from ..models import Expense, ExpenseShare, Place, Settlement, SplitMode, Traveler, Trip
+from ..schemas.expense import (
+    ExpenseCreate,
+    ExpenseRead,
+    ExpenseShareInput,
+    ExpenseUpdate,
+    ImportResult,
+)
+from ..schemas.misc import SettlementCreate, TripBalances
 from ..services import csv_io
-from ..services.rates import RateUnavailableError, get_rate
-from .common import apply_updates, get_or_404
+from ..services.balances import split_amount, trip_balances, validate_shares
+from ..services.rates import resolve_rate, to_base
+from .common import (
+    ascii_filename,
+    delete_by_id,
+    ensure_in_trip,
+    get_or_404,
+    save_new,
+    save_updates,
+)
 
 router = APIRouter(tags=["expenses"])
 
-TWO_PLACES = Decimal("0.01")
+PLACE_NOT_IN_TRIP = "El sitio no pertenece a este viaje"
 
 
-def _validate_place(db: Session, trip_id: int, place_id: int | None) -> None:
-    if place_id is None:
-        return
-    place = db.get(Place, place_id)
-    if place is None or place.trip_id != trip_id:
-        raise HTTPException(status_code=400, detail="El sitio no pertenece a este viaje")
+def _enforce_common_exclusivity(data: dict) -> None:
+    """paid_by_common y paid_by_id son excluyentes: el último gana.
+
+    Marcar fondo común suelta al pagador; asignar un pagador desmarca el fondo.
+    """
+    if data.get("paid_by_common"):
+        data["paid_by_id"] = None
+    elif data.get("paid_by_id") is not None:
+        data["paid_by_common"] = False
 
 
-async def resolve_rate(
-    db: Session, base_currency: str, currency: str, day: date, provided: Decimal | None
-) -> Decimal:
-    if provided is not None:
-        return provided
+def _checked_shares(
+    trip: Trip, amount: Decimal, split_mode: str, shares: list[ExpenseShareInput]
+) -> list[ExpenseShare]:
+    """Valida el reparto (400 si es inválido) y construye las filas."""
     try:
-        rate, _ = await get_rate(db, currency, base_currency, day)
-    except RateUnavailableError as exc:
-        raise HTTPException(
-            status_code=400,
-            detail=f"No hay tipo de cambio {currency}->{base_currency} disponible; "
-            "indícalo manualmente en exchange_rate",
-        ) from exc
-    return rate
+        validate_shares(trip, amount, split_mode, shares)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    equal = split_mode == SplitMode.equal.value
+    return [
+        ExpenseShare(traveler_id=s.traveler_id, value=None if equal else s.value)
+        for s in shares
+    ]
 
 
 @router.get("/trips/{trip_id}/expenses", response_model=list[ExpenseRead])
@@ -59,26 +75,60 @@ def list_expenses(
         query = query.where(Expense.day == day)
     if paid_by_id is not None:
         query = query.where(Expense.paid_by_id == paid_by_id)
-    return db.scalars(query.order_by(Expense.day.desc(), Expense.id.desc())).all()
+    return db.scalars(
+        query.options(selectinload(Expense.shares))
+        .order_by(Expense.day.desc(), Expense.id.desc())
+    ).all()
+
+
+@router.get("/trips/{trip_id}/balances", response_model=TripBalances)
+def get_trip_balances(trip_id: int, db: Session = Depends(get_db)):
+    trip = get_or_404(db, Trip, trip_id)
+    return trip_balances(db, trip)
+
+
+@router.post("/trips/{trip_id}/settlements", response_model=TripBalances, status_code=201)
+def create_settlement(trip_id: int, payload: SettlementCreate, db: Session = Depends(get_db)):
+    """Registra un pago entre viajeros y devuelve los saldos actualizados."""
+    trip = get_or_404(db, Trip, trip_id)
+    if payload.from_id == payload.to_id:
+        raise HTTPException(status_code=400, detail="El pagador y el receptor deben ser distintos")
+    get_or_404(db, Traveler, payload.from_id)
+    get_or_404(db, Traveler, payload.to_id)
+    db.add(
+        Settlement(
+            trip_id=trip_id,
+            from_id=payload.from_id,
+            to_id=payload.to_id,
+            amount_base=payload.amount_base,
+        )
+    )
+    db.commit()
+    return trip_balances(db, trip)
+
+
+@router.delete("/settlements/{settlement_id}", status_code=204)
+def delete_settlement(settlement_id: int, db: Session = Depends(get_db)):
+    delete_by_id(db, Settlement, settlement_id)
 
 
 @router.post("/trips/{trip_id}/expenses", response_model=ExpenseRead, status_code=201)
 async def create_expense(trip_id: int, payload: ExpenseCreate, db: Session = Depends(get_db)):
     trip = get_or_404(db, Trip, trip_id)
-    _validate_place(db, trip_id, payload.place_id)
+    ensure_in_trip(db, Place, payload.place_id, trip_id, message=PLACE_NOT_IN_TRIP)
     currency = (payload.currency or trip.base_currency).upper()
     rate = await resolve_rate(db, trip.base_currency, currency, payload.day, payload.exchange_rate)
 
     expense = Expense(trip_id=trip_id)
-    data = payload.model_dump(exclude={"currency", "exchange_rate"})
-    apply_updates(expense, data)
-    expense.currency = currency
-    expense.exchange_rate = rate
-    expense.amount_base = (payload.amount * rate).quantize(TWO_PLACES)
-    db.add(expense)
-    db.commit()
-    db.refresh(expense)
-    return expense
+    expense.shares = _checked_shares(
+        trip, payload.amount, payload.split_mode.value, payload.shares
+    )
+    data = payload.model_dump(exclude={"currency", "exchange_rate", "shares"})
+    _enforce_common_exclusivity(data)
+    data["currency"] = currency
+    data["exchange_rate"] = rate
+    data["amount_base"] = to_base(payload.amount, rate)
+    return save_new(db, expense, data)
 
 
 @router.patch("/expenses/{expense_id}", response_model=ExpenseRead)
@@ -86,8 +136,9 @@ async def update_expense(expense_id: int, payload: ExpenseUpdate, db: Session = 
     expense = get_or_404(db, Expense, expense_id)
     trip = db.get(Trip, expense.trip_id)
     data = payload.model_dump(exclude_unset=True)
+    _enforce_common_exclusivity(data)
     if "place_id" in data:
-        _validate_place(db, expense.trip_id, data["place_id"])
+        ensure_in_trip(db, Place, data["place_id"], expense.trip_id, message=PLACE_NOT_IN_TRIP)
 
     currency_changed = "currency" in data and data["currency"].upper() != expense.currency
     if currency_changed and "exchange_rate" not in data:
@@ -100,35 +151,41 @@ async def update_expense(expense_id: int, payload: ExpenseUpdate, db: Session = 
         )
     if "currency" in data:
         data["currency"] = data["currency"].upper()
-    apply_updates(expense, data)
-    expense.amount_base = (
-        Decimal(str(expense.amount)) * Decimal(str(expense.exchange_rate))
-    ).quantize(TWO_PLACES)
-    db.commit()
-    db.refresh(expense)
-    return expense
+    amount = Decimal(str(data.get("amount", expense.amount)))
+    rate = Decimal(str(data.get("exchange_rate", expense.exchange_rate)))
+    data["amount_base"] = to_base(amount, rate)
+
+    new_mode = data["split_mode"].value if "split_mode" in data else expense.split_mode
+    if payload.shares is not None:
+        # reemplazo completo del reparto ([] + equal = volver al implícito)
+        expense.shares = _checked_shares(trip, amount, new_mode, payload.shares)
+        data.pop("shares", None)
+    elif "amount" in data and new_mode == SplitMode.amount.value and expense.shares:
+        # cambia el importe con reparto por importes: rescalar proporcionalmente
+        old_values = {s.traveler_id: Decimal(str(s.value or 0)) for s in expense.shares}
+        rescaled = split_amount(amount, old_values)
+        for share in expense.shares:
+            share.value = rescaled.get(share.traveler_id, Decimal(0))
+    elif "split_mode" in data:
+        # cambio de modo reutilizando los participantes actuales
+        current = [
+            ExpenseShareInput(traveler_id=s.traveler_id, value=s.value)
+            for s in expense.shares
+        ]
+        expense.shares = _checked_shares(trip, amount, new_mode, current)
+    return save_updates(db, expense, data)
 
 
 @router.delete("/expenses/{expense_id}", status_code=204)
 def delete_expense(expense_id: int, db: Session = Depends(get_db)):
-    expense = get_or_404(db, Expense, expense_id)
-    db.delete(expense)
-    db.commit()
+    delete_by_id(db, Expense, expense_id)
 
 
 @router.get("/trips/{trip_id}/expenses/export.csv")
 def export_expenses(trip_id: int, db: Session = Depends(get_db)):
     trip = get_or_404(db, Trip, trip_id)
     content = csv_io.export_csv(db, trip)
-    # los headers HTTP solo admiten ASCII
-    safe_name = (
-        unicodedata.normalize("NFKD", trip.name)
-        .encode("ascii", "ignore")
-        .decode()
-        .replace(" ", "_")[:50]
-        or "viaje"
-    )
-    filename = f"gastos-{safe_name}.csv"
+    filename = f"gastos-{ascii_filename(trip.name, 'viaje')}.csv"
     return Response(
         content=content,
         media_type="text/csv; charset=utf-8",

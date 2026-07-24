@@ -100,6 +100,14 @@ function deleteTrip() {
           <div class="flex items-center gap-3 flex-wrap">
             <h1 class="text-2xl font-bold text-slate-800">{{ store.current.name }}</h1>
             <StatusTag :status="store.current.status" />
+            <span
+              v-if="store.current.debts_settled"
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700"
+              v-tooltip.bottom="'Deudas saldadas entre viajeros'"
+            >
+              <i class="pi pi-check-circle text-[10px]" />
+              Saldado
+            </span>
           </div>
           <p class="text-slate-500 mt-1 flex items-center gap-3 flex-wrap text-sm">
             <span v-if="store.current.countries.length" class="flex items-center gap-1.5">

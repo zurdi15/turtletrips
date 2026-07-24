@@ -2,6 +2,7 @@
 import { computed, onMounted, watch } from 'vue'
 import Button from 'primevue/button'
 import PlaceMap from '../../components/PlaceMap.vue'
+import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { Trip } from '../../api/types'
 import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
 import { useExpensesStore } from '../../stores/expenses'
@@ -54,10 +55,23 @@ const nextBookings = computed(() => {
     .filter((b) => b.start_dt && new Date(b.start_dt).getTime() >= now - 86400000)
     .slice(0, 4)
 })
+
+// primera visita al viaje: todo cargando y sin datos aún
+const initialLoading = computed(
+  () =>
+    (expenses.loading || places.loading || bookings.loading) &&
+    !expenses.items.length &&
+    !places.items.length &&
+    !bookings.items.length,
+)
 </script>
 
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div v-if="initialLoading" class="flex flex-col gap-5">
+    <TabSkeleton variant="stats" />
+    <TabSkeleton variant="cards" :rows="2" />
+  </div>
+  <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 flex flex-col gap-6">
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
@@ -140,7 +154,11 @@ const nextBookings = computed(() => {
 
     <div class="flex flex-col gap-4">
       <div class="bg-white rounded-xl border border-slate-200 p-2 h-80">
-        <PlaceMap :places="places.items" :countryCode="trip.countries[0]" />
+        <PlaceMap
+          :places="places.items"
+          :bookings="bookings.items"
+          :countryCode="trip.countries[0]"
+        />
       </div>
       <router-link :to="{ name: 'trip-places', params: { id: trip.id } }" class="no-underline">
         <Button label="Ver todos los sitios" icon="pi pi-map" outlined severity="secondary" fluid />

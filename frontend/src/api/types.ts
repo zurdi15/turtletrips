@@ -24,6 +24,8 @@ export interface Trip {
   album_url: string | null
   notes: string | null
   travelers: Traveler[]
+  // true si hay liquidaciones registradas y los saldos quedan a cero
+  debts_settled: boolean
   created_at: string
   updated_at: string
 }
@@ -118,6 +120,14 @@ export interface Booking {
   notes: string | null
 }
 
+export type SplitMode = 'equal' | 'amount' | 'percent'
+
+export interface ExpenseShare {
+  traveler_id: number
+  // null en modo equal (solo participación); importe o porcentaje en los demás
+  value: number | null
+}
+
 export interface Expense {
   id: number
   trip_id: number
@@ -131,6 +141,10 @@ export interface Expense {
   exchange_rate: number
   amount_base: number
   paid_by_id: number | null
+  // pagado del fondo común (excluyente con paid_by_id): no entra en los saldos
+  paid_by_common: boolean
+  split_mode: SplitMode
+  shares: ExpenseShare[]
   notes: string | null
 }
 
@@ -161,6 +175,45 @@ export interface TripSummary {
   by_currency: CurrencyTotal[]
 }
 
+export interface TravelerBalance {
+  traveler_id: number
+  name: string
+  color: string | null
+  paid_base: number
+  owed_base: number
+  net_base: number // >0 le deben, <0 debe
+}
+
+export interface SettlementTransfer {
+  from_id: number
+  from_name: string
+  to_id: number
+  to_name: string
+  amount_base: number
+}
+
+export interface PaidSettlement {
+  id: number
+  from_id: number
+  from_name: string
+  to_id: number
+  to_name: string
+  amount_base: number
+  created_at: string
+}
+
+export interface TripBalances {
+  base_currency: string
+  balances: TravelerBalance[]
+  settlements: SettlementTransfer[]
+  paid_settlements: PaidSettlement[]
+  debts_settled: boolean
+  unassigned_count: number
+  unassigned_total_base: number
+  common_count: number
+  common_total_base: number
+}
+
 export type WorldPlaceKind = 'country' | 'city' | 'place'
 
 export interface WorldPlace {
@@ -188,6 +241,23 @@ export interface RateRead {
   rate: number
   source: string
 }
+
+// --- payloads de creación/edición (derivados de las entidades; los widenings
+// number | string existen porque los formularios mandan strings) ---
+
+export type TripInput = Partial<
+  Omit<Trip, 'id' | 'status' | 'travelers' | 'created_at' | 'updated_at' | 'cover_url' | 'budget_amount'>
+> & { budget_amount?: number | string | null }
+export type PlaceInput = Partial<Omit<Place, 'id' | 'trip_id'>>
+export type BookingInput = Partial<Omit<Booking, 'id' | 'trip_id' | 'cost_amount'>> & {
+  cost_amount?: number | string | null
+}
+export type ExpenseInput = Partial<
+  Omit<Expense, 'id' | 'trip_id' | 'amount' | 'exchange_rate' | 'amount_base'>
+> & { amount?: number | string; exchange_rate?: number | string | null }
+export type ItineraryInput = Partial<Omit<ItineraryItem, 'id' | 'trip_id'>>
+export type PackingInput = Partial<Omit<PackingItem, 'id' | 'trip_id'>>
+export type WorldPlaceInput = Partial<Omit<WorldPlace, 'id' | 'auto' | 'origin'>>
 
 export interface ImportRowError { row: number; error: string }
 export interface ImportPreviewRow {

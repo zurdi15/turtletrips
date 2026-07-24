@@ -7,6 +7,7 @@ import { useToast } from 'primevue/usetoast'
 import BookingFormDialog from '../../components/BookingFormDialog.vue'
 import AttachmentList from '../../components/AttachmentList.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import TabSkeleton from '../../components/TabSkeleton.vue'
 import { api } from '../../api/client'
 import type { Booking, BookingType, RateRead, Trip } from '../../api/types'
 import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
@@ -104,8 +105,10 @@ function copyCode(code: string) {
       <Button label="Nueva reserva" icon="pi pi-plus" @click="openNew" />
     </div>
 
+    <TabSkeleton v-if="store.loading && !store.items.length" variant="cards" :rows="3" />
+
     <EmptyState
-      v-if="!store.loading && !store.items.length"
+      v-else-if="!store.items.length"
       icon="pi pi-ticket"
       title="Sin reservas"
       subtitle="Guarda aquí hoteles, vuelos y actividades con sus PDFs"

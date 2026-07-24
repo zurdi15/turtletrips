@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from ..models import Category, CategoryKind, Expense, Place, Traveler, Trip
 from ..schemas.expense import ImportPreviewRow, ImportResult, ImportRowError
+from .rates import to_base
 
 EXPORT_COLUMNS = [
     "day", "category", "description", "amount", "currency",
@@ -197,7 +198,7 @@ def import_csv(db: Session, trip: Trip, content: bytes, dry_run: bool) -> Import
             preview = ImportPreviewRow(
                 row=idx, day=day, category=category, description=row["description"],
                 amount=float(amount), currency=currency, exchange_rate=float(rate),
-                amount_base=float((amount * rate).quantize(Decimal("0.01"))),
+                amount_base=float(to_base(amount, rate)),
                 paid_by=paid_by, place=row.get("place") or None,
                 notes=row.get("notes") or None,
             )

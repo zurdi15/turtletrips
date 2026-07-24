@@ -10,9 +10,9 @@ const { isDark, toggle } = useTheme()
 
 const navItems = [
   { to: '/', label: 'Viajes', icon: 'pi pi-compass', match: (p: string) => p === '/' || p.startsWith('/trips') },
-  { to: '/mapa', label: 'Mapa', icon: 'pi pi-globe', match: (p: string) => p.startsWith('/mapa') },
-  { to: '/maletas', label: 'Maletas', icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/maletas') },
-  { to: '/viajeros', label: 'Viajeros', icon: 'pi pi-users', match: (p: string) => p.startsWith('/viajeros') },
+  { to: '/map', label: 'Mapa', icon: 'pi pi-globe', match: (p: string) => p.startsWith('/map') },
+  { to: '/packing', label: 'Maletas', icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/packing') },
+  { to: '/travelers', label: 'Viajeros', icon: 'pi pi-users', match: (p: string) => p.startsWith('/travelers') },
 ]
 </script>
 

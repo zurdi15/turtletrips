@@ -9,7 +9,7 @@ import AutoComplete from 'primevue/autocomplete'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
-import type { GeocodeResult, Place } from '../api/types'
+import type { GeocodeResult, Place, PlaceCategory } from '../api/types'
 import { PLACE_CATEGORY_LABELS, toSelectOptions } from '../constants'
 import { usePlacesStore } from '../stores/places'
 import { useGeocodeSearch } from '../composables/useGeocode'
@@ -23,7 +23,7 @@ const store = usePlacesStore()
 const { results, search } = useGeocodeSearch()
 
 const name = ref('')
-const category = ref('sight')
+const category = ref<PlaceCategory>('sight')
 const geocodeQuery = ref<string | GeocodeResult>('')
 const address = ref('')
 const lat = ref<number | null>(null)
@@ -56,7 +56,8 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
   address.value = r.display_name
   lat.value = r.lat
   lon.value = r.lon
-  if (!name.value.trim()) name.value = r.display_name.split(',')[0]
+  // el nombre se autorellena con el del sitio; se puede editar después
+  name.value = r.display_name.split(',')[0].trim()
 }
 
 async function save() {
@@ -97,10 +98,27 @@ async function save() {
     class="w-full max-w-lg mx-4"
   >
     <div class="flex flex-col gap-4">
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">Ubicación</label>
+        <AutoComplete
+          v-model="geocodeQuery"
+          :suggestions="results"
+          optionLabel="display_name"
+          placeholder="Busca un lugar o dirección…"
+          fluid
+          autofocus
+          @complete="(e) => search(e.query)"
+          @item-select="onGeocodeSelect"
+        />
+        <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
+          📍 {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
+        </p>
+      </div>
+
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Nombre *</label>
-          <InputText v-model="name" placeholder="Fushimi Inari" autofocus />
+          <InputText v-model="name" placeholder="Fushimi Inari" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Categoría</label>
@@ -111,22 +129,6 @@ async function save() {
             optionValue="value"
           />
         </div>
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-sm font-medium">Buscar ubicación</label>
-        <AutoComplete
-          v-model="geocodeQuery"
-          :suggestions="results"
-          optionLabel="display_name"
-          placeholder="Busca una dirección o lugar (OpenStreetMap)"
-          fluid
-          @complete="(e) => search(e.query)"
-          @item-select="onGeocodeSelect"
-        />
-        <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
-          📍 {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
-        </p>
       </div>
 
       <div class="grid grid-cols-2 gap-3">

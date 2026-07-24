@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Traveler
 from ..schemas.trip import TravelerCreate, TravelerRead, TravelerUpdate
-from .common import apply_updates, get_or_404
+from .common import delete_by_id, get_or_404, save_updates
 
 router = APIRouter(tags=["travelers"])
 
@@ -42,14 +42,9 @@ def update_traveler(traveler_id: int, payload: TravelerUpdate, db: Session = Dep
         if duplicate and duplicate.id != traveler_id:
             raise HTTPException(status_code=409, detail="Ya existe un viajero con ese nombre")
         data["name"] = data["name"].strip()
-    apply_updates(traveler, data)
-    db.commit()
-    db.refresh(traveler)
-    return traveler
+    return save_updates(db, traveler, data)
 
 
 @router.delete("/travelers/{traveler_id}", status_code=204)
 def delete_traveler(traveler_id: int, db: Session = Depends(get_db)):
-    traveler = get_or_404(db, Traveler, traveler_id)
-    db.delete(traveler)
-    db.commit()
+    delete_by_id(db, Traveler, traveler_id)

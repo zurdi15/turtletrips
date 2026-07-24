@@ -6,38 +6,31 @@ from pydantic import BaseModel, ConfigDict, Field
 from ..models import BookingType
 
 
-class BookingCreate(BaseModel):
+class BookingBase(BaseModel):
+    """Campos opcionales comunes a Create y Update."""
+
+    provider: str | None = None
+    confirmation_code: str | None = None
+    start_dt: datetime | None = None
+    end_dt: datetime | None = None
+    origin: str | None = None
+    destination: str | None = None
+    address: str | None = None
+    lat: float | None = None
+    lon: float | None = None
+    cost_amount: Decimal | None = Field(default=None, ge=0)
+    cost_currency: str | None = Field(default=None, min_length=3, max_length=3)
+    notes: str | None = None
+
+
+class BookingCreate(BookingBase):
     type: BookingType = BookingType.other
     title: str = Field(min_length=1, max_length=300)
-    provider: str | None = None
-    confirmation_code: str | None = None
-    start_dt: datetime | None = None
-    end_dt: datetime | None = None
-    origin: str | None = None
-    destination: str | None = None
-    address: str | None = None
-    lat: float | None = None
-    lon: float | None = None
-    cost_amount: Decimal | None = Field(default=None, ge=0)
-    cost_currency: str | None = Field(default=None, min_length=3, max_length=3)
-    notes: str | None = None
 
 
-class BookingUpdate(BaseModel):
+class BookingUpdate(BookingBase):
     type: BookingType | None = None
     title: str | None = Field(default=None, min_length=1, max_length=300)
-    provider: str | None = None
-    confirmation_code: str | None = None
-    start_dt: datetime | None = None
-    end_dt: datetime | None = None
-    origin: str | None = None
-    destination: str | None = None
-    address: str | None = None
-    lat: float | None = None
-    lon: float | None = None
-    cost_amount: Decimal | None = Field(default=None, ge=0)
-    cost_currency: str | None = Field(default=None, min_length=3, max_length=3)
-    notes: str | None = None
 
 
 class BookingRead(BaseModel):

@@ -58,6 +58,12 @@ class CategoryKind(str, enum.Enum):
     packing = "packing"
 
 
+class SplitMode(str, enum.Enum):
+    equal = "equal"  # partes iguales (sin filas = implícito entre todos los viajeros)
+    amount = "amount"  # importes personalizados en la moneda del gasto
+    percent = "percent"  # porcentajes personalizados (0-100)
+
+
 class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
@@ -115,6 +121,16 @@ class Trip(TimestampMixin, Base):
     packing_selections: Mapped[list["PackingSelection"]] = relationship(
         cascade="all, delete-orphan", passive_deletes=True
     )
+    settlements: Mapped[list["Settlement"]] = relationship(
+        back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+    @property
+    def debts_settled(self) -> bool:
+        """True si hubo liquidaciones registradas y los saldos quedan a cero."""
+        from .services.balances import trip_debts_settled  # import tardío: evita ciclo
+
+        return trip_debts_settled(self)
 
     @property
     def status(self) -> str:
@@ -241,10 +257,64 @@ class Expense(TimestampMixin, Base):
     paid_by_id: Mapped[int | None] = mapped_column(
         ForeignKey("travelers.id", ondelete="SET NULL")
     )
+    # pagado del fondo/monedero común (excluyente con paid_by_id): cuenta en
+    # los totales pero no en los saldos entre viajeros
+    paid_by_common: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0"
+    )
+    split_mode: Mapped[str] = mapped_column(
+        String(10), default=SplitMode.equal.value, server_default=SplitMode.equal.value
+    )
     notes: Mapped[str | None] = mapped_column(Text)
 
     trip: Mapped[Trip] = relationship(back_populates="expenses")
     paid_by: Mapped[Traveler | None] = relationship()
+    shares: Mapped[list["ExpenseShare"]] = relationship(
+        back_populates="expense",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="ExpenseShare.traveler_id",
+    )
+
+
+class ExpenseShare(Base):
+    """Participación de un viajero en un gasto.
+
+    value según split_mode del gasto: NULL en equal (solo marca participación),
+    importe en la moneda del gasto en amount, 0-100 en percent.
+    """
+
+    __tablename__ = "expense_shares"
+    __table_args__ = (UniqueConstraint("expense_id", "traveler_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    expense_id: Mapped[int] = mapped_column(
+        ForeignKey("expenses.id", ondelete="CASCADE"), index=True
+    )
+    traveler_id: Mapped[int] = mapped_column(
+        ForeignKey("travelers.id", ondelete="CASCADE")
+    )
+    value: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+
+    expense: Mapped[Expense] = relationship(back_populates="shares")
+
+
+class Settlement(TimestampMixin, Base):
+    """Pago registrado entre viajeros para saldar deudas (en moneda base)."""
+
+    __tablename__ = "settlements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trip_id: Mapped[int] = mapped_column(
+        ForeignKey("trips.id", ondelete="CASCADE"), index=True
+    )
+    from_id: Mapped[int] = mapped_column(ForeignKey("travelers.id", ondelete="CASCADE"))
+    to_id: Mapped[int] = mapped_column(ForeignKey("travelers.id", ondelete="CASCADE"))
+    amount_base: Mapped[Decimal] = mapped_column(Numeric(14, 2))
+
+    trip: Mapped[Trip] = relationship(back_populates="settlements")
+    from_traveler: Mapped[Traveler] = relationship(foreign_keys=[from_id])
+    to_traveler: Mapped[Traveler] = relationship(foreign_keys=[to_id])
 
 
 class Attachment(TimestampMixin, Base):

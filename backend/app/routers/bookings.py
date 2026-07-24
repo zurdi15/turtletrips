@@ -14,8 +14,8 @@ from ..schemas.booking import (
     CreateExpenseFromBooking,
 )
 from ..schemas.expense import ExpenseRead
-from .common import apply_updates, get_or_404
-from .expenses import TWO_PLACES, resolve_rate
+from ..services.rates import resolve_rate, to_base
+from .common import delete_by_id, get_or_404, save_new, save_updates
 
 router = APIRouter(tags=["bookings"])
 
@@ -45,28 +45,18 @@ def list_bookings(trip_id: int, type: BookingType | None = None, db: Session = D
 @router.post("/trips/{trip_id}/bookings", response_model=BookingRead, status_code=201)
 def create_booking(trip_id: int, payload: BookingCreate, db: Session = Depends(get_db)):
     get_or_404(db, Trip, trip_id)
-    booking = Booking(trip_id=trip_id)
-    apply_updates(booking, payload.model_dump())
-    db.add(booking)
-    db.commit()
-    db.refresh(booking)
-    return booking
+    return save_new(db, Booking(trip_id=trip_id), payload.model_dump())
 
 
 @router.patch("/bookings/{booking_id}", response_model=BookingRead)
 def update_booking(booking_id: int, payload: BookingUpdate, db: Session = Depends(get_db)):
     booking = get_or_404(db, Booking, booking_id)
-    apply_updates(booking, payload.model_dump(exclude_unset=True))
-    db.commit()
-    db.refresh(booking)
-    return booking
+    return save_updates(db, booking, payload.model_dump(exclude_unset=True))
 
 
 @router.delete("/bookings/{booking_id}", status_code=204)
 def delete_booking(booking_id: int, db: Session = Depends(get_db)):
-    booking = get_or_404(db, Booking, booking_id)
-    db.delete(booking)
-    db.commit()
+    delete_by_id(db, Booking, booking_id)
 
 
 @router.post("/bookings/{booking_id}/create-expense", response_model=ExpenseRead, status_code=201)
@@ -96,7 +86,7 @@ async def create_expense_from_booking(
         amount=amount,
         currency=currency,
         exchange_rate=rate,
-        amount_base=(amount * rate).quantize(TWO_PLACES),
+        amount_base=to_base(amount, rate),
     )
     db.add(expense)
     db.commit()

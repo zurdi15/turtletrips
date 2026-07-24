@@ -85,5 +85,7 @@ class TripRead(BaseModel):
     album_url: str | None
     notes: str | None
     travelers: list[TravelerRead] = []
+    # True si hay liquidaciones registradas y los saldos quedan a cero
+    debts_settled: bool
     created_at: datetime
     updated_at: datetime

@@ -4,6 +4,33 @@ from sqlalchemy.orm import Session
 from ..models import Expense, Trip, WorldPlace
 
 
+def ensure_country_entry(
+    db: Session, country_code: str | None, origin: str | None = None
+) -> bool:
+    """Añade la entrada de país si no existe ninguna (ni siquiera oculta).
+
+    Una ciudad/sitio en el diario implica haber estado en su país. Respeta los
+    borrados del usuario (hidden cuenta como existente). No hace commit.
+    """
+    if not country_code:
+        return False
+    exists = db.scalar(
+        select(WorldPlace).where(
+            WorldPlace.kind == "country", WorldPlace.country_code == country_code
+        )
+    )
+    if exists:
+        return False
+    # el nombre en español lo resuelve el frontend a partir del código
+    db.add(
+        WorldPlace(
+            name=country_code, kind="country", country_code=country_code,
+            auto=True, origin=origin,
+        )
+    )
+    return True
+
+
 def sync_world_places(db: Session) -> None:
     """Deriva entradas del diario mundial a partir de los viajes (idempotente).
 
@@ -55,6 +82,15 @@ def sync_world_places(db: Session) -> None:
             )
             known_trip_place_ids.add(place.id)
             changed = True
+            # estar en una ciudad/sitio implica estar en su país
+            if place_country and place_country not in known_codes:
+                db.add(
+                    WorldPlace(
+                        name=place_country, kind="country", country_code=place_country,
+                        auto=True, origin=trip.name,
+                    )
+                )
+                known_codes.add(place_country)
 
     if changed:
         db.commit()

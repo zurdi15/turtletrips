@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import Category, Expense, PackingItem, PackingTemplateItem
 from ..schemas.packing import CategoryCreate, CategoryRead, CategoryUpdate
-from .common import get_or_404
+from .common import delete_by_id, get_or_404
 
 router = APIRouter(tags=["categories"])
 
@@ -81,6 +81,4 @@ def update_category(category_id: int, payload: CategoryUpdate, db: Session = Dep
 @router.delete("/categories/{category_id}", status_code=204)
 def delete_category(category_id: int, db: Session = Depends(get_db)):
     """Borra la categoría; los gastos/objetos existentes conservan el nombre."""
-    category = get_or_404(db, Category, category_id)
-    db.delete(category)
-    db.commit()
+    delete_by_id(db, Category, category_id)

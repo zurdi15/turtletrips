@@ -23,7 +23,7 @@ from ..schemas.packing import (
     PackingTemplateRead,
     PackingTemplateUpdate,
 )
-from .common import apply_updates, get_or_404
+from .common import delete_by_id, get_or_404, save_new, save_updates
 
 router = APIRouter(tags=["packing"])
 
@@ -75,12 +75,7 @@ def list_selections(trip_id: int, db: Session = Depends(get_db)):
 def create_packing_item(trip_id: int, payload: PackingItemCreate, db: Session = Depends(get_db)):
     trip = get_or_404(db, Trip, trip_id)
     _validate_traveler(db, trip, payload.traveler_id)
-    item = PackingItem(trip_id=trip_id)
-    apply_updates(item, payload.model_dump())
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
+    return save_new(db, PackingItem(trip_id=trip_id), payload.model_dump())
 
 
 @router.patch("/packing/{item_id}", response_model=PackingItemRead)
@@ -90,17 +85,12 @@ def update_packing_item(item_id: int, payload: PackingItemUpdate, db: Session = 
     if "traveler_id" in data:
         trip = db.get(Trip, item.trip_id)
         _validate_traveler(db, trip, data["traveler_id"])
-    apply_updates(item, data)
-    db.commit()
-    db.refresh(item)
-    return item
+    return save_updates(db, item, data)
 
 
 @router.delete("/packing/{item_id}", status_code=204)
 def delete_packing_item(item_id: int, db: Session = Depends(get_db)):
-    item = get_or_404(db, PackingItem, item_id)
-    db.delete(item)
-    db.commit()
+    delete_by_id(db, PackingItem, item_id)
 
 
 # --- plantillas de maleta ---
@@ -176,9 +166,7 @@ def rename_template(
 
 @router.delete("/packing-templates/{template_id}", status_code=204)
 def delete_template(template_id: int, db: Session = Depends(get_db)):
-    template = get_or_404(db, PackingTemplate, template_id)
-    db.delete(template)
-    db.commit()
+    delete_by_id(db, PackingTemplate, template_id)
 
 
 @router.post("/packing-templates/{template_id}/items", response_model=PackingTemplateItemRead, status_code=201)
@@ -186,12 +174,7 @@ def create_template_item(
     template_id: int, payload: PackingTemplateItemCreate, db: Session = Depends(get_db)
 ):
     get_or_404(db, PackingTemplate, template_id)
-    item = PackingTemplateItem(template_id=template_id)
-    apply_updates(item, payload.model_dump())
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
+    return save_new(db, PackingTemplateItem(template_id=template_id), payload.model_dump())
 
 
 @router.patch("/packing-template-items/{item_id}", response_model=PackingTemplateItemRead)
@@ -199,17 +182,12 @@ def update_template_item(
     item_id: int, payload: PackingTemplateItemUpdate, db: Session = Depends(get_db)
 ):
     item = get_or_404(db, PackingTemplateItem, item_id)
-    apply_updates(item, payload.model_dump(exclude_unset=True))
-    db.commit()
-    db.refresh(item)
-    return item
+    return save_updates(db, item, payload.model_dump(exclude_unset=True))
 
 
 @router.delete("/packing-template-items/{item_id}", status_code=204)
 def delete_template_item(item_id: int, db: Session = Depends(get_db)):
-    item = get_or_404(db, PackingTemplateItem, item_id)
-    db.delete(item)
-    db.commit()
+    delete_by_id(db, PackingTemplateItem, item_id)
 
 
 @router.post(

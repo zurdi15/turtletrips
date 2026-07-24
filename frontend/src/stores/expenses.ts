@@ -1,82 +1,124 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
-import type { Expense, ImportResult, TripSummary } from '../api/types'
+import type {
+  Expense,
+  ExpenseInput,
+  ImportResult,
+  TripBalances,
+  TripSummary,
+} from '../api/types'
+import { useTripResource } from './tripResource'
 
-export interface ExpenseInput {
-  day?: string
-  category?: string
-  description?: string
-  amount?: number | string
-  currency?: string
-  exchange_rate?: number | string | null
-  paid_by_id?: number | null
-  booking_id?: number | null
-  place_id?: number | null
-  notes?: string | null
-}
+export type { ExpenseInput } from '../api/types'
 
-export const useExpensesStore = defineStore('expenses', {
-  state: () => ({
-    items: [] as Expense[],
-    summary: null as TripSummary | null,
-    tripId: null as number | null,
-    loading: false,
-  }),
-  actions: {
-    async load(tripId: number) {
-      this.loading = true
-      this.tripId = tripId
-      try {
-        ;[this.items, this.summary] = await Promise.all([
-          api.get<Expense[]>(`/trips/${tripId}/expenses`),
-          api.get<TripSummary>(`/trips/${tripId}/summary`),
-        ])
-      } finally {
-        this.loading = false
-      }
-    },
-    async refreshSummary() {
-      if (this.tripId == null) return
-      this.summary = await api.get<TripSummary>(`/trips/${this.tripId}/summary`)
-    },
-    async create(payload: ExpenseInput) {
-      const expense = await api.post<Expense>(`/trips/${this.tripId}/expenses`, payload)
-      this.items.unshift(expense)
-      await this.refreshSummary()
-      return expense
-    },
-    async update(id: number, payload: ExpenseInput) {
-      const expense = await api.patch<Expense>(`/expenses/${id}`, payload)
-      const idx = this.items.findIndex((e) => e.id === id)
-      if (idx >= 0) this.items[idx] = expense
-      await this.refreshSummary()
-      return expense
-    },
-    async remove(id: number) {
-      await api.delete(`/expenses/${id}`)
-      this.items = this.items.filter((e) => e.id !== id)
-      await this.refreshSummary()
-    },
-    async bulkUpdate(ids: number[], payload: ExpenseInput) {
-      await Promise.all(ids.map((id) => api.patch<Expense>(`/expenses/${id}`, payload)))
-      if (this.tripId != null) await this.load(this.tripId)
-    },
-    async bulkRemove(ids: number[]) {
-      await Promise.all(ids.map((id) => api.delete(`/expenses/${id}`)))
-      if (this.tripId != null) await this.load(this.tripId)
-    },
-    async importCsv(file: File, dryRun: boolean): Promise<ImportResult> {
-      const form = new FormData()
-      form.append('file', file)
-      const result = await api.upload<ImportResult>(
-        `/trips/${this.tripId}/expenses/import?dry_run=${dryRun}`,
-        form,
-      )
-      if (!dryRun && this.tripId != null) await this.load(this.tripId)
-      return result
-    },
-    exportUrl(): string {
-      return `/api/v1/trips/${this.tripId}/expenses/export.csv`
-    },
-  },
+export const useExpensesStore = defineStore('expenses', () => {
+  const base = useTripResource<Expense, ExpenseInput>({
+    listPath: (tripId) => `/trips/${tripId}/expenses`,
+    itemPath: (id) => `/expenses/${id}`,
+    insert: 'unshift',
+  })
+  const summary = ref<TripSummary | null>(null)
+  const balances = ref<TripBalances | null>(null)
+
+  async function load(tripId: number) {
+    base.loading.value = true
+    if (base.tripId.value !== tripId) balances.value = null
+    base.tripId.value = tripId
+    try {
+      ;[base.items.value, summary.value] = await Promise.all([
+        api.get<Expense[]>(`/trips/${tripId}/expenses`),
+        api.get<TripSummary>(`/trips/${tripId}/summary`),
+      ])
+    } finally {
+      base.loading.value = false
+    }
+  }
+
+  async function refreshSummary() {
+    if (base.tripId.value == null) return
+    summary.value = await api.get<TripSummary>(`/trips/${base.tripId.value}/summary`)
+    // los saldos solo se refrescan si la pestaña ya los cargó
+    if (balances.value != null) await loadBalances()
+  }
+
+  async function loadBalances() {
+    if (base.tripId.value == null) return
+    balances.value = await api.get<TripBalances>(`/trips/${base.tripId.value}/balances`)
+  }
+
+  /** Registra un pago entre viajeros; el backend devuelve los saldos ya actualizados. */
+  async function settle(transfer: { from_id: number; to_id: number; amount_base: number }) {
+    balances.value = await api.post<TripBalances>(
+      `/trips/${base.tripId.value}/settlements`,
+      transfer,
+    )
+  }
+
+  async function unsettle(settlementId: number) {
+    await api.delete(`/settlements/${settlementId}`)
+    await loadBalances()
+  }
+
+  async function create(payload: ExpenseInput) {
+    const expense = await base.create(payload)
+    await refreshSummary()
+    return expense
+  }
+
+  async function update(id: number, payload: ExpenseInput) {
+    const expense = await base.update(id, payload)
+    await refreshSummary()
+    return expense
+  }
+
+  async function remove(id: number) {
+    await base.remove(id)
+    await refreshSummary()
+  }
+
+  async function bulkUpdate(ids: number[], payload: ExpenseInput) {
+    await Promise.all(ids.map((id) => api.patch<Expense>(`/expenses/${id}`, payload)))
+    if (base.tripId.value != null) await load(base.tripId.value)
+    if (balances.value != null) await loadBalances()
+  }
+
+  async function bulkRemove(ids: number[]) {
+    await Promise.all(ids.map((id) => api.delete(`/expenses/${id}`)))
+    if (base.tripId.value != null) await load(base.tripId.value)
+    if (balances.value != null) await loadBalances()
+  }
+
+  async function importCsv(file: File, dryRun: boolean): Promise<ImportResult> {
+    const form = new FormData()
+    form.append('file', file)
+    const result = await api.upload<ImportResult>(
+      `/trips/${base.tripId.value}/expenses/import?dry_run=${dryRun}`,
+      form,
+    )
+    if (!dryRun && base.tripId.value != null) await load(base.tripId.value)
+    return result
+  }
+
+  function exportUrl(): string {
+    return `/api/v1/trips/${base.tripId.value}/expenses/export.csv`
+  }
+
+  return {
+    ...base,
+    summary,
+    balances,
+    load,
+    refreshSummary,
+    loadBalances,
+    settle,
+    unsettle,
+    create,
+    update,
+    remove,
+    bulkUpdate,
+    bulkRemove,
+    importCsv,
+    exportUrl,
+  }
 })

@@ -7,7 +7,7 @@ from ..db import get_db
 from ..models import Attachment, Booking, Trip
 from ..schemas.attachment import AttachmentRead
 from ..services import files
-from .common import get_or_404
+from .common import ensure_in_trip, get_or_404
 
 router = APIRouter(tags=["attachments"])
 
@@ -31,10 +31,9 @@ async def upload_attachment(
     db: Session = Depends(get_db),
 ):
     get_or_404(db, Trip, trip_id)
-    if booking_id is not None:
-        booking = db.get(Booking, booking_id)
-        if booking is None or booking.trip_id != trip_id:
-            raise HTTPException(status_code=400, detail="La reserva no pertenece a este viaje")
+    ensure_in_trip(
+        db, Booking, booking_id, trip_id, message="La reserva no pertenece a este viaje"
+    )
 
     try:
         stored_name, size = await files.save_upload(trip_id, file)

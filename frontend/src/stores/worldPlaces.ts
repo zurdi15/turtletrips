@@ -1,15 +1,8 @@
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
-import type { WorldPlace, WorldPlaceKind } from '../api/types'
+import type { WorldPlace, WorldPlaceInput } from '../api/types'
 
-export interface WorldPlaceInput {
-  name?: string
-  kind?: WorldPlaceKind
-  country_code?: string | null
-  lat?: number | null
-  lon?: number | null
-  note?: string | null
-}
+export type { WorldPlaceInput } from '../api/types'
 
 export const useWorldPlacesStore = defineStore('worldPlaces', {
   state: () => ({
@@ -32,14 +25,13 @@ export const useWorldPlacesStore = defineStore('worldPlaces', {
     },
     async create(payload: WorldPlaceInput) {
       const place = await api.post<WorldPlace>('/world-places', payload)
-      this.items.push(place)
-      this.items.sort((a, b) => a.name.localeCompare(b.name, 'es'))
+      // recargar: una ciudad/sitio puede arrastrar su país al diario
+      await this.load()
       return place
     },
     async update(id: number, payload: WorldPlaceInput) {
       const place = await api.patch<WorldPlace>(`/world-places/${id}`, payload)
-      const idx = this.items.findIndex((p) => p.id === id)
-      if (idx >= 0) this.items[idx] = place
+      await this.load()
       return place
     },
     async remove(id: number) {

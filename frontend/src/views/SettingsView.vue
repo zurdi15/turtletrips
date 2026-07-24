@@ -5,6 +5,7 @@ import InputText from 'primevue/inputtext'
 import Popover from 'primevue/popover'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
+import { api, API_BASE } from '../api/client'
 import type { Category } from '../api/types'
 import { CATEGORY_PALETTE } from '../constants'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
@@ -12,6 +13,51 @@ import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categorie
 const categories = useCategoriesStore()
 const confirm = useConfirm()
 const toast = useToast()
+
+// ---- copia de seguridad ----
+
+const backupExportUrl = `${API_BASE}/backup/export`
+const restoreInput = ref<HTMLInputElement | null>(null)
+const restoring = ref(false)
+
+function onRestoreFilePicked(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  confirm.require({
+    message:
+      'Esto reemplazará TODOS los datos actuales (viajes, gastos, adjuntos…) ' +
+      'por los de la copia. Esta acción no se puede deshacer.',
+    header: 'Restaurar copia de seguridad',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
+    acceptProps: { label: 'Restaurar', severity: 'danger' },
+    accept: async () => {
+      restoring.value = true
+      try {
+        const form = new FormData()
+        form.append('file', file)
+        const result = await api.upload<{ trips: number }>('/backup/restore', form)
+        toast.add({
+          severity: 'success',
+          summary: `Copia restaurada (${result.trips} viajes)`,
+          life: 3000,
+        })
+        // todas las stores quedan obsoletas tras el restore
+        setTimeout(() => window.location.reload(), 800)
+      } catch (err) {
+        toast.add({
+          severity: 'error',
+          summary: 'No se pudo restaurar',
+          detail: String(err),
+          life: 6000,
+        })
+        restoring.value = false
+      }
+    },
+  })
+}
 
 onMounted(() => {
   categories.load('expense')
@@ -155,6 +201,33 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
             icon="pi pi-plus"
             class="shrink-0 max-sm:[&_.p-button-label]:hidden"
             @click="addCategory(section.kind)"
+          />
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl border border-slate-200 p-5">
+        <h2 class="font-semibold text-slate-700 mb-1">Copia de seguridad</h2>
+        <p class="text-xs text-slate-400 mb-4">
+          La copia incluye la base de datos completa y todos los adjuntos.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <a :href="backupExportUrl" download>
+            <Button label="Descargar copia" icon="pi pi-download" severity="secondary" outlined />
+          </a>
+          <Button
+            label="Restaurar desde copia…"
+            icon="pi pi-upload"
+            severity="danger"
+            outlined
+            :loading="restoring"
+            @click="restoreInput?.click()"
+          />
+          <input
+            ref="restoreInput"
+            type="file"
+            accept=".zip,application/zip"
+            class="hidden"
+            @change="onRestoreFilePicked"
           />
         </div>
       </section>

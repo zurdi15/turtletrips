@@ -7,6 +7,7 @@ import Tag from 'primevue/tag'
 import { useConfirm } from 'primevue/useconfirm'
 import AttachmentList from '../../components/AttachmentList.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { Trip } from '../../api/types'
 import { useAttachmentsStore } from '../../stores/attachments'
 import { useBookingsStore } from '../../stores/bookings'
@@ -60,8 +61,10 @@ function remove(id: number, name: string) {
       <AttachmentList v-if="!store.items.length" />
     </div>
 
+    <TabSkeleton v-if="store.loading && !store.items.length" variant="table" :rows="4" />
+
     <EmptyState
-      v-if="!store.loading && !store.items.length"
+      v-else-if="!store.items.length"
       icon="pi pi-paperclip"
       title="Sin ficheros"
       subtitle="Sube PDFs de reservas, billetes o cualquier documento del viaje"

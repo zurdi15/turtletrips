@@ -9,7 +9,7 @@ import InputNumber from 'primevue/inputnumber'
 import Button from 'primevue/button'
 import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
-import type { Trip } from '../api/types'
+import type { Trip, TripStatus } from '../api/types'
 import { CURRENCIES, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
 import { COUNTRY_OPTIONS } from '../countries'
 import { useTripsStore } from '../stores/trips'
@@ -30,7 +30,7 @@ const baseCurrency = ref('EUR')
 const budget = ref<number | null>(null)
 const albumUrl = ref('')
 const notes = ref('')
-const statusOverride = ref<string | null>(null)
+const statusOverride = ref<TripStatus | null>(null)
 const saving = ref(false)
 const uploadingCover = ref(false)
 const coverInput = ref<HTMLInputElement>()

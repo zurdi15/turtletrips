@@ -10,6 +10,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import PlaceMap from '../../components/PlaceMap.vue'
 import PlaceFormDialog from '../../components/PlaceFormDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { Place, Trip } from '../../api/types'
 import {
   PLACE_CATEGORY_COLORS,
@@ -18,9 +19,11 @@ import {
   toSelectOptions,
 } from '../../constants'
 import { usePlacesStore } from '../../stores/places'
+import { useBookingsStore } from '../../stores/bookings'
 
 const props = defineProps<{ trip: Trip }>()
 const store = usePlacesStore()
+const bookings = useBookingsStore()
 const confirm = useConfirm()
 
 const showForm = ref(false)
@@ -48,12 +51,16 @@ watch(mobilePanel, async (panel) => {
 const route = useRoute()
 
 onMounted(async () => {
+  bookings.load(props.trip.id)
   await store.load(props.trip.id)
   // llegar desde un gasto enlazado (?place=id) selecciona y centra ese sitio
   const fromQuery = Number(route.query.place)
   if (fromQuery) selectedId.value = fromQuery
 })
-watch(() => props.trip.id, (id) => store.load(id))
+watch(() => props.trip.id, (id) => {
+  store.load(id)
+  bookings.load(id)
+})
 
 const categoryOptions = [
   { value: 'all', label: 'Todas las categorías' },
@@ -192,8 +199,13 @@ function removePlace(place: Place) {
             </div>
           </div>
         </div>
+        <TabSkeleton
+          v-if="store.loading && !store.items.length"
+          variant="cards"
+          :rows="4"
+        />
         <EmptyState
-          v-if="!store.loading && !store.items.length"
+          v-else-if="!store.items.length"
           icon="pi pi-map-marker"
           title="Sin sitios guardados"
           subtitle="Añade los sitios que quieres ver en este viaje"
@@ -210,6 +222,7 @@ function removePlace(place: Place) {
         <PlaceMap
           ref="mapRef"
           :places="filtered"
+          :bookings="bookings.items"
           :selectedId="selectedId"
           :countryCode="trip.countries[0]"
           @select="(id) => (selectedId = id)"

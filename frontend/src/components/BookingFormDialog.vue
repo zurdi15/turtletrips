@@ -7,11 +7,13 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
+import AutoComplete from 'primevue/autocomplete'
 import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
-import type { Booking, BookingType, Trip } from '../api/types'
+import type { Booking, BookingType, GeocodeResult, Trip } from '../api/types'
 import { BOOKING_TYPE_LABELS, CURRENCIES, toSelectOptions } from '../constants'
 import { useBookingsStore } from '../stores/bookings'
+import { useGeocodeSearch } from '../composables/useGeocode'
 import { toIsoDate } from '../composables/useMoney'
 
 const props = defineProps<{ trip: Trip; booking?: Booking | null }>()
@@ -20,6 +22,7 @@ const emit = defineEmits<{ saved: [] }>()
 
 const toast = useToast()
 const store = useBookingsStore()
+const { results: geoResults, search: geoSearch } = useGeocodeSearch()
 
 const type = ref<BookingType>('hotel')
 const title = ref('')
@@ -31,11 +34,35 @@ const startTime = ref<Date | null>(null)
 const endTime = ref<Date | null>(null)
 const origin = ref('')
 const destination = ref('')
-const address = ref('')
+const address = ref<string | GeocodeResult>('')
+const lat = ref<number | null>(null)
+const lon = ref<number | null>(null)
+// dirección que produjo las coordenadas; si el texto cambia, las coordenadas caducan
+const locatedAddress = ref<string | null>(null)
 const costAmount = ref<number | null>(null)
 const costCurrency = ref<string | null>(null)
 const notes = ref('')
 const saving = ref(false)
+
+function addressText(): string {
+  return typeof address.value === 'string' ? address.value : address.value.display_name
+}
+
+function onAddressSelect(event: { value: GeocodeResult }) {
+  const r = event.value
+  address.value = r.display_name
+  lat.value = r.lat
+  lon.value = r.lon
+  locatedAddress.value = r.display_name
+}
+
+watch(address, () => {
+  if (locatedAddress.value != null && addressText() !== locatedAddress.value) {
+    lat.value = null
+    lon.value = null
+    locatedAddress.value = null
+  }
+})
 
 const typeOptions = toSelectOptions(BOOKING_TYPE_LABELS)
 
@@ -75,6 +102,9 @@ watch(visible, (open) => {
   origin.value = b?.origin ?? ''
   destination.value = b?.destination ?? ''
   address.value = b?.address ?? ''
+  lat.value = b?.lat ?? null
+  lon.value = b?.lon ?? null
+  locatedAddress.value = b?.lat != null ? (b?.address ?? null) : null
   costAmount.value = b?.cost_amount ?? null
   costCurrency.value = b?.cost_currency ?? props.trip.base_currency
   notes.value = b?.notes ?? ''
@@ -96,7 +126,9 @@ async function save() {
       end_dt: endDate.value ? toNaiveIso(endDate.value, endTime.value) : null,
       origin: isTransport.value ? origin.value || null : null,
       destination: isTransport.value ? destination.value || null : null,
-      address: !isTransport.value ? address.value || null : null,
+      address: !isTransport.value ? addressText() || null : null,
+      lat: !isTransport.value ? lat.value : null,
+      lon: !isTransport.value ? lon.value : null,
       cost_amount: costAmount.value,
       cost_currency: costAmount.value != null ? costCurrency.value : null,
       notes: notes.value || null,
@@ -170,7 +202,18 @@ async function save() {
       </div>
       <div v-else class="flex flex-col gap-1">
         <label class="text-sm font-medium">Dirección</label>
-        <InputText v-model="address" />
+        <AutoComplete
+          v-model="address"
+          :suggestions="geoResults"
+          optionLabel="display_name"
+          placeholder="Busca la dirección (OpenStreetMap) o escríbela"
+          fluid
+          @complete="(e) => geoSearch(e.query)"
+          @item-select="onAddressSelect"
+        />
+        <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
+          📍 {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }} — se mostrará en el mapa del viaje
+        </p>
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">

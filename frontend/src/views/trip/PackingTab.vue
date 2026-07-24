@@ -8,6 +8,7 @@ import Dialog from 'primevue/dialog'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import EmptyState from '../../components/EmptyState.vue'
+import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
@@ -339,8 +340,10 @@ async function saveTemplate() {
       />
     </div>
 
+    <TabSkeleton v-if="store.loading && !store.items.length" variant="list" :rows="8" />
+
     <EmptyState
-      v-if="!store.loading && !activeItems.length"
+      v-else-if="!store.loading && !activeItems.length"
       icon="pi pi-briefcase"
       :title="`La maleta de ${activeBagLabel} está vacía`"
       subtitle="Añade elementos o aplica una plantilla"

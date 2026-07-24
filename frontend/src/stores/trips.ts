@@ -1,18 +1,8 @@
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
-import type { Traveler, Trip } from '../api/types'
+import type { Traveler, Trip, TripInput } from '../api/types'
 
-export interface TripInput {
-  name?: string
-  countries?: string[]
-  start_date?: string | null
-  end_date?: string | null
-  status_override?: string | null
-  base_currency?: string
-  budget_amount?: number | string | null
-  album_url?: string | null
-  notes?: string | null
-}
+export type { TripInput } from '../api/types'
 
 export const useTripsStore = defineStore('trips', {
   state: () => ({

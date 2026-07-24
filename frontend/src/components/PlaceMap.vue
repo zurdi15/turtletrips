@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { LMap, LTileLayer, LCircleMarker, LPopup } from '@vue-leaflet/vue-leaflet'
-import { latLngBounds, type Map as LeafletMap } from 'leaflet'
-import type { Place } from '../api/types'
-import { PLACE_CATEGORY_COLORS, PLACE_CATEGORY_LABELS } from '../constants'
+import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
+import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
+import type { Booking, BookingType, Place } from '../api/types'
+import {
+  BOOKING_TYPE_LABELS,
+  PLACE_CATEGORY_COLORS,
+  PLACE_CATEGORY_LABELS,
+} from '../constants'
 import { useCountryCenter } from '../composables/useCountryCenter'
 import { useMapTiles } from '../composables/useMapTiles'
+import { formatDate } from '../composables/useMoney'
 
 const props = defineProps<{
   places: Place[]
+  bookings?: Booking[]
   selectedId?: number | null
   countryCode?: string | null
 }>()
@@ -22,7 +28,26 @@ const zoom = ref(2)
 const center = ref<[number, number]>([25, 0])
 
 const located = computed(() => props.places.filter((p) => p.lat != null && p.lon != null))
+const locatedBookings = computed(
+  () => (props.bookings ?? []).filter((b) => b.lat != null && b.lon != null),
+)
 const countryCenter = computed(() => centerFor(props.countryCode))
+
+const BOOKING_ICONS: Partial<Record<BookingType, string>> = {
+  hotel: '🏨',
+  activity: '🎟️',
+  car_rental: '🚗',
+}
+
+function bookingIcon(booking: Booking): Icon {
+  const emoji = BOOKING_ICONS[booking.type] ?? '📌'
+  return divIcon({
+    html: `<span style="font-size:22px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))">${emoji}</span>`,
+    className: 'tt-booking-marker',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  }) as unknown as Icon
+}
 
 function leafletMap(): LeafletMap | undefined {
   return (mapRef.value as unknown as { leafletObject?: LeafletMap } | null)?.leafletObject
@@ -31,9 +56,12 @@ function leafletMap(): LeafletMap | undefined {
 function fitAll() {
   const map = leafletMap()
   if (!map) return
-  if (located.value.length) {
-    const bounds = latLngBounds(located.value.map((p) => [p.lat!, p.lon!] as [number, number]))
-    map.fitBounds(bounds.pad(0.2), { maxZoom: 15 })
+  const points: [number, number][] = [
+    ...located.value.map((p) => [p.lat!, p.lon!] as [number, number]),
+    ...locatedBookings.value.map((b) => [b.lat!, b.lon!] as [number, number]),
+  ]
+  if (points.length) {
+    map.fitBounds(latLngBounds(points).pad(0.2), { maxZoom: 15 })
   } else if (countryCenter.value) {
     // sin sitios localizados: centrar en el país del viaje
     map.setView(countryCenter.value, 5)
@@ -45,7 +73,7 @@ function onReady() {
 }
 
 watch(
-  () => located.value.length,
+  () => located.value.length + locatedBookings.value.length,
   () => fitAll(),
 )
 
@@ -110,5 +138,25 @@ defineExpose({ refresh })
         </div>
       </LPopup>
     </LCircleMarker>
+    <LMarker
+      v-for="booking in locatedBookings"
+      :key="`booking-${booking.id}`"
+      :lat-lng="[booking.lat!, booking.lon!]"
+      :icon="bookingIcon(booking)"
+    >
+      <LPopup>
+        <div class="font-medium">{{ booking.title }}</div>
+        <div class="text-xs text-slate-500">
+          {{ BOOKING_TYPE_LABELS[booking.type] }}
+          <template v-if="booking.start_dt">
+            · {{ formatDate(booking.start_dt) }}
+            <template v-if="booking.end_dt"> → {{ formatDate(booking.end_dt) }}</template>
+          </template>
+        </div>
+        <div v-if="booking.address" class="text-xs text-slate-400 max-w-52 mt-0.5">
+          {{ booking.address }}
+        </div>
+      </LPopup>
+    </LMarker>
   </LMap>
 </template>

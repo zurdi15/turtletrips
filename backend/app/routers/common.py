@@ -1,4 +1,5 @@
 import enum
+import unicodedata
 from typing import TypeVar
 
 from fastapi import HTTPException
@@ -15,6 +16,7 @@ NOT_FOUND_LABELS = {
     "ItineraryItem": "Elemento de itinerario",
     "Booking": "Reserva",
     "Expense": "Gasto",
+    "Settlement": "Liquidación",
     "Attachment": "Adjunto",
     "Category": "Categoría",
     "PackingItem": "Elemento de maleta",
@@ -37,3 +39,48 @@ def apply_updates(obj: Base, data: dict) -> None:
         if isinstance(value, enum.Enum):
             value = value.value
         setattr(obj, key, value)
+
+
+def ensure_in_trip(
+    db: Session, model: type[T], obj_id: int | None, trip_id: int, *, message: str
+) -> None:
+    """400 con `message` si el objeto no existe o no pertenece al viaje.
+
+    obj_id=None es no-op (enlaces opcionales).
+    """
+    if obj_id is None:
+        return
+    obj = db.get(model, obj_id)
+    if obj is None or obj.trip_id != trip_id:
+        raise HTTPException(status_code=400, detail=message)
+
+
+def save_new(db: Session, obj: T, data: dict) -> T:
+    apply_updates(obj, data)
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+def save_updates(db: Session, obj: T, data: dict) -> T:
+    apply_updates(obj, data)
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+def delete_by_id(db: Session, model: type[T], obj_id: int) -> None:
+    db.delete(get_or_404(db, model, obj_id))
+    db.commit()
+
+
+def ascii_filename(name: str, fallback: str) -> str:
+    """Nombre apto para Content-Disposition (los headers HTTP solo admiten ASCII)."""
+    return (
+        unicodedata.normalize("NFKD", name)
+        .encode("ascii", "ignore")
+        .decode()
+        .replace(" ", "_")[:50]
+        or fallback
+    )

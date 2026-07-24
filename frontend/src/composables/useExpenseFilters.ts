@@ -1,0 +1,93 @@
+import { computed, reactive, ref } from 'vue'
+import type { Expense, Place, Trip } from '../api/types'
+import {
+  countActiveFilters,
+  emptyFilters,
+  filterExpenses,
+  type ExpenseFilterState,
+} from '../utils/expenses'
+
+/**
+ * Estado reactivo de los filtros de gastos + lookups de nombres y opciones
+ * para los selectores. La lógica pura vive en utils/expenses.ts.
+ */
+export function useExpenseFilters(ctx: {
+  trip: () => Trip
+  items: () => Expense[]
+  categoryNames: () => string[]
+  placeById: () => Map<number, Place>
+}) {
+  const filters = reactive<ExpenseFilterState>(emptyFilters())
+  const showFilters = ref(false)
+
+  const memberById = computed(() => new Map(ctx.trip().travelers.map((t) => [t.id, t])))
+
+  function placeNameOf(e: Expense): string {
+    return e.place_id != null
+      ? (ctx.placeById().get(e.place_id)?.name ?? 'Sin sitio')
+      : 'Sin sitio'
+  }
+
+  function payerName(e: Expense): string {
+    if (e.paid_by_common) return 'Fondo común'
+    return e.paid_by_id != null
+      ? (memberById.value.get(e.paid_by_id)?.name ?? 'Sin asignar')
+      : 'Sin asignar'
+  }
+
+  const allCategoryNames = computed(() => {
+    const names = new Set(ctx.categoryNames())
+    for (const e of ctx.items()) names.add(e.category)
+    return [...names]
+  })
+
+  const categoryFilterOptions = computed(() => [
+    { value: 'all', label: 'Todas las categorías' },
+    ...allCategoryNames.value.map((name) => ({ value: name, label: name })),
+  ])
+  const excludeOptions = computed(() =>
+    allCategoryNames.value.map((name) => ({ value: name, label: name })),
+  )
+  const payerFilterOptions = computed(() => [
+    { value: 'all' as const, label: 'Todos los pagadores' },
+    ...ctx.trip().travelers.map((t) => ({ value: t.id, label: t.name })),
+    { value: 'common' as const, label: 'Fondo común' },
+    { value: 'none' as const, label: 'Sin asignar' },
+  ])
+  const placeFilterOptions = computed(() => {
+    const usedIds = new Set(
+      ctx.items().map((e) => e.place_id).filter((id): id is number => id != null),
+    )
+    return [
+      { value: 'all' as const, label: 'Todos los sitios' },
+      ...[...usedIds]
+        .map((id) => ({ value: id, label: ctx.placeById().get(id)?.name ?? `#${id}` }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'es')),
+      { value: 'none' as const, label: 'Sin sitio' },
+    ]
+  })
+
+  const activeFilterCount = computed(() => countActiveFilters(filters))
+
+  function clearFilters() {
+    Object.assign(filters, emptyFilters())
+  }
+
+  const filtered = computed(() => filterExpenses(ctx.items(), filters, placeNameOf))
+
+  return {
+    filters,
+    showFilters,
+    filtered,
+    activeFilterCount,
+    clearFilters,
+    memberById,
+    placeNameOf,
+    payerName,
+    allCategoryNames,
+    categoryFilterOptions,
+    excludeOptions,
+    payerFilterOptions,
+    placeFilterOptions,
+  }
+}

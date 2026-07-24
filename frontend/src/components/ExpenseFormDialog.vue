@@ -9,12 +9,14 @@ import AutoComplete from 'primevue/autocomplete'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useToast } from 'primevue/usetoast'
+import ExpenseSplitEditor, { type SplitState } from './ExpenseSplitEditor.vue'
 import { api } from '../api/client'
 import type { Expense, Place, RateRead, Trip } from '../api/types'
 import { CURRENCIES } from '../constants'
 import { useExpensesStore } from '../stores/expenses'
 import { useCategoriesStore } from '../stores/categories'
 import { usePlacesStore } from '../stores/places'
+import { validateSplit } from '../composables/useSplit'
 import { formatMoney, parseIsoDate, toIsoDate } from '../composables/useMoney'
 
 const props = defineProps<{ trip: Trip; expense?: Expense | null }>()
@@ -34,10 +36,12 @@ const description = ref('')
 const amount = ref<number | null>(null)
 const currency = ref('EUR')
 const exchangeRate = ref<number | null>(null)
-const paidById = ref<number | null>(null)
+// 'common' = pagado del fondo/monedero común (no entra en los saldos)
+const paidById = ref<number | 'common' | null>(null)
 const placeValue = ref<string | Place>('')
 const placeSuggestions = ref<Place[]>([])
 const notes = ref('')
+const split = ref<SplitState>({ split_mode: 'equal', shares: [] })
 const saving = ref(false)
 const fetchingRate = ref(false)
 const rateSource = ref<string | null>(null)
@@ -55,10 +59,22 @@ const categoryOptions = computed(() => {
   }
   return options
 })
-const memberOptions = computed(() => [
+type PayerValue = number | 'common' | null
+interface PayerOption {
+  value: PayerValue
+  label: string
+  color?: string | null
+}
+
+const memberOptions = computed<PayerOption[]>(() => [
   { value: null, label: 'Sin asignar' },
-  ...props.trip.travelers.map((t) => ({ value: t.id, label: t.name })),
+  ...props.trip.travelers.map((t) => ({ value: t.id, label: t.name, color: t.color })),
+  { value: 'common', label: 'Fondo común' },
 ])
+
+function payerOption(value: PayerValue): PayerOption | undefined {
+  return memberOptions.value.find((o) => o.value === value)
+}
 
 const isForeign = computed(() => currency.value !== props.trip.base_currency)
 const converted = computed(() => {
@@ -76,9 +92,13 @@ watch(visible, (open) => {
   amount.value = e?.amount ?? null
   currency.value = e?.currency ?? props.trip.base_currency
   exchangeRate.value = e && e.currency !== props.trip.base_currency ? e.exchange_rate : null
-  paidById.value = e?.paid_by_id ?? null
+  paidById.value = e?.paid_by_common ? 'common' : (e?.paid_by_id ?? null)
   placeValue.value = (e?.place_id != null && places.items.find((p) => p.id === e.place_id)) || ''
   notes.value = e?.notes ?? ''
+  split.value = {
+    split_mode: e?.split_mode ?? 'equal',
+    shares: e?.shares.map((s) => ({ ...s })) ?? [],
+  }
   rateSource.value = null
 })
 
@@ -122,6 +142,17 @@ async function save() {
     })
     return
   }
+  if (paidById.value !== 'common' && split.value.shares.length) {
+    const splitError = validateSplit(
+      split.value.split_mode,
+      amount.value,
+      split.value.shares.map((s) => s.value),
+    )
+    if (splitError) {
+      toast.add({ severity: 'warn', summary: 'Reparto incompleto', detail: splitError, life: 4000 })
+      return
+    }
+  }
   saving.value = true
   try {
     // sitio: uno existente, o crear uno nuevo que aparecerá en la pestaña Sitios
@@ -150,8 +181,12 @@ async function save() {
       amount: amount.value,
       currency: currency.value,
       exchange_rate: isForeign.value ? exchangeRate.value : 1,
-      paid_by_id: paidById.value,
+      paid_by_id: paidById.value === 'common' ? null : paidById.value,
+      paid_by_common: paidById.value === 'common',
       place_id: placeId,
+      // del fondo común no hay reparto que hacer: se resetea al implícito
+      split_mode: paidById.value === 'common' ? ('equal' as const) : split.value.split_mode,
+      shares: paidById.value === 'common' ? [] : split.value.shares,
       notes: notes.value || null,
     }
     if (props.expense) await store.update(props.expense.id, payload)
@@ -250,7 +285,44 @@ async function save() {
             :options="memberOptions"
             optionLabel="label"
             optionValue="value"
-          />
+          >
+            <template #option="{ option }">
+              <span
+                v-if="option.value === 'common'"
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700"
+              >
+                <i class="pi pi-wallet text-[10px]" />
+                {{ option.label }}
+              </span>
+              <span v-else-if="option.value === null" class="text-slate-400">
+                {{ option.label }}
+              </span>
+              <span v-else class="inline-flex items-center gap-1.5">
+                <span
+                  class="w-2 h-2 rounded-full shrink-0"
+                  :style="{ background: option.color ?? '#94a3b8' }"
+                />
+                {{ option.label }}
+              </span>
+            </template>
+            <template #value="{ value }">
+              <span
+                v-if="value === 'common'"
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700"
+              >
+                <i class="pi pi-wallet text-[10px]" />
+                Fondo común
+              </span>
+              <span v-else-if="value == null" class="text-slate-400">Sin asignar</span>
+              <span v-else class="inline-flex items-center gap-1.5">
+                <span
+                  class="w-2 h-2 rounded-full shrink-0"
+                  :style="{ background: payerOption(value)?.color ?? '#94a3b8' }"
+                />
+                {{ payerOption(value)?.label }}
+              </span>
+            </template>
+          </Select>
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Sitio</label>
@@ -264,6 +336,18 @@ async function save() {
           />
         </div>
       </div>
+      <ExpenseSplitEditor
+        v-if="paidById !== 'common'"
+        v-model="split"
+        :travelers="trip.travelers"
+        :amount="amount"
+        :currency="currency"
+      />
+      <p v-else class="text-xs text-slate-400 rounded-lg bg-slate-50 border border-slate-200 p-3">
+        <i class="pi pi-wallet mr-1" />Pagado del fondo común: cuenta en los totales pero no
+        genera deudas entre viajeros.
+      </p>
+
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Notas</label>
         <InputText v-model="notes" placeholder="Opcional" />

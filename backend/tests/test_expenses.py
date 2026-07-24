@@ -55,14 +55,14 @@ def test_expense_explicit_rate_and_recompute_on_patch(client, trip):
 
 
 def test_expense_unknown_rate_fails_offline(client, trip, monkeypatch):
-    import app.routers.expenses as expenses_router
+    import app.services.rates as rates_service
     from app.services.rates import RateUnavailableError
 
     async def boom(*args, **kwargs):
         raise RateUnavailableError("sin red")
 
     # sin cache y sin red -> 400 pidiendo la tasa manual
-    monkeypatch.setattr(expenses_router, "get_rate", boom)
+    monkeypatch.setattr(rates_service, "get_rate", boom)
     resp = client.post(
         f"/api/v1/trips/{trip['id']}/expenses",
         json={"day": "2026-04-04", "description": "Taxi", "amount": "100", "currency": "USD"},

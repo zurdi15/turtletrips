@@ -12,6 +12,8 @@ import esLocale from '@fullcalendar/core/locales/es'
 import type { CalendarOptions, EventDropArg } from '@fullcalendar/core'
 import ItineraryFormDialog from '../../components/ItineraryFormDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import TabSkeleton from '../../components/TabSkeleton.vue'
+import { API_BASE } from '../../api/client'
 import type { ItineraryItem, Trip } from '../../api/types'
 import { useItineraryStore } from '../../stores/itinerary'
 import { usePlacesStore } from '../../stores/places'
@@ -33,6 +35,8 @@ const viewOptions = [
 const showForm = ref(false)
 const editing = ref<ItineraryItem | null>(null)
 const presetDay = ref<string | null>(null)
+
+const icsUrl = computed(() => `${API_BASE}/trips/${props.trip.id}/calendar.ics`)
 
 function loadAll(tripId: number) {
   store.load(tripId)
@@ -243,6 +247,16 @@ function onEventDrop(info: EventDropArg) {
   <div>
     <div class="flex flex-wrap items-center gap-2 mb-4">
       <Button label="Nueva actividad" icon="pi pi-plus" @click="openNew()" />
+      <a :href="icsUrl" download>
+        <Button
+          label="Exportar"
+          icon="pi pi-calendar-plus"
+          severity="secondary"
+          outlined
+          v-tooltip.bottom="'Descargar calendario (.ics)'"
+          class="max-sm:[&_.p-button-label]:hidden"
+        />
+      </a>
       <span class="flex-1" />
       <SelectButton
         v-model="view"
@@ -253,8 +267,14 @@ function onEventDrop(info: EventDropArg) {
       />
     </div>
 
+    <TabSkeleton
+      v-if="store.loading && !store.items.length && !days.length"
+      variant="cards"
+      :rows="3"
+    />
+
     <EmptyState
-      v-if="!store.loading && !store.items.length && !days.length"
+      v-else-if="!store.loading && !store.items.length && !days.length"
       icon="pi pi-calendar"
       title="Sin itinerario"
       subtitle="Define las fechas del viaje o añade una actividad para empezar"

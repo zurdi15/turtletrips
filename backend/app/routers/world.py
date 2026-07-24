@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from ..db import get_db
 from ..models import WorldPlace
 from ..schemas.worldmap import WorldPlaceCreate, WorldPlaceRead, WorldPlaceUpdate
-from ..services.worldmap import sync_world_places
-from .common import apply_updates, get_or_404
+from ..services.worldmap import ensure_country_entry, sync_world_places
+from .common import get_or_404, save_new, save_updates
 
 router = APIRouter(tags=["world"])
 
@@ -24,12 +24,10 @@ def create_world_place(payload: WorldPlaceCreate, db: Session = Depends(get_db))
     data = payload.model_dump()
     if data.get("country_code"):
         data["country_code"] = data["country_code"].upper()
-    place = WorldPlace()
-    apply_updates(place, data)
-    db.add(place)
-    db.commit()
-    db.refresh(place)
-    return place
+    # una ciudad/sitio nuevo arrastra su país al diario (save_new hace commit)
+    if data.get("kind") != "country":
+        ensure_country_entry(db, data.get("country_code"))
+    return save_new(db, WorldPlace(), data)
 
 
 @router.patch("/world-places/{place_id}", response_model=WorldPlaceRead)
@@ -38,10 +36,9 @@ def update_world_place(place_id: int, payload: WorldPlaceUpdate, db: Session = D
     data = payload.model_dump(exclude_unset=True)
     if data.get("country_code"):
         data["country_code"] = data["country_code"].upper()
-    apply_updates(place, data)
-    db.commit()
-    db.refresh(place)
-    return place
+    if data.get("kind", place.kind) != "country":
+        ensure_country_entry(db, data.get("country_code"))
+    return save_updates(db, place, data)
 
 
 @router.delete("/world-places/{place_id}", status_code=204)

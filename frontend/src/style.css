@@ -5,6 +5,26 @@
 :root {
   --tt-page-bg: #f8fafc; /* slate-50 */
 }
+
+/* scrollbar siempre presente (desactivada si no hace falta): evita el salto
+   de anchura al navegar entre vistas con y sin scroll */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/* Bloqueo de scroll de PrimeVue con modales abiertos: como el gutter del
+   viewport nunca colapsa (html de arriba), su compensación de padding sobraría
+   (desplazaba el contenido) y el overflow:hidden en <body> lo convertía en
+   scroll container rompiendo la nav sticky. Se neutraliza el body y se bloquea
+   el scroll en el html, cuyo gutter queda reservado. */
+html:has(body.p-overflow-hidden) {
+  overflow-y: hidden;
+}
+body.p-overflow-hidden {
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
 html.tt-dark {
   --tt-page-bg: #0f172a; /* slate-900 */
   color-scheme: dark;
