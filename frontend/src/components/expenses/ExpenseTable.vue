@@ -150,23 +150,28 @@ watch(
     <Column header="Descripción" field="description">
       <template #body="{ data }">
         <span>{{ data.description }}</span>
-        <router-link
-          v-if="data.booking_id"
-          :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: data.booking_id } }"
-          class="ml-2 text-slate-400 hover:text-sky-600 no-underline"
-          v-tooltip.top="'Ver reserva'"
+        <!-- reserva y sitio como iconos agrupados (saltan de línea juntos) -->
+        <span
+          v-if="data.booking_id || (data.place_id && placeById.get(data.place_id))"
+          class="inline-flex items-center gap-2 ml-2 align-middle"
         >
-          <i class="pi pi-ticket text-xs" />
-        </router-link>
-        <router-link
-          v-if="data.place_id && placeById.get(data.place_id)"
-          :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: data.place_id } }"
-          class="mt-1.5 flex items-center gap-0.5 w-fit whitespace-nowrap text-xs text-emerald-600 hover:underline no-underline"
-          v-tooltip.top="'Ver sitio'"
-        >
-          <i class="pi pi-map-marker text-[10px] no-underline" />
-          <span>{{ placeById.get(data.place_id)!.name }}</span>
-        </router-link>
+          <router-link
+            v-if="data.booking_id"
+            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: data.booking_id } }"
+            class="text-violet-600 no-underline"
+            v-tooltip.top="'Ver reserva'"
+          >
+            <i class="pi pi-ticket text-xs" />
+          </router-link>
+          <router-link
+            v-if="data.place_id && placeById.get(data.place_id)"
+            :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: data.place_id } }"
+            class="text-emerald-600 no-underline"
+            v-tooltip.top="`Sitio: ${placeById.get(data.place_id)!.name}`"
+          >
+            <i class="pi pi-map-marker text-xs" />
+          </router-link>
+        </span>
         <p v-if="data.notes" class="mt-1.5 text-xs text-slate-400 truncate max-w-[16rem]">
           {{ data.notes }}
         </p>

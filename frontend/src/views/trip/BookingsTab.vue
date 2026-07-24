@@ -205,22 +205,41 @@ function copyCode(code: string) {
                     {{ formatDateTime(booking.start_dt) }}
                     <template v-if="booking.end_dt"> → {{ formatDateTime(booking.end_dt) }}</template>
                   </span>
-                  <!-- con sitio enlazado, el chip sustituye a la dirección en crudo
-                       (el sitio ya la guarda y el display_name repite el nombre) -->
-                  <router-link
-                    v-if="booking.place_id && placeById.get(booking.place_id)"
-                    :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: booking.place_id } }"
-                    class="flex items-center gap-1 text-emerald-600 hover:underline no-underline min-w-0"
-                    v-tooltip.top="booking.address ?? 'Ver en Sitios'"
+                  <span
+                    v-if="!booking.place_id && booking.address"
+                    class="flex items-center gap-1 min-w-0"
                   >
-                    <i class="pi pi-map-marker text-xs shrink-0" />
-                    <span class="truncate">{{ placeById.get(booking.place_id)!.name }}</span>
-                  </router-link>
-                  <span v-else-if="booking.address" class="flex items-center gap-1 min-w-0">
                     <i class="pi pi-map-marker text-xs shrink-0" />
                     <span class="truncate max-w-[24rem]" v-tooltip.top="booking.address">
                       {{ booking.address }}
                     </span>
+                  </span>
+                  <!-- sitio y gasto como iconos, agrupados para que en móvil
+                       salten de línea juntos (mismo patrón que las demás tabs) -->
+                  <span
+                    v-if="booking.place_id || expenseByBooking.has(booking.id)"
+                    class="flex items-center gap-2.5"
+                  >
+                    <router-link
+                      v-if="booking.place_id && placeById.get(booking.place_id)"
+                      :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: booking.place_id } }"
+                      class="text-emerald-600 no-underline"
+                      v-tooltip.top="`Sitio: ${placeById.get(booking.place_id)!.name}`"
+                    >
+                      <i class="pi pi-map-marker text-xs" />
+                    </router-link>
+                    <router-link
+                      v-if="expenseByBooking.has(booking.id)"
+                      :to="{
+                        name: 'trip-expenses',
+                        params: { id: trip.id },
+                        query: { expense: expenseByBooking.get(booking.id) },
+                      }"
+                      class="text-amber-600 no-underline"
+                      v-tooltip.top="'Ver gasto'"
+                    >
+                      <i class="pi pi-wallet text-xs" />
+                    </router-link>
                   </span>
                 </div>
                 <p v-if="booking.notes" class="text-sm text-slate-400 mt-1">{{ booking.notes }}</p>
@@ -251,34 +270,17 @@ function copyCode(code: string) {
                   :member="memberById.get(booking.paid_by_id)!"
                   class="mt-0.5"
                 />
-                <template v-if="booking.cost_amount != null">
-                  <router-link
-                    v-if="expenseByBooking.has(booking.id)"
-                    :to="{
-                      name: 'trip-expenses',
-                      params: { id: trip.id },
-                      query: { expense: expenseByBooking.get(booking.id) },
-                    }"
-                  >
-                    <Button
-                      label="Ver gasto"
-                      size="small"
-                      text
-                      severity="secondary"
-                      icon="pi pi-check-circle"
-                      v-tooltip.left="'La reserva ya tiene su gasto en la pestaña Gastos'"
-                    />
-                  </router-link>
-                  <Button
-                    v-else
-                    label="Crear gasto"
-                    size="small"
-                    text
-                    icon="pi pi-wallet"
-                    :loading="creatingExpenseId === booking.id"
-                    @click="createExpense(booking)"
-                  />
-                </template>
+                <!-- normalmente el gasto nace solo con la reserva; este botón es
+                     la vía de regeneración (gasto borrado o tasa no disponible) -->
+                <Button
+                  v-if="booking.cost_amount != null && !expenseByBooking.has(booking.id)"
+                  label="Crear gasto"
+                  size="small"
+                  text
+                  icon="pi pi-wallet"
+                  :loading="creatingExpenseId === booking.id"
+                  @click="createExpense(booking)"
+                />
               </div>
             </div>
             <div class="mt-3 pt-3 border-t border-slate-100">

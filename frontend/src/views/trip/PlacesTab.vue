@@ -186,7 +186,8 @@ function removePlace(place: Place) {
               <i :class="PLACE_CATEGORY_ICONS[place.category]" class="text-sm" />
             </span>
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
+              <!-- min-h igual al icono (h-9): el nombre queda centrado a su altura -->
+              <div class="flex items-center gap-2 flex-wrap min-h-9">
                 <span class="font-medium">{{ place.name }}</span>
                 <i
                   v-if="place.priority > 0"
@@ -201,27 +202,36 @@ function removePlace(place: Place) {
                   }"
                   class="text-xs"
                 />
-                <!-- enlaces compactos a reserva y gasto: solo icono + tooltip -->
-                <router-link
-                  v-for="b in bookingsByPlace.get(place.id) ?? []"
-                  :key="`bk-${b.id}`"
-                  :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
-                  class="text-violet-600 no-underline"
-                  v-tooltip.top="`Reserva: ${b.title}`"
-                  @click.stop
+                <!-- enlaces compactos a reserva y gasto: van agrupados para que
+                     en móvil salten de línea juntos, nunca separados -->
+                <span
+                  v-if="
+                    (bookingsByPlace.get(place.id) ?? []).length ||
+                    (expensesByPlace.get(place.id) ?? []).length
+                  "
+                  class="flex items-center gap-2.5"
                 >
-                  <i class="pi pi-ticket text-xs" />
-                </router-link>
-                <router-link
-                  v-for="e in expensesByPlace.get(place.id) ?? []"
-                  :key="`ex-${e.id}`"
-                  :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: e.id } }"
-                  class="text-amber-600 no-underline"
-                  v-tooltip.top="`Gasto: ${e.description} · ${formatMoney(e.amount_base, trip.base_currency)}`"
-                  @click.stop
-                >
-                  <i class="pi pi-wallet text-xs" />
-                </router-link>
+                  <router-link
+                    v-for="b in bookingsByPlace.get(place.id) ?? []"
+                    :key="`bk-${b.id}`"
+                    :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+                    class="text-violet-600 no-underline"
+                    v-tooltip.top="`Reserva: ${b.title}`"
+                    @click.stop
+                  >
+                    <i class="pi pi-ticket text-xs" />
+                  </router-link>
+                  <router-link
+                    v-for="e in expensesByPlace.get(place.id) ?? []"
+                    :key="`ex-${e.id}`"
+                    :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: e.id } }"
+                    class="text-amber-600 no-underline"
+                    v-tooltip.top="`Gasto: ${e.description} · ${formatMoney(e.amount_base, trip.base_currency)}`"
+                    @click.stop
+                  >
+                    <i class="pi pi-wallet text-xs" />
+                  </router-link>
+                </span>
               </div>
               <p v-if="place.notes" class="text-sm text-slate-500 mt-0.5 truncate">{{ place.notes }}</p>
               <a

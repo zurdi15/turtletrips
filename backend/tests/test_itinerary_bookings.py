@@ -1,3 +1,22 @@
+def _linked_expense(client, trip_id: int, booking_id: int) -> dict:
+    """El gasto que la reserva crea automáticamente al tener coste."""
+    return next(
+        e
+        for e in client.get(f"/api/v1/trips/{trip_id}/expenses").json()
+        if e["booking_id"] == booking_id
+    )
+
+
+def _block_rates(monkeypatch):
+    """Simula estar sin red: cualquier tasa no-trivial falla (determinista)."""
+    from app.services.rates import RateUnavailableError
+
+    async def _offline(*args, **kwargs):
+        raise RateUnavailableError("offline")
+
+    monkeypatch.setattr("app.services.rates.get_rate", _offline)
+
+
 def test_itinerary_crud_and_reorder(client, trip):
     trip_id = trip["id"]
     a = client.post(
@@ -54,7 +73,10 @@ def test_itinerary_link_validation(client, trip):
     assert resp.status_code == 400
 
 
-def test_booking_create_expense(client, trip):
+def test_booking_create_expense(client, trip, monkeypatch):
+    # sin red: la autocreación en moneda extranjera se salta (best-effort)
+    # y el gasto se genera a mano aportando la tasa
+    _block_rates(monkeypatch)
     booking = client.post(
         f"/api/v1/trips/{trip['id']}/bookings",
         json={
@@ -100,8 +122,8 @@ def test_booking_links_place(client, trip):
     assert other["place_id"] == places[0]["id"]
     assert len(client.get(f"/api/v1/trips/{trip['id']}/places").json()) == 1
 
-    # el gasto generado hereda el sitio de la reserva
-    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    # el gasto autogenerado hereda el sitio de la reserva
+    expense = _linked_expense(client, trip["id"], booking["id"])
     assert expense["place_id"] == places[0]["id"]
 
     # transporte sin coordenadas: ni sitio nuevo ni enlace
@@ -139,9 +161,8 @@ def test_booking_create_expense_only_once(client, trip):
         f"/api/v1/trips/{trip['id']}/bookings",
         json={"type": "hotel", "title": "Hotel", "cost_amount": "100", "cost_currency": "EUR"},
     ).json()
-    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
-
-    # segundo intento: la reserva ya tiene gasto enlazado
+    # el gasto nace solo con la reserva; el endpoint manual rechaza duplicar
+    expense = _linked_expense(client, trip["id"], booking["id"])
     resp = client.post(f"/api/v1/bookings/{booking['id']}/create-expense")
     assert resp.status_code == 400
     assert "ya tiene un gasto" in resp.json()["detail"]
@@ -169,7 +190,7 @@ def test_booking_payer_inherited_by_expense(client, trip):
     assert booking["paid_by_id"] == traveler["id"]
     assert booking["paid_by_common"] is False
 
-    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    expense = _linked_expense(client, trip["id"], booking["id"])
     assert expense["paid_by_id"] == traveler["id"]
     assert expense["paid_by_common"] is False
 
@@ -194,7 +215,7 @@ def test_booking_expense_two_way_sync(client, trip):
             "paid_by_id": ana["id"],
         },
     ).json()
-    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    expense = _linked_expense(client, trip["id"], booking["id"])
 
     # reserva → gasto: título, fecha, importe y pagador se espejan
     client.patch(
@@ -237,7 +258,7 @@ def test_expense_day_moves_booking_dates(client, trip):
             "end_dt": "2026-04-03T11:00:00",
         },
     ).json()
-    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    expense = _linked_expense(client, trip["id"], booking["id"])
     assert expense["day"] == "2026-04-01"
 
     # mover el día del gasto desplaza entrada Y salida (misma duración y horas)
@@ -265,6 +286,24 @@ def test_booking_create_expense_requires_cost(client, trip):
     ).json()
     resp = client.post(f"/api/v1/bookings/{booking['id']}/create-expense")
     assert resp.status_code == 400
+
+
+def test_booking_auto_expense_when_cost_added(client, trip):
+    # sin coste no hay gasto...
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "hotel", "title": "Hotel"},
+    ).json()
+    assert client.get(f"/api/v1/trips/{trip['id']}/expenses").json() == []
+
+    # ...y al estrenar coste el gasto aparece solo
+    client.patch(
+        f"/api/v1/bookings/{booking['id']}",
+        json={"cost_amount": "50", "cost_currency": "EUR"},
+    )
+    expense = _linked_expense(client, trip["id"], booking["id"])
+    assert expense["amount"] == 50.0
+    assert expense["description"] == "Hotel"
 
 
 def test_places_filters(client, trip):

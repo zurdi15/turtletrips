@@ -349,7 +349,9 @@ async function save() {
         <div class="flex flex-col gap-1 col-span-2">
           <label class="text-sm font-medium">Pagado por</label>
           <PayerSelect v-model="paidById" :travelers="trip.travelers" />
-          <p class="text-xs text-slate-400">El gasto generado desde la reserva hereda el pagador</p>
+          <p class="text-xs text-slate-400">
+            Con coste, la reserva crea su gasto automáticamente y hereda este pagador
+          </p>
         </div>
       </div>
       <div class="flex flex-col gap-1">

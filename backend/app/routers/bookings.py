@@ -53,6 +53,45 @@ def _enforce_common_exclusivity(data: dict) -> None:
         data["paid_by_common"] = False
 
 
+async def _new_booking_expense(
+    db: Session, booking: Booking, provided_rate: Decimal | None
+) -> Expense:
+    """Construye el gasto espejo de la reserva (no lo añade ni commitea)."""
+    trip = db.get(Trip, booking.trip_id)
+    day = booking.start_dt.date() if booking.start_dt else date.today()
+    currency = booking.cost_currency.upper()
+    rate = await resolve_rate(db, trip.base_currency, currency, day, provided_rate)
+    amount = Decimal(str(booking.cost_amount))
+    return Expense(
+        trip_id=booking.trip_id,
+        booking_id=booking.id,
+        place_id=booking.place_id,
+        paid_by_id=booking.paid_by_id,
+        paid_by_common=booking.paid_by_common,
+        day=day,
+        category=BOOKING_EXPENSE_CATEGORY.get(booking.type, "Otros"),
+        description=booking.title,
+        amount=amount,
+        currency=currency,
+        exchange_rate=rate,
+        amount_base=to_base(amount, rate),
+    )
+
+
+async def _auto_create_expense(db: Session, booking: Booking) -> None:
+    """Una reserva con coste tiene siempre su gasto: se crea solo, sin paso
+    manual. Best-effort: sin tasa de cambio disponible la reserva se guarda
+    igual y el gasto puede generarse a mano después. No commitea."""
+    if booking.cost_amount is None or not booking.cost_currency:
+        return
+    if db.scalar(select(Expense.id).where(Expense.booking_id == booking.id)) is not None:
+        return
+    try:
+        db.add(await _new_booking_expense(db, booking, None))
+    except HTTPException:
+        pass
+
+
 async def _sync_linked_expense(db: Session, booking: Booking) -> None:
     """La reserva es el registro maestro de su gasto generado: al editarla,
     el gasto se mantiene espejo (título, fecha, sitio, pagador e importe).
@@ -87,7 +126,9 @@ async def _sync_linked_expense(db: Session, booking: Booking) -> None:
 
 
 @router.post("/trips/{trip_id}/bookings", response_model=BookingRead, status_code=201)
-def create_booking(trip_id: int, payload: BookingCreate, db: Session = Depends(get_db)):
+async def create_booking(
+    trip_id: int, payload: BookingCreate, db: Session = Depends(get_db)
+):
     get_or_404(db, Trip, trip_id)
     booking = Booking(trip_id=trip_id)
     data = payload.model_dump()
@@ -95,6 +136,8 @@ def create_booking(trip_id: int, payload: BookingCreate, db: Session = Depends(g
     apply_updates(booking, data)
     db.add(booking)
     ensure_booking_place(db, booking)
+    db.flush()  # id de la reserva para el gasto enlazado
+    await _auto_create_expense(db, booking)
     db.commit()
     db.refresh(booking)
     return booking
@@ -113,6 +156,8 @@ async def update_booking(
         booking.place_id = None
     ensure_booking_place(db, booking)
     await _sync_linked_expense(db, booking)
+    # si la reserva estrena coste y aún no tiene gasto, se crea ahora
+    await _auto_create_expense(db, booking)
     db.commit()
     db.refresh(booking)
     return booking
@@ -138,27 +183,8 @@ async def create_expense_from_booking(
     # permite volver a generarlo
     if db.scalar(select(Expense.id).where(Expense.booking_id == booking.id)) is not None:
         raise HTTPException(status_code=400, detail="La reserva ya tiene un gasto enlazado")
-    trip = db.get(Trip, booking.trip_id)
-    day = booking.start_dt.date() if booking.start_dt else date.today()
     provided = payload.exchange_rate if payload else None
-    currency = booking.cost_currency.upper()
-    rate = await resolve_rate(db, trip.base_currency, currency, day, provided)
-
-    amount = Decimal(str(booking.cost_amount))
-    expense = Expense(
-        trip_id=booking.trip_id,
-        booking_id=booking.id,
-        place_id=booking.place_id,
-        paid_by_id=booking.paid_by_id,
-        paid_by_common=booking.paid_by_common,
-        day=day,
-        category=BOOKING_EXPENSE_CATEGORY.get(booking.type, "Otros"),
-        description=booking.title,
-        amount=amount,
-        currency=currency,
-        exchange_rate=rate,
-        amount_base=to_base(amount, rate),
-    )
+    expense = await _new_booking_expense(db, booking, provided)
     db.add(expense)
     db.commit()
     db.refresh(expense)
