@@ -237,7 +237,7 @@ watch(
 
 /* gasto enlazado desde otra pestaña: se enciende y se apaga suave al limpiar */
 :deep(.p-datatable-tbody > tr > td) {
-  transition: background-color 0.6s ease;
+  transition: background-color var(--tt-dur-600) ease;
 }
 :deep(.p-datatable-tbody > tr.tt-row-flash > td) {
   background: color-mix(in srgb, var(--p-primary-color) 14%, transparent) !important;
@@ -252,46 +252,42 @@ watch(
 }
 
 /* las filas entran en cascada rápida al montarse (o al cambiar de página);
-   a partir de la 12ª entran juntas para no alargar la espera */
+   a partir de la 12ª entran juntas para no alargar la espera.
+   reduced-motion lo cubre el guard global de style.css */
 :deep(.p-datatable-tbody > tr) {
-  animation: tt-rise-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tt-rise-in var(--tt-dur-250) var(--tt-ease-spring) both;
 }
 :deep(.p-datatable-tbody > tr:nth-child(2)) {
-  animation-delay: 25ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 1);
 }
 :deep(.p-datatable-tbody > tr:nth-child(3)) {
-  animation-delay: 50ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 2);
 }
 :deep(.p-datatable-tbody > tr:nth-child(4)) {
-  animation-delay: 75ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 3);
 }
 :deep(.p-datatable-tbody > tr:nth-child(5)) {
-  animation-delay: 100ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 4);
 }
 :deep(.p-datatable-tbody > tr:nth-child(6)) {
-  animation-delay: 125ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 5);
 }
 :deep(.p-datatable-tbody > tr:nth-child(7)) {
-  animation-delay: 150ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 6);
 }
 :deep(.p-datatable-tbody > tr:nth-child(8)) {
-  animation-delay: 175ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 7);
 }
 :deep(.p-datatable-tbody > tr:nth-child(9)) {
-  animation-delay: 200ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 8);
 }
 :deep(.p-datatable-tbody > tr:nth-child(10)) {
-  animation-delay: 225ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 9);
 }
 :deep(.p-datatable-tbody > tr:nth-child(11)) {
-  animation-delay: 250ms;
+  animation-delay: calc(var(--tt-stagger-step-dense) * 10);
 }
 :deep(.p-datatable-tbody > tr:nth-child(n + 12)) {
-  animation-delay: 275ms;
-}
-@media (prefers-reduced-motion: reduce) {
-  :deep(.p-datatable-tbody > tr) {
-    animation: none;
-  }
+  animation-delay: calc(var(--tt-stagger-step-dense) * 11);
 }
 </style>

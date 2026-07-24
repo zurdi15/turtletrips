@@ -237,6 +237,7 @@ function deleteTrip() {
 </template>
 
 <style scoped>
+/* reduced-motion lo cubre el guard global de style.css */
 .tt-tab {
   position: relative;
 }
@@ -247,17 +248,12 @@ function deleteTrip() {
   right: 0.6rem;
   bottom: 0;
   height: 2px;
-  border-radius: 9999px;
+  border-radius: theme('borderRadius.full');
   background: var(--p-primary-color);
   transform: scaleX(0);
-  transition: transform 0.18s ease;
+  transition: transform var(--tt-dur-180) ease;
 }
 .tt-tab-active::after {
   transform: scaleX(1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .tt-tab::after {
-    transition: none;
-  }
 }
 </style>

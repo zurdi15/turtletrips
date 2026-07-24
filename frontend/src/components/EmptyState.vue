@@ -14,17 +14,11 @@ defineProps<{ icon: string; title: string; subtitle?: string }>()
 </template>
 
 <style scoped>
-/* keyframes globales de style.css */
+/* keyframes globales de style.css; reduced-motion lo cubre el guard global */
 .tt-empty {
-  animation: tt-fade-in 0.3s ease both;
+  animation: tt-fade-in var(--tt-dur-300) ease both;
 }
 .tt-empty-icon {
-  animation: tt-pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tt-empty,
-  .tt-empty-icon {
-    animation: none;
-  }
+  animation: tt-pop-in var(--tt-dur-450) var(--tt-ease-spring) 80ms both;
 }
 </style>

@@ -2,8 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Tokens de diseño (--tt-*): única fuente de verdad de color/movimiento/forma.
+   Los primitivos son la paleta stock de Tailwind vía theme(); el modo oscuro
+   solo REDEFINE estas variables bajo html.tt-dark — nunca remapea utilidades.
+   Los tokens son colores completos (algunos valores dark son translúcidos),
+   por lo que los modificadores de opacidad de Tailwind (bg-surface/50) no
+   aplican; los casos translúcidos reales tienen token propio.
+--------------------------------------------------------------------------- */
 :root {
-  --tt-page-bg: #f8fafc; /* slate-50 */
+  /* superficies */
+  --tt-page-bg: theme('colors.slate.50');
+  --tt-surface: theme('colors.white');
+  --tt-surface-soft: theme('colors.slate.50');
+  --tt-surface-muted: theme('colors.slate.100');
+  --tt-surface-strong: theme('colors.slate.200');
+  --tt-surface-hover: theme('colors.slate.50');
+  /* bordes / anillos */
+  --tt-line: theme('colors.slate.200');
+  --tt-line-subtle: theme('colors.slate.100');
+  --tt-line-faint: theme('colors.slate.50');
+  --tt-line-strong: theme('colors.slate.300');
+  /* texto (rampa slate 900→300) */
+  --tt-ink-strong: theme('colors.slate.900');
+  --tt-ink-heading: theme('colors.slate.800');
+  --tt-ink: theme('colors.slate.700');
+  --tt-ink-secondary: theme('colors.slate.600');
+  --tt-ink-muted: theme('colors.slate.500');
+  --tt-ink-faint: theme('colors.slate.400'); /* invariante entre modos */
+  --tt-ink-disabled: theme('colors.slate.300');
+  /* acentos por rol de dominio */
+  --tt-brand: theme('colors.emerald.600');
+  --tt-brand-strong: theme('colors.emerald.700');
+  --tt-brand-tint: var(--p-primary-50);
+  --tt-brand-tint-strong: theme('colors.emerald.100');
+  --tt-info: theme('colors.sky.600'); /* transporte, links */
+  --tt-info-strong: theme('colors.sky.700');
+  --tt-info-tint: theme('colors.sky.50');
+  --tt-info-tint-strong: theme('colors.sky.100');
+  --tt-info-edge: theme('colors.sky.200');
+  --tt-lodging: theme('colors.violet.600');
+  --tt-lodging-strong: theme('colors.violet.700');
+  --tt-lodging-tint: theme('colors.violet.50');
+  --tt-lodging-tint-strong: theme('colors.violet.100');
+  --tt-warn: theme('colors.amber.600'); /* fondo común, avisos */
+  --tt-warn-strong: theme('colors.amber.700');
+  --tt-warn-tint: theme('colors.amber.50');
+  --tt-warn-tint-strong: theme('colors.amber.100');
+  --tt-nature-strong: theme('colors.teal.700');
+  --tt-nature-tint: theme('colors.teal.50');
+  --tt-nature-tint-hover: rgb(240 253 250 / 0.5); /* teal-50/50 */
+  /* placeholder degradado de tarjetas sin imagen */
+  --tt-media-ph-start: theme('colors.sky.100');
+  --tt-media-ph-end: theme('colors.indigo.100');
+  /* calendario / gráficas / selector de rango (asimétricos por modo) */
+  --tt-cal-today: var(--p-primary-50);
+  --tt-cal-page-bg: theme('colors.white');
+  --tt-cal-ink: var(--p-text-color);
+  --tt-cal-ink-strong: var(--p-text-color);
+  --tt-chart-grid: rgb(226 232 240 / 0.8);
+  --tt-range-inrange-bg: var(--p-primary-100);
+  --tt-range-inrange-text: var(--p-primary-800);
+  --tt-range-preview-bg: color-mix(in srgb, var(--p-primary-500) 55%, transparent);
+  --tt-range-preview-text: theme('colors.white');
+  /* movimiento */
+  --tt-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --tt-dur-50: 50ms; /* feedback al pulsar */
+  --tt-dur-150: 150ms; /* colores en hover, hover-actions */
+  --tt-dur-180: 180ms; /* lift, salida de listas, subrayado de tabs */
+  --tt-dur-200: 200ms; /* fade de entrada */
+  --tt-dur-250: 250ms; /* rise/list de entrada, filas de tabla */
+  --tt-dur-300: 300ms; /* anim-rise, recolocación de listas */
+  --tt-dur-350: 350ms; /* pop-in, stagger */
+  --tt-dur-450: 450ms; /* icono de estados vacíos */
+  --tt-dur-600: 600ms; /* barras de progreso, flash de fila */
+  --tt-stagger-step: 40ms; /* cascada estándar (tope 8 pasos) */
+  --tt-stagger-step-dense: 25ms; /* cascada densa de filas de tabla (tope 11) */
+  /* forma */
+  --tt-radius-card: theme('borderRadius.xl');
+  --tt-shadow-lift: 0 10px 24px -14px rgb(15 23 42 / 0.35);
+  --tt-shadow-marker: 0 1px 4px rgb(0 0 0 / 0.45);
+  --tt-shadow-flag: drop-shadow(0 1px 2px rgb(0 0 0 / 0.4));
 }
 
 /* scrollbar siempre presente (desactivada si no hace falta): evita el salto
@@ -25,9 +104,58 @@ body.p-overflow-hidden {
   overflow: visible !important;
   padding-right: 0 !important;
 }
+/* Tema oscuro = redefinir tokens. Los valores translúcidos dejan traslucir la
+   superficie y funcionan sobre cualquier fondo (tarjeta o página). */
 html.tt-dark {
-  --tt-page-bg: #0f172a; /* slate-900 */
   color-scheme: dark;
+  --tt-page-bg: theme('colors.slate.900');
+  --tt-surface: theme('colors.slate.800');
+  --tt-surface-soft: #162032; /* entre slate-800 y 900, fuera de paleta a propósito */
+  --tt-surface-muted: theme('colors.slate.700');
+  --tt-surface-strong: theme('colors.slate.700');
+  --tt-surface-hover: rgb(51 65 85 / 0.4); /* slate-700/40 */
+  --tt-line: theme('colors.slate.700');
+  --tt-line-subtle: rgb(51 65 85 / 0.6);
+  --tt-line-faint: rgb(51 65 85 / 0.4);
+  --tt-line-strong: theme('colors.slate.600');
+  --tt-ink-strong: theme('colors.slate.50');
+  --tt-ink-heading: theme('colors.slate.100');
+  --tt-ink: theme('colors.slate.200');
+  --tt-ink-secondary: theme('colors.slate.300');
+  --tt-ink-muted: theme('colors.slate.400');
+  /* --tt-ink-faint no cambia */
+  --tt-ink-disabled: theme('colors.slate.600');
+  --tt-brand: theme('colors.emerald.400');
+  --tt-brand-strong: theme('colors.emerald.300');
+  --tt-brand-tint: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
+  --tt-brand-tint-strong: rgb(6 78 59 / 0.6); /* emerald-900/60 */
+  --tt-info: theme('colors.sky.400');
+  --tt-info-strong: theme('colors.sky.300');
+  --tt-info-tint: rgb(12 74 110 / 0.45); /* sky-900/45 */
+  --tt-info-tint-strong: rgb(12 74 110 / 0.45);
+  --tt-info-edge: rgb(12 74 110 / 0.8);
+  --tt-lodging: theme('colors.violet.400');
+  --tt-lodging-strong: theme('colors.violet.300');
+  --tt-lodging-tint: rgb(76 29 149 / 0.35); /* violet-900/35 */
+  --tt-lodging-tint-strong: rgb(76 29 149 / 0.35);
+  --tt-warn: theme('colors.amber.400');
+  --tt-warn-strong: theme('colors.amber.300');
+  --tt-warn-tint: rgb(120 53 15 / 0.35); /* amber-900/35 */
+  --tt-warn-tint-strong: rgb(120 53 15 / 0.35);
+  --tt-nature-strong: theme('colors.teal.300');
+  --tt-nature-tint: rgb(19 78 74 / 0.5); /* teal-900/50 */
+  --tt-nature-tint-hover: rgb(19 78 74 / 0.3);
+  --tt-media-ph-start: theme('colors.sky.900');
+  --tt-media-ph-end: theme('colors.indigo.900');
+  --tt-cal-today: rgb(14 165 233 / 0.12); /* sky-500/12 */
+  --tt-cal-page-bg: transparent;
+  --tt-cal-ink: var(--tt-ink-secondary);
+  --tt-cal-ink-strong: var(--tt-ink);
+  --tt-chart-grid: rgb(51 65 85 / 0.6);
+  --tt-range-inrange-bg: color-mix(in srgb, var(--p-primary-900) 55%, transparent);
+  --tt-range-inrange-text: var(--p-primary-200);
+  --tt-range-preview-bg: color-mix(in srgb, var(--p-primary-400) 50%, transparent);
+  --tt-range-preview-text: var(--p-primary-900);
 }
 
 body {
@@ -46,10 +174,7 @@ body {
 
 /* botones superpuestos al banner: fondo sólido para que se vean sobre la imagen */
 .tt-banner-btn.p-button {
-  background: #ffffff;
-}
-.tt-dark .tt-banner-btn.p-button {
-  background: #1e293b;
+  background: var(--tt-surface);
 }
 
 .leaflet-container {
@@ -78,8 +203,8 @@ body {
    página y el grupo se difumina; en oscuro sí contrasta. Se sube a slate-200
    solo en claro — el chip de la opción activa sigue siendo blanco. */
 html:not(.tt-dark) .p-selectbutton .p-togglebutton {
-  background: #e2e8f0;
-  border-color: #e2e8f0;
+  background: theme('colors.slate.200');
+  border-color: theme('colors.slate.200');
 }
 
 /* DatePicker: altura estable del calendario. Los meses de 5 y 6 semanas miden
@@ -183,25 +308,25 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 
 /* aparición de contenido al montarse (vistas, paneles al cambiar de pestaña) */
 .tt-anim-rise {
-  animation: tt-rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tt-rise-in var(--tt-dur-300) var(--tt-ease-spring) both;
 }
 
 /* elementos que "saltan" al aparecer: pills, banners de éxito */
 .tt-pop-in {
-  animation: tt-pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tt-pop-in var(--tt-dur-350) var(--tt-ease-spring) both;
 }
 
 /* transiciones Vue nombradas (solo entrada) */
 .tt-fade-enter-active {
-  transition: opacity 0.2s ease;
+  transition: opacity var(--tt-dur-200) ease;
 }
 .tt-fade-enter-from {
   opacity: 0;
 }
 .tt-rise-enter-active {
   transition:
-    opacity 0.25s ease,
-    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--tt-dur-250) ease,
+    transform var(--tt-dur-250) var(--tt-ease-spring);
 }
 .tt-rise-enter-from {
   opacity: 0;
@@ -212,12 +337,12 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
    entrada, salida y recolocación suave del resto. El contenedor necesita
    position: relative para que la salida (absolute) no descoloque nada. */
 .tt-list-move {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--tt-dur-300) var(--tt-ease-spring);
 }
 .tt-list-enter-active {
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    opacity var(--tt-dur-250) ease,
+    transform var(--tt-dur-250) ease;
 }
 .tt-list-enter-from {
   opacity: 0;
@@ -227,8 +352,8 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   position: absolute;
   width: 100%;
   transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+    opacity var(--tt-dur-180) ease,
+    transform var(--tt-dur-180) ease;
 }
 .tt-list-leave-to {
   opacity: 0;
@@ -238,66 +363,72 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 /* cascada al montarse una lista de tarjetas: cada hija entra con un pequeño
    retardo incremental (limitado: a partir de la 9ª entran juntas) */
 .tt-stagger > * {
-  animation: tt-rise-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tt-rise-in var(--tt-dur-350) var(--tt-ease-spring) both;
 }
 .tt-stagger > *:nth-child(2) {
-  animation-delay: 40ms;
+  animation-delay: calc(var(--tt-stagger-step) * 1);
 }
 .tt-stagger > *:nth-child(3) {
-  animation-delay: 80ms;
+  animation-delay: calc(var(--tt-stagger-step) * 2);
 }
 .tt-stagger > *:nth-child(4) {
-  animation-delay: 120ms;
+  animation-delay: calc(var(--tt-stagger-step) * 3);
 }
 .tt-stagger > *:nth-child(5) {
-  animation-delay: 160ms;
+  animation-delay: calc(var(--tt-stagger-step) * 4);
 }
 .tt-stagger > *:nth-child(6) {
-  animation-delay: 200ms;
+  animation-delay: calc(var(--tt-stagger-step) * 5);
 }
 .tt-stagger > *:nth-child(7) {
-  animation-delay: 240ms;
+  animation-delay: calc(var(--tt-stagger-step) * 6);
 }
 .tt-stagger > *:nth-child(8) {
-  animation-delay: 280ms;
+  animation-delay: calc(var(--tt-stagger-step) * 7);
 }
 .tt-stagger > *:nth-child(n + 9) {
-  animation-delay: 320ms;
+  animation-delay: calc(var(--tt-stagger-step) * 8);
 }
 
 /* tarjetas clicables: se elevan un poco al pasar el ratón (incluye los colores
    para no pisar el transition-colors de Tailwind en el mismo elemento) */
 .tt-lift {
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.15s ease,
-    background-color 0.15s ease,
-    color 0.15s ease;
+    transform var(--tt-dur-180) ease,
+    box-shadow var(--tt-dur-180) ease,
+    border-color var(--tt-dur-150) ease,
+    background-color var(--tt-dur-150) ease,
+    color var(--tt-dur-150) ease;
 }
 @media (hover: hover) {
   .tt-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px -14px rgb(15 23 42 / 0.35);
+    box-shadow: var(--tt-shadow-lift);
   }
 }
 
 /* micro-feedback al pulsar cualquier botón */
 .p-button:enabled:active {
   transform: scale(0.97);
-  transition: transform 0.05s ease;
+  transition: transform var(--tt-dur-50) ease;
 }
 
 /* barras de progreso: el relleno crece suavemente */
 .tt-bar {
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width var(--tt-dur-600) var(--tt-ease-spring);
 }
 
-/* accesibilidad: sin movimiento si el sistema lo pide */
+/* accesibilidad: sin movimiento si el sistema lo pide. Guard ÚNICO de la app:
+   cubre también las animaciones declaradas en estilos scoped de componentes
+   (EmptyState, filas de ExpenseTable, subrayado de tabs) — lo global puede
+   apuntar a sus clases aunque la animación viva en el componente. */
 @media (prefers-reduced-motion: reduce) {
   .tt-anim-rise,
   .tt-pop-in,
-  .tt-stagger > * {
+  .tt-stagger > *,
+  .tt-empty,
+  .tt-empty-icon,
+  .p-datatable-tbody > tr {
     animation: none !important;
   }
   .tt-fade-enter-active,
@@ -306,7 +437,8 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   .tt-list-enter-active,
   .tt-list-leave-active,
   .tt-lift,
-  .tt-bar {
+  .tt-bar,
+  .tt-tab::after {
     transition: none !important;
   }
   .tt-lift:hover,
@@ -318,7 +450,7 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 /* Acciones que en escritorio aparecen al hacer hover; en táctil siempre visibles */
 .hover-actions {
   opacity: 1;
-  transition: opacity 0.15s;
+  transition: opacity var(--tt-dur-150);
 }
 @media (hover: hover) {
   .hover-actions {
@@ -390,24 +522,19 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   --tw-gradient-to: #312e81 var(--tw-gradient-to-position);
 }
 
-/* FullCalendar en oscuro */
-.tt-dark .fc {
-  --fc-border-color: #334155;
-  --fc-today-bg-color: rgb(14 165 233 / 0.12);
-  --fc-page-bg-color: transparent;
-  color: #cbd5e1;
-}
-.tt-dark .fc .fc-col-header-cell-cushion,
-.tt-dark .fc .fc-daygrid-day-number,
-.tt-dark .fc .fc-toolbar-title {
-  color: #e2e8f0;
-}
-
-/* FullCalendar: alinear tipografía con el resto de la app */
+/* FullCalendar: skin único basado en tokens (el modo oscuro entra solo por
+   la redefinición de variables) y tipografía alineada con el resto de la app */
 .fc {
-  --fc-border-color: var(--p-surface-200);
-  --fc-today-bg-color: var(--p-primary-50);
-  font-size: 0.875rem;
+  --fc-border-color: var(--tt-line);
+  --fc-today-bg-color: var(--tt-cal-today);
+  --fc-page-bg-color: var(--tt-cal-page-bg);
+  color: var(--tt-cal-ink);
+  font-size: 0.875rem; /* = text-sm */
+}
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number,
+.fc .fc-toolbar-title {
+  color: var(--tt-cal-ink-strong);
 }
 .fc .fc-button {
   background: var(--p-primary-color);
@@ -432,7 +559,7 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   min-width: 2.5rem;
   height: 2.5rem;
   margin: 0;
-  border-radius: 9999px;
+  border-radius: theme('borderRadius.full');
 }
 .tt-range-panel .tt-day-inner {
   display: flex;
@@ -448,23 +575,16 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 }
 .tt-range-panel .p-datepicker-day:has(.tt-range-start),
 .tt-range-panel .p-datepicker-day:has(.tt-range-end) {
-  background: #10b981;
-  color: #fff;
+  /* los extremos van en primary-500 pleno en ambos modos */
+  background: var(--p-primary-500);
+  color: theme('colors.white');
 }
 .tt-range-panel .p-datepicker-day:has(.tt-range-preview) {
-  background: rgb(16 185 129 / 0.55);
-  color: #fff;
+  background: var(--tt-range-preview-bg);
+  color: var(--tt-range-preview-text);
 }
 .tt-range-panel .p-datepicker-day:has(.tt-in-range) {
-  background: #d1fae5;
-  color: #065f46;
+  background: var(--tt-range-inrange-bg);
+  color: var(--tt-range-inrange-text);
   border-radius: 0;
-}
-.tt-dark .tt-range-panel .p-datepicker-day:has(.tt-in-range) {
-  background: rgb(6 78 59 / 0.55);
-  color: #a7f3d0;
-}
-.tt-dark .tt-range-panel .p-datepicker-day:has(.tt-range-preview) {
-  background: rgb(52 211 153 / 0.5);
-  color: #064e3b;
 }
