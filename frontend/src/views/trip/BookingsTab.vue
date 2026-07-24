@@ -214,33 +214,32 @@ function copyCode(code: string) {
                       {{ booking.address }}
                     </span>
                   </span>
-                  <!-- sitio y gasto como iconos, agrupados para que en móvil
-                       salten de línea juntos (mismo patrón que las demás tabs) -->
-                  <span
-                    v-if="booking.place_id || expenseByBooking.has(booking.id)"
-                    class="flex items-center gap-2.5"
+                </div>
+                <!-- sitio y gasto como iconos, siempre en su propia fila -->
+                <div
+                  v-if="booking.place_id || expenseByBooking.has(booking.id)"
+                  class="mt-1.5 flex items-center gap-2.5 text-sm"
+                >
+                  <router-link
+                    v-if="booking.place_id && placeById.get(booking.place_id)"
+                    :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: booking.place_id } }"
+                    class="text-emerald-600 no-underline"
+                    v-tooltip.top="`Sitio: ${placeById.get(booking.place_id)!.name}`"
                   >
-                    <router-link
-                      v-if="booking.place_id && placeById.get(booking.place_id)"
-                      :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: booking.place_id } }"
-                      class="text-emerald-600 no-underline"
-                      v-tooltip.top="`Sitio: ${placeById.get(booking.place_id)!.name}`"
-                    >
-                      <i class="pi pi-map-marker text-xs" />
-                    </router-link>
-                    <router-link
-                      v-if="expenseByBooking.has(booking.id)"
-                      :to="{
-                        name: 'trip-expenses',
-                        params: { id: trip.id },
-                        query: { expense: expenseByBooking.get(booking.id) },
-                      }"
-                      class="text-amber-600 no-underline"
-                      v-tooltip.top="'Ver gasto'"
-                    >
-                      <i class="pi pi-wallet text-xs" />
-                    </router-link>
-                  </span>
+                    <i class="pi pi-map-marker text-xs" />
+                  </router-link>
+                  <router-link
+                    v-if="expenseByBooking.has(booking.id)"
+                    :to="{
+                      name: 'trip-expenses',
+                      params: { id: trip.id },
+                      query: { expense: expenseByBooking.get(booking.id) },
+                    }"
+                    class="text-amber-600 no-underline"
+                    v-tooltip.top="'Ver gasto'"
+                  >
+                    <i class="pi pi-wallet text-xs" />
+                  </router-link>
                 </div>
                 <p v-if="booking.notes" class="text-sm text-slate-400 mt-1">{{ booking.notes }}</p>
               </div>

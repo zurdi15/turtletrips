@@ -64,15 +64,28 @@ const expenseByBooking = computed(() => {
 })
 
 
+// salida el día de inicio y, si llega en OTRO día (vuelo nocturno), también
+// una entrada de "Llegada" en el día de destino
+interface TransportEntry {
+  b: Booking
+  arrival: boolean
+}
+function transportDt(e: TransportEntry): string {
+  return e.arrival ? e.b.end_dt! : e.b.start_dt!
+}
+
 const transportsByDay = computed(() => {
-  const map = new Map<string, Booking[]>()
+  const map = new Map<string, TransportEntry[]>()
+  const add = (day: string, e: TransportEntry) => map.set(day, [...(map.get(day) ?? []), e])
   for (const b of bookings.items) {
     if (!TRANSPORT_TYPES.includes(b.type) || !b.start_dt) continue
-    const day = b.start_dt.slice(0, 10)
-    map.set(day, [...(map.get(day) ?? []), b])
+    add(b.start_dt.slice(0, 10), { b, arrival: false })
+    if (b.end_dt && b.end_dt.slice(0, 10) > b.start_dt.slice(0, 10)) {
+      add(b.end_dt.slice(0, 10), { b, arrival: true })
+    }
   }
   for (const list of map.values()) {
-    list.sort((a, b) => a.start_dt!.localeCompare(b.start_dt!))
+    list.sort((a, b) => transportDt(a).localeCompare(transportDt(b)))
   }
   return map
 })
@@ -91,6 +104,7 @@ const otherBookingsByDay = computed(() => {
   return map
 })
 
+// noches del check-in a la víspera del check-out, más el día del check-out
 const lodgingByDay = computed(() => {
   const map = new Map<string, Booking[]>()
   const add = (day: string, b: Booking) => map.set(day, [...(map.get(day) ?? []), b])
@@ -103,7 +117,7 @@ const lodgingByDay = computed(() => {
       continue
     }
     const cursor = parseIsoDate(checkin)
-    while (toIsoDate(cursor) < checkout) {
+    while (toIsoDate(cursor) <= checkout) {
       add(toIsoDate(cursor), b)
       cursor.setDate(cursor.getDate() + 1)
     }
@@ -111,24 +125,46 @@ const lodgingByDay = computed(() => {
   return map
 })
 
-function lodgingTimeLabel(b: Booking, day: string): string {
-  if (b.start_dt && b.start_dt.slice(0, 10) === day) {
-    const t = b.start_dt.slice(11, 16)
-    return t !== '00:00' ? `in ${t}` : 'check-in'
-  }
+type LodgingKind = 'checkin' | 'noche' | 'checkout'
+function lodgingKind(b: Booking, day: string): LodgingKind {
+  if (b.start_dt && b.start_dt.slice(0, 10) === day) return 'checkin'
+  if (b.end_dt && b.end_dt.slice(0, 10) === day) return 'checkout'
   return 'noche'
 }
 
-function transportTime(b: Booking): string {
-  const t = b.start_dt ? b.start_dt.slice(11, 16) : ''
-  return t !== '00:00' ? t : '—'
+// filas en tres columnas: hora | tipo (Vuelo/Llegada/Check-in…) | ruta o nombre
+function lodgingTime(b: Booking, day: string): string {
+  const kind = lodgingKind(b, day)
+  if (kind === 'noche') return ''
+  const dt = kind === 'checkout' ? b.end_dt! : b.start_dt!
+  const t = dt.slice(11, 16)
+  return t !== '00:00' ? t : ''
 }
 
-function transportLabel(b: Booking): string {
-  if (b.origin || b.destination) {
-    return `${BOOKING_TYPE_LABELS[b.type]}: ${b.origin ?? '?'} → ${b.destination ?? '?'}`
-  }
-  return b.title
+function lodgingKindLabel(b: Booking, day: string): string {
+  const kind = lodgingKind(b, day)
+  if (kind === 'checkin') return 'Check-in'
+  if (kind === 'checkout') return 'Check-out'
+  return 'noche'
+}
+
+function transportTime(e: TransportEntry): string {
+  const t = transportDt(e).slice(11, 16)
+  return t !== '00:00' ? t : ''
+}
+
+function transportKind(e: TransportEntry): string {
+  return e.arrival ? 'Llegada' : BOOKING_TYPE_LABELS[e.b.type]
+}
+
+function transportLabel(e: TransportEntry): string {
+  const b = e.b
+  return b.origin || b.destination ? `${b.origin ?? '?'} → ${b.destination ?? '?'}` : b.title
+}
+
+function bookingTime(b: Booking): string {
+  const t = b.start_dt ? b.start_dt.slice(11, 16) : ''
+  return t && t !== '00:00' ? t : ''
 }
 
 const days = computed<string[]>(() => {
@@ -305,7 +341,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
         const color = b.type === 'hotel' ? '#7c3aed' : isTransport ? '#0284c7' : '#94a3b8'
         return {
           id: `b-${b.id}`,
-          title: isTransport ? transportLabel(b) : b.title,
+          title: isTransport ? transportLabel({ b, arrival: false }) : b.title,
           start: b.start_dt!,
           end: b.end_dt ?? undefined,
           editable: false,
@@ -437,39 +473,41 @@ function onEventDrop(info: EventDropArg) {
             <i class="mdi mdi-plane-train" /> Transporte
           </p>
           <div
-            v-for="b in transportsByDay.get(day) ?? []"
-            :key="`t-${b.id}`"
+            v-for="e in transportsByDay.get(day) ?? []"
+            :key="`t-${e.b.id}-${e.arrival ? 'a' : 's'}`"
             class="flex items-center gap-3 px-4 py-1 text-sky-700"
           >
-            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-xs w-4 text-center" />
-            <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
-              {{ transportTime(b) }}
+            <span class="text-xs sm:text-sm font-mono w-10 sm:w-12 shrink-0 opacity-70">
+              {{ transportTime(e) }}
+            </span>
+            <span class="text-xs w-16 sm:w-20 shrink-0 opacity-80 truncate">
+              {{ transportKind(e) }}
             </span>
             <router-link
-              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+              :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: e.b.id } }"
               class="font-medium text-sm truncate text-inherit no-underline hover:underline"
             >
-              {{ transportLabel(b) }}
+              {{ transportLabel(e) }}
             </router-link>
             <span class="ml-auto flex items-center gap-2.5 shrink-0">
               <router-link
-                v-if="b.place_id"
-                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: b.place_id } }"
+                v-if="e.b.place_id"
+                :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: e.b.place_id } }"
                 class="text-emerald-600"
                 v-tooltip.top="'Ver sitio'"
               >
                 <i class="pi pi-map-marker text-[11px]" />
               </router-link>
               <router-link
-                v-if="expenseByBooking.get(b.id)"
-                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(b.id) } }"
+                v-if="expenseByBooking.get(e.b.id)"
+                :to="{ name: 'trip-expenses', params: { id: trip.id }, query: { expense: expenseByBooking.get(e.b.id) } }"
                 class="text-amber-600"
                 v-tooltip.top="'Ver gasto'"
               >
                 <i class="pi pi-wallet text-[11px]" />
               </router-link>
               <router-link
-                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: e.b.id } }"
                 class="text-inherit opacity-50 hover:opacity-100"
                 v-tooltip.top="'Ver reserva'"
               >
@@ -494,9 +532,11 @@ function onEventDrop(info: EventDropArg) {
             :key="`o-${b.id}`"
             class="flex items-center gap-3 px-4 py-1 text-amber-700"
           >
-            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-xs w-4 text-center" />
-            <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
-              {{ transportTime(b) }}
+            <span class="text-xs sm:text-sm font-mono w-10 sm:w-12 shrink-0 opacity-70">
+              {{ bookingTime(b) }}
+            </span>
+            <span class="text-xs w-16 sm:w-20 shrink-0 opacity-80 truncate">
+              {{ BOOKING_TYPE_LABELS[b.type] }}
             </span>
             <router-link
               :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
@@ -622,8 +662,11 @@ function onEventDrop(info: EventDropArg) {
             :key="`l-${b.id}`"
             class="flex items-center gap-3 px-4 py-1 text-violet-700"
           >
-            <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
-              {{ lodgingTimeLabel(b, day) }}
+            <span class="text-xs sm:text-sm font-mono w-10 sm:w-12 shrink-0 opacity-70">
+              {{ lodgingTime(b, day) }}
+            </span>
+            <span class="text-xs w-16 sm:w-20 shrink-0 opacity-80 truncate">
+              {{ lodgingKindLabel(b, day) }}
             </span>
             <router-link
               :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
