@@ -220,6 +220,11 @@ watch(
   padding-left: 1.75rem;
 }
 
+/* size="small" deja las filas muy apretadas: un poco más de aire vertical */
+:deep(.p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td) {
+  padding-block: 0.625rem;
+}
+
 /* gasto enlazado desde otra pestaña: se enciende y se apaga suave al limpiar */
 :deep(.p-datatable-tbody > tr > td) {
   transition: background-color var(--tt-dur-600) ease;
