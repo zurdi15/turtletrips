@@ -412,7 +412,7 @@ function onEventDrop(info: EventDropArg) {
         :key="day"
         class="bg-white rounded-xl border border-slate-200 overflow-hidden"
       >
-        <div class="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-slate-100 border-b border-slate-100">
           <div class="flex items-baseline gap-2">
             <span class="font-semibold text-slate-700">{{ dayLabel(day).title }}</span>
             <span class="text-sm text-slate-400 capitalize">{{ dayLabel(day).sub }}</span>
@@ -429,7 +429,7 @@ function onEventDrop(info: EventDropArg) {
         <!-- transportes del día: sección propia con cabecera -->
         <div
           v-if="(transportsByDay.get(day) ?? []).length"
-          class="bg-sky-50 border-b border-slate-100 py-1.5"
+          class="bg-sky-100 border-b border-slate-100 py-1.5"
         >
           <p
             class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-sky-600 flex items-center gap-1.5"
@@ -482,7 +482,7 @@ function onEventDrop(info: EventDropArg) {
         <!-- otras reservas del día (actividades, coche…) -->
         <div
           v-if="(otherBookingsByDay.get(day) ?? []).length"
-          class="bg-amber-50 border-b border-slate-100 py-1.5"
+          class="bg-amber-100 border-b border-slate-100 py-1.5"
         >
           <p
             class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 flex items-center gap-1.5"
@@ -610,7 +610,7 @@ function onEventDrop(info: EventDropArg) {
         <!-- dónde se duerme esa noche: sección propia al pie del día -->
         <div
           v-if="(lodgingByDay.get(day) ?? []).length"
-          class="bg-violet-50 border-t border-slate-100 py-1.5"
+          class="bg-violet-100 border-t border-slate-100 py-1.5"
         >
           <p
             class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-600 flex items-center gap-1.5"

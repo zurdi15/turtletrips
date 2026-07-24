@@ -151,16 +151,15 @@ function deleteTrip() {
             </span>
           </div>
           <p class="text-slate-500 mt-1 flex items-center gap-3 flex-wrap text-sm">
-            <span v-if="store.current.countries.length" class="flex items-center gap-1.5">
-              <span
-                v-for="code in store.current.countries"
-                :key="code"
-                v-tooltip.bottom="countryName(code)"
-                class="text-base"
-              >
-                {{ flagEmoji(code) }}
-              </span>
-              <span>{{ store.current.countries.map(countryName).join(' · ') }}</span>
+            <!-- cada bandera junto al nombre de su país -->
+            <span v-if="store.current.countries.length" class="flex items-center gap-1.5 flex-wrap">
+              <template v-for="(code, idx) in store.current.countries" :key="code">
+                <span class="flex items-center gap-1">
+                  <span class="text-base">{{ flagEmoji(code) }}</span>
+                  <span>{{ countryName(code) }}</span>
+                </span>
+                <span v-if="idx < store.current.countries.length - 1" class="text-slate-300">·</span>
+              </template>
             </span>
             <span v-if="store.current.start_date" class="flex items-center gap-1">
               <i class="pi pi-calendar text-xs" />

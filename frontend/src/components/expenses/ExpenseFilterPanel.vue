@@ -25,7 +25,7 @@ defineEmits<{ clear: [] }>()
 
 <template>
   <div
-    class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl p-3 mb-4"
+    class="flex flex-wrap items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-3 mb-4"
   >
     <InputText
       v-model="filters.searchText"

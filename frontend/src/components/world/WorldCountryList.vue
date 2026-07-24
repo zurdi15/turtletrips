@@ -35,7 +35,7 @@ defineEmits<{
       :key="group.code ?? 'none'"
       class="bg-white rounded-xl border border-slate-200 overflow-hidden"
     >
-      <div class="px-4 py-3 bg-slate-50 border-b border-slate-100">
+      <div class="px-4 py-3 bg-slate-100 border-b border-slate-100">
         <div class="flex items-center gap-2.5 flex-wrap">
           <span class="text-xl">{{ group.flag }}</span>
           <span class="font-semibold text-slate-800">{{ group.title }}</span>

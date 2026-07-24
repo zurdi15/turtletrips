@@ -74,6 +74,14 @@ body {
   width: 100%;
 }
 
+/* SelectButton: en claro su fondo (surface-100) casi coincide con el de la
+   página y el grupo se difumina; en oscuro sí contrasta. Se sube a slate-200
+   solo en claro — el chip de la opción activa sigue siendo blanco. */
+html:not(.tt-dark) .p-selectbutton .p-togglebutton {
+  background: #e2e8f0;
+  border-color: #e2e8f0;
+}
+
 /* DatePicker: altura estable del calendario. Los meses de 5 y 6 semanas miden
    distinto y cada navegación hacía recolocar el overlay (saltaba de debajo a
    encima del campo y vuelta). Con altura mínima de 6 semanas nunca cambia. */
@@ -335,6 +343,9 @@ body {
 .tt-dark .text-sky-700 { color: #7dd3fc; }
 .tt-dark .text-sky-600 { color: #38bdf8; }
 .tt-dark .bg-violet-50 { background-color: rgb(76 29 149 / 0.35); }
+.tt-dark .bg-violet-100 { background-color: rgb(76 29 149 / 0.35); }
+.tt-dark .bg-sky-100 { background-color: rgb(12 74 110 / 0.45); }
+.tt-dark .bg-amber-100 { background-color: rgb(120 53 15 / 0.35); }
 .tt-dark .text-violet-700 { color: #c4b5fd; }
 .tt-dark .text-violet-600 { color: #a78bfa; }
 .tt-dark .bg-amber-50 { background-color: rgb(120 53 15 / 0.35); }

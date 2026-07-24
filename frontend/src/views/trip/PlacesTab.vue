@@ -133,12 +133,13 @@ function removePlace(place: Place) {
     <div class="flex flex-wrap items-center gap-2 mb-4">
       <Button label="Nuevo sitio" icon="pi pi-plus" @click="openNew" />
       <InputText v-model="searchText" placeholder="Buscar…" class="flex-1 sm:flex-none sm:w-44" />
+      <!-- el selector de categoría absorbe el espacio sobrante: la fila queda completa -->
       <Select
         v-model="filterCategory"
         :options="categoryOptions"
         optionLabel="label"
         optionValue="value"
-        class="flex-1 sm:flex-none sm:w-40"
+        class="flex-1 min-w-[10rem]"
       />
       <SelectButton
         v-model="filterVisited"
@@ -154,7 +155,7 @@ function removePlace(place: Place) {
         optionValue="value"
         :allowEmpty="false"
       />
-      <span class="ml-auto text-sm text-slate-400 hidden sm:block">
+      <span class="shrink-0 text-sm text-slate-400 hidden sm:block">
         {{ store.items.filter((p) => p.visited).length }}/{{ store.items.length }} visitados
       </span>
     </div>

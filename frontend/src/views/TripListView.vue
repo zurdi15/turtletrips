@@ -235,7 +235,7 @@ function dateRange(trip: Trip): string {
              en móvil el buscador ocupa su propia línea, en desktop todo en una fila -->
         <div
           v-if="showFilters"
-          class="flex flex-wrap items-center gap-2 bg-white border border-slate-200 rounded-xl p-3"
+          class="flex flex-wrap items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl p-3"
         >
           <InputText
             v-model="searchText"
