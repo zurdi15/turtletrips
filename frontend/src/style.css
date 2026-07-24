@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tt-page-bg: #f8fafc; /* slate-50 */
+}
+html.tt-dark {
+  --tt-page-bg: #0f172a; /* slate-900 */
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--tt-page-bg);
+  color: var(--p-text-color);
+}
+
+/* difuminado del banner del viaje hacia el fondo de la página:
+   la zona inferior queda sólida para que el contenido superpuesto se lea bien */
+.banner-fade {
+  background: linear-gradient(
+    to bottom,
+    rgb(2 6 23 / 0.3),
+    rgb(2 6 23 / 0.05) 30%,
+    var(--tt-page-bg) 76%
+  );
+}
+
+.leaflet-container {
+  z-index: 0;
+}
+
+/* Diálogos: sin scroll lateral y con los controles ocupando todo el ancho */
+.p-dialog-content {
+  overflow-x: hidden;
+}
+.p-dialog .p-inputtext,
+.p-dialog .p-select,
+.p-dialog .p-multiselect,
+.p-dialog .p-datepicker,
+.p-dialog .p-inputnumber,
+.p-dialog .p-autocomplete,
+.p-dialog .p-textarea {
+  width: 100%;
+  min-width: 0;
+}
+.p-dialog .p-autocomplete .p-autocomplete-input {
+  width: 100%;
+}
+
+/* utilería para barras con scroll horizontal sin scrollbar visible */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* móvil: los toasts no deben desbordar la pantalla */
+.p-toast {
+  max-width: calc(100vw - 2rem);
+}
+
+/* tooltips informativos: más anchos y legibles, sin salirse de pantalla */
+.p-tooltip {
+  max-width: min(22rem, calc(100vw - 2rem));
+}
+
+/* FullCalendar: la toolbar envuelve en pantallas estrechas */
+.fc .fc-header-toolbar {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+@media (max-width: 640px) {
+  .fc .fc-toolbar-title {
+    font-size: 1.05rem;
+  }
+}
+
+/* Acciones que en escritorio aparecen al hacer hover; en táctil siempre visibles */
+.hover-actions {
+  opacity: 1;
+  transition: opacity 0.15s;
+}
+@media (hover: hover) {
+  .hover-actions {
+    opacity: 0;
+  }
+  .group:hover .hover-actions,
+  .group\/item:hover .hover-actions {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Tema oscuro: la app usa la paleta slate de Tailwind de forma consistente,
+   así que remapeamos esas utilidades bajo .tt-dark (PrimeVue ya se adapta solo
+   vía darkModeSelector). Superficies, bordes y textos.
+--------------------------------------------------------------------------- */
+.tt-dark .bg-white { background-color: #1e293b; }               /* tarjetas → slate-800 */
+.tt-dark .bg-slate-50 { background-color: #162032; }            /* subcabeceras dentro de tarjetas */
+.tt-dark .bg-slate-100 { background-color: #334155; }
+.tt-dark .bg-slate-200 { background-color: #334155; }
+.tt-dark .hover\:bg-slate-50:hover { background-color: rgb(51 65 85 / 0.4); }
+
+.tt-dark .border-slate-200 { border-color: #334155; }
+.tt-dark .border-slate-100 { border-color: rgb(51 65 85 / 0.6); }
+.tt-dark .border-slate-50 { border-color: rgb(51 65 85 / 0.4); }
+.tt-dark .hover\:border-slate-300:hover { border-color: #475569; }
+.tt-dark .ring-slate-200 { --tw-ring-color: #334155; }
+
+.tt-dark .text-slate-900 { color: #f8fafc; }
+.tt-dark .text-slate-800 { color: #f1f5f9; }
+.tt-dark .text-slate-700 { color: #e2e8f0; }
+.tt-dark .text-slate-600 { color: #cbd5e1; }
+.tt-dark .text-slate-500 { color: #94a3b8; }
+.tt-dark .text-slate-300 { color: #475569; }
+.tt-dark .hover\:text-slate-700:hover { color: #e2e8f0; }
+.tt-dark .hover\:text-slate-600:hover { color: #cbd5e1; }
+
+/* chips de acento (itinerario, plantillas…) */
+.tt-dark .bg-sky-50 { background-color: rgb(12 74 110 / 0.45); }
+.tt-dark .border-sky-200 { border-color: rgb(12 74 110 / 0.8); }
+.tt-dark .text-sky-700 { color: #7dd3fc; }
+.tt-dark .text-sky-600 { color: #38bdf8; }
+.tt-dark .bg-teal-50 { background-color: rgb(19 78 74 / 0.5); }
+.tt-dark .text-teal-700 { color: #5eead4; }
+.tt-dark .hover\:bg-teal-50\/50:hover { background-color: rgb(19 78 74 / 0.3); }
+.tt-dark .bg-emerald-100 { background-color: rgb(6 78 59 / 0.6); }
+.tt-dark .text-emerald-700 { color: #6ee7b7; }
+.tt-dark .text-emerald-600 { color: #34d399; }
+.tt-dark .bg-\[var\(--p-primary-50\)\] {
+  background-color: color-mix(in srgb, var(--p-primary-color) 18%, transparent);
+}
+
+/* placeholder de tarjetas sin imagen */
+.tt-dark .from-sky-100 {
+  --tw-gradient-from: #0c4a6e var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(12 74 110 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.tt-dark .to-indigo-100 {
+  --tw-gradient-to: #312e81 var(--tw-gradient-to-position);
+}
+
+/* FullCalendar en oscuro */
+.tt-dark .fc {
+  --fc-border-color: #334155;
+  --fc-today-bg-color: rgb(14 165 233 / 0.12);
+  --fc-page-bg-color: transparent;
+  color: #cbd5e1;
+}
+.tt-dark .fc .fc-col-header-cell-cushion,
+.tt-dark .fc .fc-daygrid-day-number,
+.tt-dark .fc .fc-toolbar-title {
+  color: #e2e8f0;
+}
+
+/* FullCalendar: alinear tipografía con el resto de la app */
+.fc {
+  --fc-border-color: var(--p-surface-200);
+  --fc-today-bg-color: var(--p-primary-50);
+  font-size: 0.875rem;
+}
+.fc .fc-button {
+  background: var(--p-primary-color);
+  border-color: var(--p-primary-color);
+}
+.fc .fc-button:hover {
+  background: var(--p-primary-600);
+  border-color: var(--p-primary-600);
+}
