@@ -279,6 +279,67 @@ def test_expense_day_moves_booking_dates(client, trip):
     assert synced["day"] == "2026-04-10"
 
 
+def test_flight_number_roundtrip(client, trip):
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "flight", "title": "Vuelo ida", "origin": "MAD",
+            "destination": "HAN", "confirmation_code": "ABC123", "flight_number": "IB6801",
+        },
+    ).json()
+    assert booking["flight_number"] == "IB6801"
+    assert booking["confirmation_code"] == "ABC123"
+
+
+def test_delete_booking_cascades_expense_and_lodging_place(client, trip):
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "hotel", "title": "Hotel Gracery", "cost_amount": "90",
+            "cost_currency": "EUR", "lat": 35.6955, "lon": 139.7022,
+        },
+    ).json()
+    assert len(client.get(f"/api/v1/trips/{trip['id']}/expenses").json()) == 1
+    assert len(client.get(f"/api/v1/trips/{trip['id']}/places").json()) == 1
+
+    # borrar la reserva se lleva el gasto espejo y el sitio lodging huérfano
+    assert client.delete(f"/api/v1/bookings/{booking['id']}").status_code == 204
+    assert client.get(f"/api/v1/trips/{trip['id']}/expenses").json() == []
+    assert client.get(f"/api/v1/trips/{trip['id']}/places").json() == []
+
+
+def test_delete_booking_keeps_linked_city(client, trip):
+    city = client.post(
+        f"/api/v1/trips/{trip['id']}/places",
+        json={"name": "Tokio", "category": "city", "lat": 35.6812, "lon": 139.7671},
+    ).json()
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "hotel", "title": "Hotel", "lat": 35.6955, "lon": 139.7022},
+    ).json()
+    assert booking["place_id"] == city["id"]
+
+    client.delete(f"/api/v1/bookings/{booking['id']}")
+    # la ciudad enlazada por cercanía no se toca
+    remaining = client.get(f"/api/v1/trips/{trip['id']}/places").json()
+    assert [p["id"] for p in remaining] == [city["id"]]
+
+
+def test_expense_description_renames_booking(client, trip):
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "hotel", "title": "Hotel A", "cost_amount": "60", "cost_currency": "EUR"},
+    ).json()
+    expense = _linked_expense(client, trip["id"], booking["id"])
+
+    client.patch(f"/api/v1/expenses/{expense['id']}", json={"description": "Hotel renombrado"})
+    renamed = next(
+        b for b in client.get(f"/api/v1/trips/{trip['id']}/bookings").json()
+        if b["id"] == booking["id"]
+    )
+    assert renamed["title"] == "Hotel renombrado"
+
+
 def test_booking_create_expense_requires_cost(client, trip):
     booking = client.post(
         f"/api/v1/trips/{trip['id']}/bookings",

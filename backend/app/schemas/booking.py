@@ -11,6 +11,7 @@ class BookingBase(BaseModel):
 
     provider: str | None = None
     confirmation_code: str | None = None
+    flight_number: str | None = Field(default=None, max_length=20)
     start_dt: datetime | None = None
     end_dt: datetime | None = None
     origin: str | None = None
@@ -44,6 +45,7 @@ class BookingRead(BaseModel):
     title: str
     provider: str | None
     confirmation_code: str | None
+    flight_number: str | None
     start_dt: datetime | None
     end_dt: datetime | None
     origin: str | None

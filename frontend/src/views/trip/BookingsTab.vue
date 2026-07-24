@@ -182,8 +182,16 @@ function copyCode(code: string) {
                     :value="booking.confirmation_code"
                     severity="secondary"
                     class="cursor-pointer font-mono"
-                    v-tooltip.top="'Copiar código'"
+                    v-tooltip.top="'Copiar código de reserva'"
                     @click="copyCode(booking.confirmation_code)"
+                  />
+                  <Tag
+                    v-if="booking.flight_number"
+                    :value="booking.flight_number"
+                    severity="info"
+                    class="cursor-pointer font-mono"
+                    v-tooltip.top="'Copiar código de vuelo'"
+                    @click="copyCode(booking.flight_number)"
                   />
                 </div>
                 <!-- transporte: origen→destino y fechas en filas separadas (cada

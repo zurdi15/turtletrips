@@ -109,6 +109,7 @@ export interface Booking {
   title: string
   provider: string | null
   confirmation_code: string | null
+  flight_number: string | null
   start_dt: string | null
   end_dt: string | null
   origin: string | null

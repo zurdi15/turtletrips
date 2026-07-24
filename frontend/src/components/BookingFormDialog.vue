@@ -30,6 +30,7 @@ const type = ref<BookingType>('hotel')
 const title = ref('')
 const provider = ref('')
 const confirmationCode = ref('')
+const flightNumber = ref('')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 const startTime = ref<Date | null>(null)
@@ -160,6 +161,7 @@ watch(visible, (open) => {
   title.value = b?.title ?? ''
   provider.value = b?.provider ?? ''
   confirmationCode.value = b?.confirmation_code ?? ''
+  flightNumber.value = b?.flight_number ?? ''
   const start = b?.start_dt ? new Date(b.start_dt) : null
   const end = b?.end_dt ? new Date(b.end_dt) : null
   startDate.value = start
@@ -195,6 +197,7 @@ async function save() {
       title: title.value.trim(),
       provider: provider.value || null,
       confirmation_code: confirmationCode.value || null,
+      flight_number: isFlight.value ? flightNumber.value.trim().toUpperCase() || null : null,
       start_dt: startDate.value ? toNaiveIso(startDate.value, startTime.value) : null,
       end_dt: endDate.value ? toNaiveIso(endDate.value, endTime.value) : null,
       origin: isTransport.value ? origin.value || null : null,
@@ -309,7 +312,18 @@ async function save() {
           <InputText v-model="provider" placeholder="Booking.com, Iberia…" />
         </div>
       </div>
-      <div class="flex flex-col gap-1">
+      <!-- en vuelos: código de reserva (booking) + número de vuelo -->
+      <div v-if="isFlight" class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Código de reserva</label>
+          <InputText v-model="confirmationCode" placeholder="ABC123" />
+        </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium">Código de vuelo</label>
+          <InputText v-model="flightNumber" placeholder="IB6801" class="font-mono" />
+        </div>
+      </div>
+      <div v-else class="flex flex-col gap-1">
         <label class="text-sm font-medium">Código de confirmación</label>
         <InputText v-model="confirmationCode" />
       </div>

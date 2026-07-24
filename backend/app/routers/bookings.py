@@ -6,19 +6,27 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..models import Booking, BookingType, Expense, Trip
+from ..models import (
+    Booking,
+    BookingType,
+    Expense,
+    ItineraryItem,
+    Place,
+    PlaceCategory,
+    SplitMode,
+    Trip,
+)
 from ..schemas.booking import (
     BookingCreate,
     BookingRead,
     BookingUpdate,
     CreateExpenseFromBooking,
 )
-from ..models import SplitMode
 from ..schemas.expense import ExpenseRead
 from ..services.balances import split_amount
 from ..services.booking_place import ensure_booking_place
 from ..services.rates import resolve_rate, to_base
-from .common import apply_updates, delete_by_id, get_or_404
+from .common import apply_updates, get_or_404
 
 router = APIRouter(tags=["bookings"])
 
@@ -165,7 +173,28 @@ async def update_booking(
 
 @router.delete("/bookings/{booking_id}", status_code=204)
 def delete_booking(booking_id: int, db: Session = Depends(get_db)):
-    delete_by_id(db, Booking, booking_id)
+    booking = get_or_404(db, Booking, booking_id)
+    # el gasto espejo muere con la reserva
+    expense = db.scalar(select(Expense).where(Expense.booking_id == booking.id))
+    if expense is not None:
+        db.delete(expense)
+    place = db.get(Place, booking.place_id) if booking.place_id is not None else None
+    db.delete(booking)
+    db.flush()
+    # el sitio de alojamiento autocreado se limpia si queda huérfano; ciudades
+    # y POIs enlazados por cercanía no se tocan
+    if place is not None and place.category == PlaceCategory.lodging.value:
+        in_use = (
+            db.scalar(select(Booking.id).where(Booking.place_id == place.id)) is not None
+            or db.scalar(select(Expense.id).where(Expense.place_id == place.id)) is not None
+            or db.scalar(
+                select(ItineraryItem.id).where(ItineraryItem.place_id == place.id)
+            )
+            is not None
+        )
+        if not in_use:
+            db.delete(place)
+    db.commit()
 
 
 @router.post("/bookings/{booking_id}/create-expense", response_model=ExpenseRead, status_code=201)

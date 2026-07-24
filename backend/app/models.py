@@ -222,6 +222,8 @@ class Booking(TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(300))
     provider: Mapped[str | None] = mapped_column(String(200))
     confirmation_code: Mapped[str | None] = mapped_column(String(100))
+    # número de vuelo (IB6801); solo aplica a reservas de tipo flight
+    flight_number: Mapped[str | None] = mapped_column(String(20))
     start_dt: Mapped[datetime | None] = mapped_column(DateTime)
     end_dt: Mapped[datetime | None] = mapped_column(DateTime)
     origin: Mapped[str | None] = mapped_column(String(200))

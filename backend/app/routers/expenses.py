@@ -192,6 +192,9 @@ async def update_expense(expense_id: int, payload: ExpenseUpdate, db: Session = 
             booking.cost_currency = data.get("currency", expense.currency)
             booking.paid_by_id = data.get("paid_by_id", expense.paid_by_id)
             booking.paid_by_common = data.get("paid_by_common", expense.paid_by_common)
+            # renombrar el gasto renombra la reserva (y viceversa vía sync)
+            if "description" in data:
+                booking.title = data["description"]
             # mover el día del gasto desplaza entrada/salida conservando la
             # duración de la estancia (y las horas)
             if "day" in data:
