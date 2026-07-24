@@ -3,15 +3,15 @@ import { onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Popover from 'primevue/popover'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import type { Traveler } from '../api/types'
 import { CATEGORY_PALETTE } from '../constants'
 import { useTravelersStore } from '../stores/travelers'
+import { useConfirmDelete } from '../composables/useConfirmDelete'
+import { useNotify } from '../composables/useNotify'
 
 const travelers = useTravelersStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 
 const newName = ref('')
 const editingId = ref<number | null>(null)
@@ -39,7 +39,7 @@ async function add() {
     await travelers.create(name, CATEGORY_PALETTE[travelers.items.length % CATEGORY_PALETTE.length])
     newName.value = ''
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al añadir', err)
   }
 }
 
@@ -54,17 +54,14 @@ async function confirmRename() {
     await travelers.update(editingId.value, { name: editingName.value.trim() })
     editingId.value = null
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al renombrar', err)
   }
 }
 
 function remove(traveler: Traveler) {
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar a "${traveler.name}"? Se quitará de todos los viajes y sus gastos quedarán sin pagador.`,
     header: 'Eliminar viajero',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: () => travelers.remove(traveler.id),
   })
 }

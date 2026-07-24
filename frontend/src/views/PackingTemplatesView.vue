@@ -3,18 +3,18 @@ import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import EmptyState from '../components/EmptyState.vue'
 import type { PackingTemplateItem } from '../api/types'
 import { usePackingTemplatesStore } from '../stores/packingTemplates'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { useConfirmDelete } from '../composables/useConfirmDelete'
+import { useNotify } from '../composables/useNotify'
 import { groupPackingItems } from '../utils/packing'
 
 const store = usePackingTemplatesStore()
 const categories = useCategoriesStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 
 const newTemplateName = ref('')
 const renaming = ref(false)
@@ -55,7 +55,7 @@ async function createTemplate() {
     newTemplateName.value = ''
     await store.select(template.id)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al crear', err)
   }
 }
 
@@ -65,18 +65,15 @@ async function confirmRename() {
     await store.rename(store.detail.id, renameValue.value.trim())
     renaming.value = false
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al renombrar', err)
   }
 }
 
 function removeTemplate() {
   if (!store.detail) return
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar la plantilla "${store.detail.name}"? Las maletas ya aplicadas en viajes no se tocan.`,
     header: 'Eliminar plantilla',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: () => store.remove(store.detail!.id),
   })
 }
@@ -94,7 +91,7 @@ async function addItem() {
     newItemUrl.value = ''
     showUrlField.value = false
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al añadir', err)
   }
 }
 

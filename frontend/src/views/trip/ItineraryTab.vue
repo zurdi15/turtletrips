@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
-import { useConfirm } from 'primevue/useconfirm'
 import draggable from 'vuedraggable'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -22,6 +21,8 @@ import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
 import { parseIsoDate, toIsoDate } from '../../composables/useMoney'
+import { useCrudView } from '../../composables/useCrudView'
+import { useTripTabData } from '../../composables/useTripTabData'
 import { expenseIdByBooking } from '../../utils/expenses'
 import {
   agendaDayLabel,
@@ -44,7 +45,6 @@ const store = useItineraryStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
 const expenses = useExpensesStore()
-const confirm = useConfirm()
 
 const view = ref<'agenda' | 'calendar'>('agenda')
 const viewOptions = [
@@ -52,21 +52,19 @@ const viewOptions = [
   { value: 'calendar', label: 'Calendario', icon: 'pi pi-calendar' },
 ]
 
-const showForm = ref(false)
 const showSubscribe = ref(false)
-const editing = ref<ItineraryItem | null>(null)
 const presetDay = ref<string | null>(null)
 
 const icsUrl = computed(() => `${API_BASE}/trips/${props.trip.id}/calendar.ics`)
 
-function loadAll(tripId: number) {
-  store.load(tripId)
-  places.load(tripId)
-  bookings.load(tripId)
-  expenses.load(tripId)
-}
-onMounted(() => loadAll(props.trip.id))
-watch(() => props.trip.id, loadAll)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    store.load(tripId)
+    places.load(tripId)
+    bookings.load(tripId)
+    expenses.load(tripId)
+  },
+})
 
 // ---- Agenda (derivación pura en utils/itinerary.ts) ----
 
@@ -121,24 +119,18 @@ function bookingTitle(id: number | null): string | null {
   return id == null ? null : (bookings.items.find((b) => b.id === id)?.title ?? null)
 }
 
-function openNew(day?: string) {
-  editing.value = null
-  presetDay.value = day ?? null
-  showForm.value = true
-}
-function openEdit(item: ItineraryItem) {
-  editing.value = item
-  showForm.value = true
-}
-function removeItem(item: ItineraryItem) {
-  confirm.require({
+const crud = useCrudView<ItineraryItem>({
+  confirm: (item) => ({
     message: `¿Eliminar "${item.title}" del itinerario?`,
     header: 'Eliminar actividad',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
-    accept: () => store.remove(item.id),
-  })
+  }),
+  remove: (item) => store.remove(item.id),
+})
+const { showForm, editing, openEdit, removeItem } = crud
+
+function openNew(day?: string) {
+  presetDay.value = day ?? null
+  crud.openNew()
 }
 
 // ---- Calendario ----

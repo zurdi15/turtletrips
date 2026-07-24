@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import BookingFormDialog from '../../components/BookingFormDialog.vue'
 import AttachmentList from '../../components/AttachmentList.vue'
 import MemberChip from '../../components/MemberChip.vue'
@@ -19,45 +17,40 @@ import { useAttachmentsStore } from '../../stores/attachments'
 import { useExpensesStore } from '../../stores/expenses'
 import { usePlacesStore } from '../../stores/places'
 import { formatDateTime, formatMoney, toIsoDate } from '../../composables/useMoney'
+import { useNotify } from '../../composables/useNotify'
+import { useCrudView } from '../../composables/useCrudView'
+import { useTripTabData } from '../../composables/useTripTabData'
 
 const props = defineProps<{ trip: Trip }>()
 const store = useBookingsStore()
 const attachments = useAttachmentsStore()
 const expenses = useExpensesStore()
 const places = usePlacesStore()
-const confirm = useConfirm()
-const toast = useToast()
+const notify = useNotify()
 const route = useRoute()
 
-const showForm = ref(false)
-const editing = ref<Booking | null>(null)
 const creatingExpenseId = ref<number | null>(null)
 const highlightId = ref<number | null>(null)
 
-function loadAll(tripId: number) {
-  store.load(tripId)
-  attachments.load(tripId)
-  expenses.load(tripId)
-  places.load(tripId)
-}
-
-onMounted(async () => {
-  attachments.load(props.trip.id)
-  expenses.load(props.trip.id)
-  places.load(props.trip.id)
-  await store.load(props.trip.id)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    attachments.load(tripId)
+    expenses.load(tripId)
+    places.load(tripId)
+    return store.load(tripId)
+  },
   // llegar desde un gasto enlazado (?booking=id) resalta y centra esa reserva
-  const fromQuery = Number(route.query.booking)
-  if (fromQuery) {
+  async afterFirstLoad() {
+    const fromQuery = Number(route.query.booking)
+    if (!fromQuery) return
     highlightId.value = fromQuery
     await nextTick()
     document
       .getElementById(`booking-${fromQuery}`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => (highlightId.value = null), 2600)
-  }
+  },
 })
-watch(() => props.trip.id, loadAll)
 
 // gasto ya generado desde cada reserva: bloquea el botón "Crear gasto"
 const expenseByBooking = computed(() => expenseIdByBooking(expenses.items))
@@ -76,24 +69,19 @@ const grouped = computed(() =>
   })).filter((g) => g.bookings.length),
 )
 
-function openNew() {
-  editing.value = null
-  showForm.value = true
-}
-function openEdit(booking: Booking) {
-  editing.value = booking
-  showForm.value = true
-}
-function removeBooking(booking: Booking) {
-  confirm.require({
+const {
+  showForm,
+  editing,
+  openNew,
+  openEdit,
+  removeItem: removeBooking,
+} = useCrudView<Booking>({
+  confirm: (booking) => ({
     message: `¿Eliminar la reserva "${booking.title}"? Sus adjuntos pasarán a nivel de viaje.`,
     header: 'Eliminar reserva',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
-    accept: () => store.remove(booking.id),
-  })
-}
+  }),
+  remove: (booking) => store.remove(booking.id),
+})
 
 async function createExpense(booking: Booking) {
   creatingExpenseId.value = booking.id
@@ -112,15 +100,13 @@ async function createExpense(booking: Booking) {
       }
     }
     const expense = await store.createExpense(booking.id, rate)
-    toast.add({
-      severity: 'success',
-      summary: 'Gasto creado',
-      detail: `${expense.description}: ${formatMoney(expense.amount_base, props.trip.base_currency)}`,
-      life: 4000,
-    })
+    notify.success(
+      'Gasto creado',
+      `${expense.description}: ${formatMoney(expense.amount_base, props.trip.base_currency)}`,
+    )
     expenses.load(props.trip.id) // refresca el enlace reserva → gasto
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'No se pudo crear el gasto', detail: String(err), life: 5000 })
+    notify.error('No se pudo crear el gasto', err)
   } finally {
     creatingExpenseId.value = null
   }
@@ -128,7 +114,7 @@ async function createExpense(booking: Booking) {
 
 function copyCode(code: string) {
   navigator.clipboard?.writeText(code)
-  toast.add({ severity: 'info', summary: 'Código copiado', life: 2000 })
+  notify.info('Código copiado')
 }
 </script>
 

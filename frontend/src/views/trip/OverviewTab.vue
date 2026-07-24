@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import Button from 'primevue/button'
 import PlaceMap from '../../components/PlaceMap.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
@@ -9,6 +9,7 @@ import { useExpensesStore } from '../../stores/expenses'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { formatDateTime, formatMoney } from '../../composables/useMoney'
+import { useTripTabData } from '../../composables/useTripTabData'
 import { DAY_MS, daysBetween, daysUntil } from '../../utils/dates'
 import { budgetPercent } from '../../utils/expenses'
 
@@ -17,13 +18,13 @@ const expenses = useExpensesStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
 
-function loadAll(tripId: number) {
-  expenses.load(tripId)
-  places.load(tripId)
-  bookings.load(tripId)
-}
-onMounted(() => loadAll(props.trip.id))
-watch(() => props.trip.id, loadAll)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    expenses.load(tripId)
+    places.load(tripId)
+    bookings.load(tripId)
+  },
+})
 
 const daysToStart = computed(() => daysUntil(props.trip.start_date))
 

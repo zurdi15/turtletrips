@@ -1,24 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Checkbox from 'primevue/checkbox'
 import Dialog from 'primevue/dialog'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
+import { useConfirmDelete } from '../../composables/useConfirmDelete'
+import { useNotify } from '../../composables/useNotify'
+import { useTripTabData } from '../../composables/useTripTabData'
 import { groupPackingItems } from '../../utils/packing'
 
 const props = defineProps<{ trip: Trip }>()
 const store = usePackingStore()
 const categories = useCategoriesStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 
 // maleta activa: null = común, número = viajero
 const activeTraveler = ref<number | null>(null)
@@ -38,12 +39,12 @@ const editTraveler = ref<number | null>(null)
 const showSaveTemplate = ref(false)
 const templateName = ref('')
 
-function loadAll(tripId: number) {
-  store.load(tripId).then(syncSelectedTemplate)
-  categories.load('packing')
-}
-onMounted(() => loadAll(props.trip.id))
-watch(() => props.trip.id, loadAll)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    store.load(tripId).then(syncSelectedTemplate)
+    categories.load('packing')
+  },
+})
 
 // al cambiar de maleta, refleja la plantilla que tiene asociada
 function syncSelectedTemplate() {
@@ -118,7 +119,7 @@ async function addItem() {
     newUrl.value = ''
     showUrlField.value = false
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al añadir', err)
   }
 }
 
@@ -142,12 +143,9 @@ async function saveEdit() {
 }
 
 function removeItem(item: PackingItem) {
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar "${item.name}" de la maleta?`,
     header: 'Eliminar elemento',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: () => store.remove(item.id),
   })
 }
@@ -155,26 +153,24 @@ function removeItem(item: PackingItem) {
 async function applyTemplate() {
   if (selectedTemplate.value == null) return
   await store.applyTemplate(selectedTemplate.value, activeTraveler.value)
-  toast.add({
-    severity: 'success',
-    summary: `Plantilla aplicada a la maleta de ${activeBagLabel.value}`,
-    detail: 'Los cambios que hagas aquí no afectan a la plantilla',
-    life: 4000,
-  })
+  notify.success(
+    `Plantilla aplicada a la maleta de ${activeBagLabel.value}`,
+    'Los cambios que hagas aquí no afectan a la plantilla',
+  )
 }
 
 function syncTemplate() {
   if (selectedTemplate.value == null) return
   const template = store.templates.find((t) => t.id === selectedTemplate.value)
-  confirm.require({
+  confirmAction({
     message: `¿Sobrescribir la plantilla "${template?.name}" con los ${activeItems.value.length} elementos de la maleta de ${activeBagLabel.value}?`,
     header: 'Guardar cambios en la plantilla',
     icon: 'pi pi-sync',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Sobrescribir plantilla' },
+    acceptLabel: 'Sobrescribir plantilla',
+    acceptSeverity: undefined,
     accept: async () => {
       await store.syncTemplateFromTrip(selectedTemplate.value!, activeTraveler.value)
-      toast.add({ severity: 'success', summary: 'Plantilla actualizada', life: 3000 })
+      notify.success('Plantilla actualizada')
     },
   })
 }
@@ -184,12 +180,12 @@ async function saveTemplate() {
   if (!name) return
   try {
     await store.saveAsTemplate(name, activeTraveler.value)
-    toast.add({ severity: 'success', summary: `Plantilla "${name}" guardada`, life: 3000 })
+    notify.success(`Plantilla "${name}" guardada`)
     showSaveTemplate.value = false
     templateName.value = ''
     syncSelectedTemplate()
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al guardar', err)
   }
 }
 </script>

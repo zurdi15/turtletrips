@@ -4,17 +4,17 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
-import { useToast } from 'primevue/usetoast'
 import MemberChip from './MemberChip.vue'
 import type { SettlementTransfer, Trip } from '../api/types'
 import { useExpensesStore } from '../stores/expenses'
 import { useTripsStore } from '../stores/trips'
 import { formatDate, formatMoney } from '../composables/useMoney'
+import { useNotify } from '../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
 const store = useExpensesStore()
 const trips = useTripsStore()
-const toast = useToast()
+const notify = useNotify()
 
 onMounted(() => store.loadBalances())
 watch(() => props.trip.id, () => store.loadBalances())
@@ -32,15 +32,11 @@ async function settle(transfer: SettlementTransfer) {
       to_id: transfer.to_id,
       amount_base: transfer.amount_base,
     })
-    toast.add({
-      severity: 'success',
-      summary: `Pago registrado: ${transfer.from_name} → ${transfer.to_name}`,
-      life: 3000,
-    })
+    notify.success(`Pago registrado: ${transfer.from_name} → ${transfer.to_name}`)
     // refresca la pill de "deudas saldadas" del viaje
     await trips.loadTrip(props.trip.id)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al liquidar', err)
   } finally {
     settling.value = false
   }
@@ -52,7 +48,7 @@ async function undo(settlementId: number) {
     await store.unsettle(settlementId)
     await trips.loadTrip(props.trip.id)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al deshacer', err)
   } finally {
     settling.value = false
   }

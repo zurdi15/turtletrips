@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
-import { useConfirm } from 'primevue/useconfirm'
 import AttachmentList from '../../components/AttachmentList.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
@@ -12,29 +11,28 @@ import type { Trip } from '../../api/types'
 import { useAttachmentsStore } from '../../stores/attachments'
 import { useBookingsStore } from '../../stores/bookings'
 import { formatDate } from '../../composables/useMoney'
+import { useConfirmDelete } from '../../composables/useConfirmDelete'
+import { useTripTabData } from '../../composables/useTripTabData'
 import { fileIcon, formatSize } from '../../utils/files'
 
 const props = defineProps<{ trip: Trip }>()
 const store = useAttachmentsStore()
 const bookings = useBookingsStore()
-const confirm = useConfirm()
+const confirmAction = useConfirmDelete()
 
-function loadAll(tripId: number) {
-  store.load(tripId)
-  bookings.load(tripId)
-}
-onMounted(() => loadAll(props.trip.id))
-watch(() => props.trip.id, loadAll)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    store.load(tripId)
+    bookings.load(tripId)
+  },
+})
 
 const bookingTitle = computed(() => new Map(bookings.items.map((b) => [b.id, b.title])))
 
 function remove(id: number, name: string) {
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar el fichero "${name}"?`,
     header: 'Eliminar adjunto',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: () => store.remove(id),
   })
 }

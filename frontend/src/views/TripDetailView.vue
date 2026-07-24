@@ -3,22 +3,22 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import StatusTag from '../components/StatusTag.vue'
 import MemberChip from '../components/MemberChip.vue'
 import TripFormDialog from '../components/TripFormDialog.vue'
 import TabSkeleton from '../components/TabSkeleton.vue'
 import { useTripsStore } from '../stores/trips'
 import { formatDate } from '../composables/useMoney'
+import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useCountryImage } from '../composables/useCountryImage'
+import { useNotify } from '../composables/useNotify'
 import { countryName, flagEmoji } from '../countries'
 
 const props = defineProps<{ id: string }>()
 const route = useRoute()
 const router = useRouter()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 const store = useTripsStore()
 
 const tripId = computed(() => Number(props.id))
@@ -95,15 +95,12 @@ const tabSkeleton = computed(
 )
 
 function deleteTrip() {
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar "${store.current?.name}" con todos sus datos y ficheros?`,
     header: 'Eliminar viaje',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: async () => {
       await store.deleteTrip(tripId.value)
-      toast.add({ severity: 'success', summary: 'Viaje eliminado', life: 3000 })
+      notify.success('Viaje eliminado')
       router.push('/')
     },
   })

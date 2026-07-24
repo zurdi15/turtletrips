@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import Tag from 'primevue/tag'
-import { useConfirm } from 'primevue/useconfirm'
 import PlaceMap from '../../components/PlaceMap.vue'
 import PlaceFormDialog from '../../components/PlaceFormDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -22,15 +21,14 @@ import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
 import { formatMoney } from '../../composables/useMoney'
+import { useCrudView } from '../../composables/useCrudView'
+import { useTripTabData } from '../../composables/useTripTabData'
 
 const props = defineProps<{ trip: Trip }>()
 const store = usePlacesStore()
 const bookings = useBookingsStore()
 const expenses = useExpensesStore()
-const confirm = useConfirm()
 
-const showForm = ref(false)
-const editing = ref<Place | null>(null)
 const selectedId = ref<number | null>(null)
 const searchText = ref('')
 const filterCategory = ref<string>('all')
@@ -55,18 +53,17 @@ watch(panel, async (value) => {
 
 const route = useRoute()
 
-onMounted(async () => {
-  bookings.load(props.trip.id)
-  expenses.load(props.trip.id)
-  await store.load(props.trip.id)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    bookings.load(tripId)
+    expenses.load(tripId)
+    return store.load(tripId)
+  },
   // llegar desde un gasto enlazado (?place=id) selecciona y centra ese sitio
-  const fromQuery = Number(route.query.place)
-  if (fromQuery) selectedId.value = fromQuery
-})
-watch(() => props.trip.id, (id) => {
-  store.load(id)
-  bookings.load(id)
-  expenses.load(id)
+  afterFirstLoad() {
+    const fromQuery = Number(route.query.place)
+    if (fromQuery) selectedId.value = fromQuery
+  },
 })
 
 const categoryOptions = [
@@ -108,24 +105,16 @@ const filtered = computed(() =>
   }),
 )
 
-function openNew() {
-  editing.value = null
-  showForm.value = true
-}
-function openEdit(place: Place) {
-  editing.value = place
-  showForm.value = true
-}
-function removePlace(place: Place) {
-  confirm.require({
-    message: `¿Eliminar "${place.name}"?`,
-    header: 'Eliminar sitio',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
-    accept: () => store.remove(place.id),
-  })
-}
+const {
+  showForm,
+  editing,
+  openNew,
+  openEdit,
+  removeItem: removePlace,
+} = useCrudView<Place>({
+  confirm: (place) => ({ message: `¿Eliminar "${place.name}"?`, header: 'Eliminar sitio' }),
+  remove: (place) => store.remove(place.id),
+})
 </script>
 
 <template>

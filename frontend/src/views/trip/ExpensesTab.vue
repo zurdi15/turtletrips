@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import ExpenseFormDialog from '../../components/ExpenseFormDialog.vue'
 import ExpenseImportDialog from '../../components/ExpenseImportDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -21,6 +19,11 @@ import { useExpensesStore } from '../../stores/expenses'
 import { useCategoriesStore } from '../../stores/categories'
 import { usePlacesStore } from '../../stores/places'
 import { useExpenseFilters } from '../../composables/useExpenseFilters'
+import { useConfirmDelete } from '../../composables/useConfirmDelete'
+import { useCrudView } from '../../composables/useCrudView'
+import { useNotify } from '../../composables/useNotify'
+import { useRafDeferred } from '../../composables/useRafDeferred'
+import { useTripTabData } from '../../composables/useTripTabData'
 import {
   budgetPercent,
   buildRows,
@@ -37,16 +40,14 @@ const props = defineProps<{ trip: Trip }>()
 const store = useExpensesStore()
 const categoriesStore = useCategoriesStore()
 const places = usePlacesStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 
 function catColor(name: string): string {
   return categoriesStore.colorOf('expense', name)
 }
 
-const showForm = ref(false)
 const showImport = ref(false)
-const editing = ref<Expense | null>(null)
 
 const tableGroup = ref<ExpenseGroupBy>('none')
 const tableGroupOptions = [
@@ -67,32 +68,25 @@ const viewOptions = [
 // el cambio de vista se pinta en dos fases: primero el botón + skeleton (frame
 // inmediato) y en el siguiente frame se monta la vista pesada — así el click
 // responde al instante en vez de congelarse mientras renderiza la tabla
-const renderedView = ref(viewMode.value)
-watch(viewMode, (v) => {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      renderedView.value = v
-    })
-  })
-})
+const { deferred: renderedView } = useRafDeferred(() => viewMode.value)
 
 const route = useRoute()
 // llegar desde una reserva/sitio/itinerario (?expense=id) enciende ese gasto
 const highlightId = ref<number | null>(null)
 
-onMounted(() => {
-  store.load(props.trip.id)
-  categoriesStore.load('expense')
-  places.load(props.trip.id)
-  const fromQuery = Number(route.query.expense)
-  if (fromQuery) {
-    highlightId.value = fromQuery
-    setTimeout(() => (highlightId.value = null), 4000)
-  }
-})
-watch(() => props.trip.id, (id) => {
-  store.load(id)
-  places.load(id)
+useTripTabData(() => props.trip, {
+  load(tripId) {
+    store.load(tripId)
+    categoriesStore.load('expense')
+    places.load(tripId)
+  },
+  afterFirstLoad() {
+    const fromQuery = Number(route.query.expense)
+    if (fromQuery) {
+      highlightId.value = fromQuery
+      setTimeout(() => (highlightId.value = null), 4000)
+    }
+  },
 })
 
 const placeById = computed(() => new Map(places.items.map((p) => [p.id, p])))
@@ -169,7 +163,7 @@ async function applyBulk(payload: {
   try {
     const count = selected.value.length
     await store.bulkUpdate(selected.value.map((e) => e.id), payload)
-    toast.add({ severity: 'success', summary: `${count} gastos actualizados`, life: 3000 })
+    notify.success(`${count} gastos actualizados`)
     selected.value = []
   } finally {
     bulkWorking.value = false
@@ -178,17 +172,15 @@ async function applyBulk(payload: {
 
 function bulkDelete() {
   const count = selected.value.length
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar los ${count} gastos seleccionados?`,
     header: 'Eliminar gastos',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: `Eliminar ${count}`, severity: 'danger' },
+    acceptLabel: `Eliminar ${count}`,
     accept: async () => {
       bulkWorking.value = true
       try {
         await store.bulkRemove(selected.value.map((e) => e.id))
-        toast.add({ severity: 'success', summary: `${count} gastos eliminados`, life: 3000 })
+        notify.success(`${count} gastos eliminados`)
         selected.value = []
       } finally {
         bulkWorking.value = false
@@ -197,24 +189,19 @@ function bulkDelete() {
   })
 }
 
-function openNew() {
-  editing.value = null
-  showForm.value = true
-}
-function openEdit(expense: Expense) {
-  editing.value = expense
-  showForm.value = true
-}
-function removeExpense(expense: Expense) {
-  confirm.require({
+const {
+  showForm,
+  editing,
+  openNew,
+  openEdit,
+  removeItem: removeExpense,
+} = useCrudView<Expense>({
+  confirm: (expense) => ({
     message: `¿Eliminar el gasto "${expense.description}"?`,
     header: 'Eliminar gasto',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
-    accept: () => store.remove(expense.id),
-  })
-}
+  }),
+  remove: (expense) => store.remove(expense.id),
+})
 </script>
 
 <template>

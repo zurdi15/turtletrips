@@ -4,14 +4,14 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import AutoComplete from 'primevue/autocomplete'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import WorldMapPanel from '../components/world/WorldMapPanel.vue'
 import WorldCountryList from '../components/world/WorldCountryList.vue'
 import WorldPlaceDialog, {
   type WorldPlacePrefill,
 } from '../components/world/WorldPlaceDialog.vue'
 import { api } from '../api/client'
+import { useConfirmDelete } from '../composables/useConfirmDelete'
+import { useNotify } from '../composables/useNotify'
 import type { GeocodeResult, WorldPlace, WorldPlaceKind } from '../api/types'
 import { COUNTRY_BY_CODE, COUNTRY_OPTIONS, countryName, flagEmoji } from '../countries'
 import { useWorldPlacesStore } from '../stores/worldPlaces'
@@ -26,8 +26,8 @@ import {
 } from '../utils/worldGrouping'
 
 const store = useWorldPlacesStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 const { results: geoResults, search: geoSearch } = useGeocodeSearch()
 
 const mapPanel = ref<InstanceType<typeof WorldMapPanel> | null>(null)
@@ -122,15 +122,11 @@ async function addCountry(code: string | null) {
       lat: results[0]?.lat ?? null,
       lon: results[0]?.lon ?? null,
     })
-    toast.add({
-      severity: 'success',
-      summary: `${flagEmoji(code)} ${countryName(code)} añadido`,
-      life: 3000,
-    })
+    notify.success(`${flagEmoji(code)} ${countryName(code)} añadido`)
     // esperar al render para que el mapa ya tenga el marcador nuevo
     nextTick(() => mapPanel.value?.fitAll())
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al añadir', err)
   } finally {
     addingCountry.value = false
     addCountryCode.value = null
@@ -150,14 +146,12 @@ function onDialogSaved(created: boolean) {
 }
 
 function removePlace(place: WorldPlace) {
-  confirm.require({
+  confirmAction({
     message: place.auto
       ? `"${displayName(place)}" viene del viaje "${place.origin}". Se ocultará del mapa y no volverá a aparecer.`
       : `¿Quitar "${displayName(place)}" del mapa?`,
     header: 'Quitar del mapa',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Quitar', severity: 'danger' },
+    acceptLabel: 'Quitar',
     accept: () => store.remove(place.id),
   })
 }

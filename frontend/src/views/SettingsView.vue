@@ -4,17 +4,17 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import { api, API_BASE } from '../api/client'
 import type { Category } from '../api/types'
 import { CATEGORY_PALETTE } from '../constants'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { useConfirmDelete } from '../composables/useConfirmDelete'
+import { useNotify } from '../composables/useNotify'
 import { useTheme } from '../composables/useTheme'
 
 const categories = useCategoriesStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 
 // ---- apariencia (tema claro/oscuro) ----
 
@@ -41,34 +41,23 @@ function onRestoreFilePicked(event: Event) {
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
-  confirm.require({
+  confirmAction({
     message:
       'Esto reemplazará TODOS los datos actuales (viajes, gastos, adjuntos…) ' +
       'por los de la copia. Esta acción no se puede deshacer.',
     header: 'Restaurar copia de seguridad',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Restaurar', severity: 'danger' },
+    acceptLabel: 'Restaurar',
     accept: async () => {
       restoring.value = true
       try {
         const form = new FormData()
         form.append('file', file)
         const result = await api.upload<{ trips: number }>('/backup/restore', form)
-        toast.add({
-          severity: 'success',
-          summary: `Copia restaurada (${result.trips} viajes)`,
-          life: 3000,
-        })
+        notify.success(`Copia restaurada (${result.trips} viajes)`)
         // todas las stores quedan obsoletas tras el restore
         setTimeout(() => window.location.reload(), 800)
       } catch (err) {
-        toast.add({
-          severity: 'error',
-          summary: 'No se pudo restaurar',
-          detail: String(err),
-          life: 6000,
-        })
+        notify.error('No se pudo restaurar', err)
         restoring.value = false
       }
     },
@@ -97,7 +86,7 @@ async function pickColor(color: string) {
   try {
     await categories.update(colorTarget.value.id, colorTarget.value.kind, { color })
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al cambiar el color', err)
   }
   colorPopover.value?.hide()
 }
@@ -110,7 +99,7 @@ async function addCategory(kind: 'expense' | 'packing') {
     await categories.create(kind, name, color)
     newNames.value[kind] = ''
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al añadir', err)
   }
 }
 
@@ -125,17 +114,14 @@ async function confirmRename(kind: 'expense' | 'packing') {
     await categories.update(editingId.value, kind, { name: editingName.value.trim() })
     editingId.value = null
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al renombrar', err)
   }
 }
 
 function removeCategory(kind: 'expense' | 'packing', category: Category) {
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar la categoría "${category.name}"? Los elementos existentes conservan el nombre.`,
     header: 'Eliminar categoría',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: () => categories.remove(category.id, kind),
   })
 }

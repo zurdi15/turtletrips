@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Button from 'primevue/button'
-import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import { useAttachmentsStore } from '../stores/attachments'
+import { useConfirmDelete } from '../composables/useConfirmDelete'
+import { useNotify } from '../composables/useNotify'
 import { fileIcon, formatSize } from '../utils/files'
 
 const props = withDefaults(
@@ -11,8 +11,8 @@ const props = withDefaults(
   { showList: true },
 )
 const store = useAttachmentsStore()
-const confirm = useConfirm()
-const toast = useToast()
+const confirmAction = useConfirmDelete()
+const notify = useNotify()
 const fileInput = ref<HTMLInputElement>()
 const uploading = ref(false)
 
@@ -30,7 +30,7 @@ async function onFileChosen(event: Event) {
   try {
     await store.upload(file, props.bookingId)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error al subir', detail: String(err), life: 5000 })
+    notify.error('Error al subir', err)
   } finally {
     uploading.value = false
     target.value = ''
@@ -38,12 +38,9 @@ async function onFileChosen(event: Event) {
 }
 
 function remove(id: number, name: string) {
-  confirm.require({
+  confirmAction({
     message: `¿Eliminar el fichero "${name}"?`,
     header: 'Eliminar adjunto',
-    icon: 'pi pi-exclamation-triangle',
-    rejectProps: { label: 'Cancelar', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Eliminar', severity: 'danger' },
     accept: () => store.remove(id),
   })
 }

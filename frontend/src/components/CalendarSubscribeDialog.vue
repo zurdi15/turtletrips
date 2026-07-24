@@ -4,15 +4,15 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { useToast } from 'primevue/usetoast'
 import { api } from '../api/client'
+import { useNotify } from '../composables/useNotify'
 import type { Trip } from '../api/types'
 import { useTripsStore } from '../stores/trips'
 
 const props = defineProps<{ trip: Trip }>()
 const visible = defineModel<boolean>('visible', { required: true })
 
-const toast = useToast()
+const notify = useNotify()
 const trips = useTripsStore()
 const working = ref(false)
 
@@ -28,7 +28,7 @@ async function rotate() {
     await api.post(`/trips/${props.trip.id}/ics-token`, {})
     await trips.loadTrip(props.trip.id)
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+    notify.error('Error al generar el enlace', err)
   } finally {
     working.value = false
   }
@@ -37,7 +37,7 @@ async function rotate() {
 function copy() {
   if (!url.value) return
   navigator.clipboard?.writeText(url.value)
-  toast.add({ severity: 'info', summary: 'Enlace copiado', life: 2000 })
+  notify.info('Enlace copiado')
 }
 </script>
 
