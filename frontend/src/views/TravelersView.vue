@@ -71,7 +71,7 @@ function remove(traveler: Traveler) {
 </script>
 
 <template>
-  <div class="max-w-2xl">
+  <div class="max-w-2xl mx-auto">
     <div class="flex items-center gap-2 mb-6">
       <h1 class="text-2xl font-bold text-slate-800">Viajeros</h1>
       <button
