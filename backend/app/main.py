@@ -20,6 +20,7 @@ from .routers import (
     rates,
     travelers,
     trips,
+    world,
 )
 from .services.categories import ensure_default_categories
 
@@ -55,6 +56,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         countries.router,
         geocode.router,
         rates.router,
+        world.router,
     ):
         app.include_router(router, prefix=API_PREFIX)
 

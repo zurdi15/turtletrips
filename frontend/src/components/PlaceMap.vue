@@ -5,6 +5,7 @@ import { latLngBounds, type Map as LeafletMap } from 'leaflet'
 import type { Place } from '../api/types'
 import { PLACE_CATEGORY_COLORS, PLACE_CATEGORY_LABELS } from '../constants'
 import { useCountryCenter } from '../composables/useCountryCenter'
+import { useMapTiles } from '../composables/useMapTiles'
 
 const props = defineProps<{
   places: Place[]
@@ -14,6 +15,7 @@ const props = defineProps<{
 const emit = defineEmits<{ select: [id: number] }>()
 
 const { centerFor } = useCountryCenter()
+const tiles = useMapTiles()
 
 const mapRef = ref<InstanceType<typeof LMap> | null>(null)
 const zoom = ref(2)
@@ -83,10 +85,11 @@ defineExpose({ refresh })
     @ready="onReady"
   >
     <LTileLayer
-      url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      :key="tiles.url.value"
+      :url="tiles.url.value"
+      :attribution="tiles.attribution"
       layer-type="base"
-      name="OpenStreetMap"
+      name="Base"
     />
     <LCircleMarker
       v-for="place in located"

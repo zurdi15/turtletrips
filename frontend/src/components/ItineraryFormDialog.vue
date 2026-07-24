@@ -6,6 +6,7 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
+import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
 import type { ItineraryItem } from '../api/types'
 import { useItineraryStore } from '../stores/itinerary'
@@ -22,7 +23,7 @@ const store = useItineraryStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
 
-const day = ref<Date>(new Date())
+const day = ref<Date | null>(new Date())
 const endDay = ref<Date | null>(null)
 const title = ref('')
 const startTime = ref<Date | null>(null)
@@ -76,6 +77,10 @@ async function save() {
     toast.add({ severity: 'warn', summary: 'El título es obligatorio', life: 3000 })
     return
   }
+  if (!day.value) {
+    toast.add({ severity: 'warn', summary: 'El día es obligatorio', life: 3000 })
+    return
+  }
   saving.value = true
   try {
     const payload = {
@@ -112,22 +117,9 @@ async function save() {
         <label class="text-sm font-medium">Título *</label>
         <InputText v-model="title" placeholder="Visitar Fushimi Inari" autofocus />
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Desde (día) *</label>
-          <DatePicker v-model="day" showIcon dateFormat="dd/mm/yy" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Hasta (día)</label>
-          <DatePicker
-            v-model="endDay"
-            showIcon
-            showButtonBar
-            dateFormat="dd/mm/yy"
-            :minDate="day"
-            placeholder="Mismo día"
-          />
-        </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">Día(s) *</label>
+        <DateRangePicker v-model:start="day" v-model:end="endDay" startLabel="Desde" endLabel="Hasta" />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
@@ -140,7 +132,7 @@ async function save() {
         </div>
       </div>
       <p class="text-xs text-slate-400 -mt-2">
-        Usa "Hasta (día)" para estancias de varios días, p. ej. una ciudad en la que estarás del 3 al 6.
+        Deja "Hasta" vacío para actividades de un solo día; rellénalo para estancias (p. ej. una ciudad del 3 al 6).
       </p>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">

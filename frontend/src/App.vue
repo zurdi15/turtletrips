@@ -2,6 +2,7 @@
 import { useRoute } from 'vue-router'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
+import BrandMark from './components/BrandMark.vue'
 import { useTheme } from './composables/useTheme'
 
 const route = useRoute()
@@ -9,6 +10,7 @@ const { isDark, toggle } = useTheme()
 
 const navItems = [
   { to: '/', label: 'Viajes', icon: 'pi pi-compass', match: (p: string) => p === '/' || p.startsWith('/trips') },
+  { to: '/mapa', label: 'Mapa', icon: 'pi pi-globe', match: (p: string) => p.startsWith('/mapa') },
   { to: '/maletas', label: 'Maletas', icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/maletas') },
   { to: '/viajeros', label: 'Viajeros', icon: 'pi pi-users', match: (p: string) => p.startsWith('/viajeros') },
 ]
@@ -17,12 +19,14 @@ const navItems = [
 <template>
   <div class="min-h-screen">
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
-      <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center gap-2 sm:gap-4">
+      <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 relative flex items-center gap-2 sm:gap-4">
         <router-link to="/" class="flex items-center gap-2 no-underline shrink-0">
-          <span class="text-2xl">🐢</span>
-          <span class="font-bold text-lg text-slate-800 hidden md:inline">Turtle Trips</span>
+          <BrandMark class="h-8 w-8 text-slate-800" />
+          <span class="font-bold text-lg tracking-tight text-slate-800 hidden md:inline"
+            >turtle<span class="text-emerald-500">trips</span></span
+          >
         </router-link>
-        <nav class="flex items-center gap-0.5 sm:gap-1">
+        <nav class="absolute left-1/2 -translate-x-1/2 flex items-center gap-0.5 sm:gap-1">
           <router-link
             v-for="item in navItems"
             :key="item.to"

@@ -160,6 +160,20 @@ export interface TripSummary {
   by_currency: CurrencyTotal[]
 }
 
+export type WorldPlaceKind = 'country' | 'city' | 'place'
+
+export interface WorldPlace {
+  id: number
+  name: string
+  kind: WorldPlaceKind
+  country_code: string | null
+  lat: number | null
+  lon: number | null
+  note: string | null
+  auto: boolean
+  origin: string | null
+}
+
 export interface GeocodeResult {
   display_name: string
   lat: number

@@ -93,7 +93,7 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
 </script>
 
 <template>
-  <div class="max-w-3xl">
+  <div class="max-w-3xl mx-auto">
     <h1 class="text-2xl font-bold text-slate-800 mb-6">Ajustes</h1>
 
     <div class="flex flex-col gap-6">

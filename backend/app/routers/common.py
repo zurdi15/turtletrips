@@ -20,6 +20,7 @@ NOT_FOUND_LABELS = {
     "PackingItem": "Elemento de maleta",
     "PackingTemplate": "Plantilla de maleta",
     "PackingTemplateItem": "Elemento de plantilla",
+    "WorldPlace": "Lugar del mapa",
 }
 
 

@@ -341,6 +341,26 @@ class PackingTemplateItem(Base):
     template: Mapped[PackingTemplate] = relationship(back_populates="items")
 
 
+class WorldPlace(TimestampMixin, Base):
+    """Diario mundial: lugares visitados, añadidos a mano o derivados de los viajes."""
+
+    __tablename__ = "world_places"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(200))
+    kind: Mapped[str] = mapped_column(String(10), default="place")  # country|city|place
+    country_code: Mapped[str | None] = mapped_column(String(2))  # ISO alpha-2
+    lat: Mapped[float | None] = mapped_column()
+    lon: Mapped[float | None] = mapped_column()
+    note: Mapped[str | None] = mapped_column(Text)
+    auto: Mapped[bool] = mapped_column(Boolean, default=False)  # derivado de un viaje
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False)  # auto "borrado" por el usuario
+    origin: Mapped[str | None] = mapped_column(String(200))  # nombre del viaje de origen
+    trip_place_id: Mapped[int | None] = mapped_column(
+        ForeignKey("places.id", ondelete="SET NULL")
+    )
+
+
 class ExchangeRateCache(Base):
     __tablename__ = "exchange_rate_cache"
     __table_args__ = (UniqueConstraint("base", "quote", "day"),)

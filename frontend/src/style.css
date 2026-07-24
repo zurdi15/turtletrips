@@ -172,3 +172,54 @@ body {
   background: var(--p-primary-600);
   border-color: var(--p-primary-600);
 }
+
+/* Selector de rango (DateRangePicker): dos campos + calendario compartido con el lapso en verde */
+.tt-range-panel .p-datepicker-panel {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+.tt-range-panel td.p-datepicker-day-cell {
+  padding: 2px 0;
+}
+.tt-range-panel .p-datepicker-day {
+  width: 100%;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  border-radius: 9999px;
+}
+.tt-range-panel .tt-day-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+/* la selección interna del DatePicker no debe verse: el rango lo pintamos nosotros */
+.tt-range-panel .p-datepicker-day-selected {
+  background: transparent;
+  color: inherit;
+}
+.tt-range-panel .p-datepicker-day:has(.tt-range-start),
+.tt-range-panel .p-datepicker-day:has(.tt-range-end) {
+  background: #10b981;
+  color: #fff;
+}
+.tt-range-panel .p-datepicker-day:has(.tt-range-preview) {
+  background: rgb(16 185 129 / 0.55);
+  color: #fff;
+}
+.tt-range-panel .p-datepicker-day:has(.tt-in-range) {
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 0;
+}
+.tt-dark .tt-range-panel .p-datepicker-day:has(.tt-in-range) {
+  background: rgb(6 78 59 / 0.55);
+  color: #a7f3d0;
+}
+.tt-dark .tt-range-panel .p-datepicker-day:has(.tt-range-preview) {
+  background: rgb(52 211 153 / 0.5);
+  color: #064e3b;
+}

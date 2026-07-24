@@ -8,7 +8,7 @@ import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
 import SelectButton from 'primevue/selectbutton'
 import InputText from 'primevue/inputtext'
-import DatePicker from 'primevue/datepicker'
+import DateRangePicker from '../../components/DateRangePicker.vue'
 import Chart from 'primevue/chart'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
@@ -645,22 +645,13 @@ function removeExpense(expense: Expense) {
         placeholder="Buscar en descripción, notas o categoría…"
         class="w-full lg:w-auto lg:flex-1"
       />
-      <DatePicker
-        v-model="dateFrom"
-        placeholder="Desde"
-        showIcon
-        showButtonBar
-        dateFormat="dd/mm/yy"
-        class="w-[calc(50%-0.25rem)] sm:w-36"
-      />
-      <DatePicker
-        v-model="dateTo"
-        placeholder="Hasta"
-        showIcon
-        showButtonBar
-        dateFormat="dd/mm/yy"
-        :minDate="dateFrom ?? undefined"
-        class="w-[calc(50%-0.25rem)] sm:w-36"
+      <DateRangePicker
+        v-model:start="dateFrom"
+        v-model:end="dateTo"
+        startLabel="Desde"
+        endLabel="Hasta"
+        clearable
+        class="w-full sm:w-72"
       />
       <Select
         v-model="filterCategory"

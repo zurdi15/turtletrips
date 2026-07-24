@@ -9,6 +9,11 @@ export const router = createRouter({
       component: () => import('../views/TripListView.vue'),
     },
     {
+      path: '/mapa',
+      name: 'world-map',
+      component: () => import('../views/WorldMapView.vue'),
+    },
+    {
       path: '/maletas',
       name: 'packing-templates',
       component: () => import('../views/PackingTemplatesView.vue'),

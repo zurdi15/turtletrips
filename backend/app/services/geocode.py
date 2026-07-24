@@ -34,7 +34,14 @@ async def search(query: str, limit: int = 8) -> list[GeocodeResult]:
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.get(
                     f"{settings.nominatim_url}/search",
-                    params={"q": query, "format": "jsonv2", "limit": limit},
+                    # accept-language=es: nombres en español (si no, Nominatim
+                    # devuelve el idioma local: 臺北 en vez de Taipéi)
+                    params={
+                        "q": query,
+                        "format": "jsonv2",
+                        "limit": limit,
+                        "accept-language": "es",
+                    },
                     headers={"User-Agent": _USER_AGENT},
                 )
                 resp.raise_for_status()

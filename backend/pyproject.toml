@@ -24,6 +24,10 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.ruff.lint.flake8-bugbear]
+# Depends/Query/Form en defaults es el idiom oficial de FastAPI
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Form", "fastapi.File"]
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"

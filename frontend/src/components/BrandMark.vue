@@ -1,0 +1,36 @@
+<template>
+  <!-- Marca de Turtle Trips: tinta = currentColor (se adapta al tema), placa central verde -->
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="-180 -200 360 360" aria-hidden="true">
+    <defs>
+      <mask id="tt-mark-scutes">
+        <rect x="-180" y="-200" width="360" height="360" fill="white" />
+        <!-- anillo que separa caparazón de cabeza/aletas/cola -->
+        <ellipse cx="0" cy="18" rx="94" ry="106" fill="none" stroke="black" stroke-width="10" />
+        <!-- hueco hexagonal (la placa verde va dentro, algo menor) -->
+        <polygon points="0,-40 43.3,-15 43.3,35 0,60 -43.3,35 -43.3,-15" fill="black" />
+        <!-- surcos radiales de las placas, terminan en el anillo -->
+        <g stroke="black" stroke-width="10" stroke-linecap="round">
+          <line x1="0" y1="-40" x2="0" y2="-88" />
+          <line x1="43.3" y1="-15" x2="80.6" y2="-36.5" />
+          <line x1="-43.3" y1="-15" x2="-80.6" y2="-36.5" />
+          <line x1="43.3" y1="35" x2="86.3" y2="59.9" />
+          <line x1="-43.3" y1="35" x2="-86.3" y2="59.9" />
+          <line x1="0" y1="60" x2="0" y2="124" />
+        </g>
+      </mask>
+    </defs>
+    <g mask="url(#tt-mark-scutes)">
+      <g fill="currentColor">
+        <ellipse cx="0" cy="0" rx="78" ry="27" transform="translate(-102,-70) rotate(42)" />
+        <ellipse cx="0" cy="0" rx="78" ry="27" transform="translate(102,-70) rotate(-42)" />
+        <ellipse cx="0" cy="0" rx="50" ry="20" transform="translate(-78,108) rotate(-45)" />
+        <ellipse cx="0" cy="0" rx="50" ry="20" transform="translate(78,108) rotate(45)" />
+        <path d="M -16 110 Q 0 178 16 110 Z" />
+        <circle cx="0" cy="-146" r="40" />
+        <rect x="-22" y="-146" width="44" height="76" />
+        <ellipse cx="0" cy="18" rx="94" ry="106" />
+      </g>
+    </g>
+    <polygon points="0,-31 35.5,-10.5 35.5,30.5 0,51 -35.5,30.5 -35.5,-10.5" fill="#10B981" />
+  </svg>
+</template>

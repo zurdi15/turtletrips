@@ -3,11 +3,11 @@ import { ref, watch } from 'vue'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
 import InputNumber from 'primevue/inputnumber'
 import Button from 'primevue/button'
+import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
 import type { Trip } from '../api/types'
 import { CURRENCIES, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
@@ -130,15 +130,9 @@ async function save() {
           :virtualScrollerOptions="{ itemSize: 38 }"
         />
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Inicio</label>
-          <DatePicker v-model="startDate" showIcon dateFormat="dd/mm/yy" />
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">Fin</label>
-          <DatePicker v-model="endDate" showIcon dateFormat="dd/mm/yy" :minDate="startDate ?? undefined" />
-        </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">Fechas</label>
+        <DateRangePicker v-model:start="startDate" v-model:end="endDate" clearable />
       </div>
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">

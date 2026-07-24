@@ -128,14 +128,7 @@ function removePlace(place: Place) {
       </span>
     </div>
 
-    <EmptyState
-      v-if="!store.loading && !store.items.length"
-      icon="pi pi-map-marker"
-      title="Sin sitios guardados"
-      subtitle="Añade los sitios que quieres ver en este viaje"
-    />
-
-    <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div
         class="flex-col gap-2 max-h-[70vh] lg:max-h-[600px] overflow-y-auto pr-1"
         :class="mobilePanel === 'map' ? 'hidden lg:flex' : 'flex'"
@@ -199,7 +192,13 @@ function removePlace(place: Place) {
             </div>
           </div>
         </div>
-        <p v-if="!filtered.length" class="text-center text-sm text-slate-400 py-8">
+        <EmptyState
+          v-if="!store.loading && !store.items.length"
+          icon="pi pi-map-marker"
+          title="Sin sitios guardados"
+          subtitle="Añade los sitios que quieres ver en este viaje"
+        />
+        <p v-else-if="!filtered.length" class="text-center text-sm text-slate-400 py-8">
           Ningún sitio coincide con los filtros
         </p>
       </div>

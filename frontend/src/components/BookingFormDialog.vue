@@ -7,6 +7,7 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
+import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
 import type { Booking, BookingType, Trip } from '../api/types'
 import { BOOKING_TYPE_LABELS, CURRENCIES, toSelectOptions } from '../constants'
@@ -24,8 +25,10 @@ const type = ref<BookingType>('hotel')
 const title = ref('')
 const provider = ref('')
 const confirmationCode = ref('')
-const startDt = ref<Date | null>(null)
-const endDt = ref<Date | null>(null)
+const startDate = ref<Date | null>(null)
+const endDate = ref<Date | null>(null)
+const startTime = ref<Date | null>(null)
+const endTime = ref<Date | null>(null)
 const origin = ref('')
 const destination = ref('')
 const address = ref('')
@@ -45,10 +48,15 @@ const dateLabels = computed(() =>
       : { start: 'Inicio', end: 'Fin' },
 )
 
-function toNaiveIso(d: Date): string {
-  const hh = String(d.getHours()).padStart(2, '0')
-  const mm = String(d.getMinutes()).padStart(2, '0')
-  return `${toIsoDate(d)}T${hh}:${mm}:00`
+function toNaiveIso(date: Date, time: Date | null): string {
+  const hh = String(time?.getHours() ?? 0).padStart(2, '0')
+  const mm = String(time?.getMinutes() ?? 0).padStart(2, '0')
+  return `${toIsoDate(date)}T${hh}:${mm}:00`
+}
+
+// una hora 00:00 guardada se trata como "sin hora"
+function timeOf(d: Date): Date | null {
+  return d.getHours() || d.getMinutes() ? d : null
 }
 
 watch(visible, (open) => {
@@ -58,8 +66,12 @@ watch(visible, (open) => {
   title.value = b?.title ?? ''
   provider.value = b?.provider ?? ''
   confirmationCode.value = b?.confirmation_code ?? ''
-  startDt.value = b?.start_dt ? new Date(b.start_dt) : null
-  endDt.value = b?.end_dt ? new Date(b.end_dt) : null
+  const start = b?.start_dt ? new Date(b.start_dt) : null
+  const end = b?.end_dt ? new Date(b.end_dt) : null
+  startDate.value = start
+  endDate.value = end
+  startTime.value = start ? timeOf(start) : null
+  endTime.value = end ? timeOf(end) : null
   origin.value = b?.origin ?? ''
   destination.value = b?.destination ?? ''
   address.value = b?.address ?? ''
@@ -80,8 +92,8 @@ async function save() {
       title: title.value.trim(),
       provider: provider.value || null,
       confirmation_code: confirmationCode.value || null,
-      start_dt: startDt.value ? toNaiveIso(startDt.value) : null,
-      end_dt: endDt.value ? toNaiveIso(endDt.value) : null,
+      start_dt: startDate.value ? toNaiveIso(startDate.value, startTime.value) : null,
+      end_dt: endDate.value ? toNaiveIso(endDate.value, endTime.value) : null,
       origin: isTransport.value ? origin.value || null : null,
       destination: isTransport.value ? destination.value || null : null,
       address: !isTransport.value ? address.value || null : null,
@@ -129,14 +141,21 @@ async function save() {
           <InputText v-model="confirmationCode" />
         </div>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <DateRangePicker
+        v-model:start="startDate"
+        v-model:end="endDate"
+        :startLabel="dateLabels.start"
+        :endLabel="dateLabels.end"
+        clearable
+      />
+      <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">{{ dateLabels.start }}</label>
-          <DatePicker v-model="startDt" showTime hourFormat="24" showIcon dateFormat="dd/mm/yy" />
+          <label class="text-sm font-medium">Hora {{ dateLabels.start.toLowerCase() }}</label>
+          <DatePicker v-model="startTime" timeOnly hourFormat="24" placeholder="—" />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium">{{ dateLabels.end }}</label>
-          <DatePicker v-model="endDt" showTime hourFormat="24" showIcon dateFormat="dd/mm/yy" />
+          <label class="text-sm font-medium">Hora {{ dateLabels.end.toLowerCase() }}</label>
+          <DatePicker v-model="endTime" timeOnly hourFormat="24" placeholder="—" />
         </div>
       </div>
       <div v-if="isTransport" class="grid grid-cols-2 gap-3">
