@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, TransitionGroup } from 'vue'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -117,7 +117,7 @@ async function undo(settlementId: number) {
 
       <div
         v-if="data.debts_settled"
-        class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-2 text-emerald-700 font-medium"
+        class="tt-pop-in rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-2 text-emerald-700 font-medium"
       >
         <i class="pi pi-check-circle" />
         Deudas saldadas
@@ -128,10 +128,10 @@ async function undo(settlementId: number) {
         <p v-if="!data.settlements.length" class="text-sm text-slate-400">
           Todo cuadra: nadie debe nada. 🎉
         </p>
-        <ul v-else class="flex flex-col gap-2">
+        <TransitionGroup v-else tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li
-            v-for="(t, idx) in data.settlements"
-            :key="idx"
+            v-for="t in data.settlements"
+            :key="`${t.from_id}-${t.to_id}`"
             class="flex items-center gap-2 text-sm text-slate-700"
           >
             <span class="font-medium">{{ t.from_name }}</span>
@@ -148,12 +148,12 @@ async function undo(settlementId: number) {
               @click="settle(t)"
             />
           </li>
-        </ul>
+        </TransitionGroup>
       </div>
 
       <div v-if="data.paid_settlements.length" class="bg-white rounded-xl border border-slate-200 p-4">
         <h3 class="text-sm font-semibold text-slate-700 mb-3">Pagos registrados</h3>
-        <ul class="flex flex-col gap-2">
+        <TransitionGroup tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li
             v-for="s in data.paid_settlements"
             :key="s.id"
@@ -175,7 +175,7 @@ async function undo(settlementId: number) {
               @click="undo(s.id)"
             />
           </li>
-        </ul>
+        </TransitionGroup>
       </div>
     </template>
   </div>

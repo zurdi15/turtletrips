@@ -143,7 +143,7 @@ function deleteTrip() {
             <StatusTag :status="store.current.status" />
             <span
               v-if="store.current.debts_settled"
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700"
+              class="tt-pop-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700"
               v-tooltip.bottom="'Deudas saldadas entre viajeros'"
             >
               <i class="pi pi-check-circle text-[10px]" />
@@ -217,15 +217,18 @@ function deleteTrip() {
       </div>
 
       <nav class="flex gap-1 border-b border-slate-200 mb-6 mt-4 overflow-x-auto no-scrollbar">
+        <!-- el color activo se aplica SIN transición (una transición de color se
+             congela si el hilo principal está montando la tab) y el subrayado
+             crece con transform, que anima en el compositor -->
         <router-link
           v-for="tab in tabs"
           :key="tab.name"
           :to="{ name: tab.name, params: { id } }"
-          class="px-3 py-2 text-sm font-medium no-underline whitespace-nowrap border-b-2 -mb-px transition-colors"
+          class="tt-tab px-3 py-2 text-sm font-medium no-underline whitespace-nowrap"
           :class="
             activeTab === tab.name
-              ? 'border-[var(--p-primary-color)] text-[var(--p-primary-color)]'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'tt-tab-active text-[var(--p-primary-color)]'
+              : 'text-slate-500 hover:text-slate-700'
           "
           @click="pendingTab = tab.name"
         >
@@ -237,10 +240,37 @@ function deleteTrip() {
         <TabSkeleton v-if="tabSkeleton.stats" variant="stats" />
         <TabSkeleton :variant="tabSkeleton.main" :rows="tabSkeleton.rows" />
       </div>
-      <router-view v-else :trip="store.current" />
+      <!-- la clase cae en la raíz de la tab: cada tab entra con un rise suave -->
+      <router-view v-else :trip="store.current" class="tt-anim-rise" />
 
       <TripFormDialog v-model:visible="showEdit" :trip="store.current" />
       <TravelersDialog v-model:visible="showTravelers" :trip-id="tripId" />
     </div>
   </div>
 </template>
+
+<style scoped>
+.tt-tab {
+  position: relative;
+}
+.tt-tab::after {
+  content: '';
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: 0;
+  height: 2px;
+  border-radius: 9999px;
+  background: var(--p-primary-color);
+  transform: scaleX(0);
+  transition: transform 0.18s ease;
+}
+.tt-tab-active::after {
+  transform: scaleX(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-tab::after {
+    transition: none;
+  }
+}
+</style>

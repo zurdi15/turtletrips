@@ -302,7 +302,7 @@ function removeExpense(expense: Expense) {
       >
         Ningún gasto coincide con los filtros
       </p>
-      <div v-else-if="renderedView === 'table'">
+      <div v-else-if="renderedView === 'table'" class="tt-anim-rise">
         <ExpenseBulkBar
           v-if="selected.length"
           :count="selected.length"
@@ -330,17 +330,20 @@ function removeExpense(expense: Expense) {
         />
       </div>
 
-      <ExpenseChartsPanel
-        v-else-if="renderedView === 'charts'"
-        :filtered="filtered"
-        :trip="trip"
-        :catColor="catColor"
-        :payerName="payerName"
-        :placeNameOf="placeNameOf"
-        :excludedCategories="filters.excludedCategories"
-      />
+      <div v-else-if="renderedView === 'charts'" class="tt-anim-rise">
+        <ExpenseChartsPanel
+          :filtered="filtered"
+          :trip="trip"
+          :catColor="catColor"
+          :payerName="payerName"
+          :placeNameOf="placeNameOf"
+          :excludedCategories="filters.excludedCategories"
+        />
+      </div>
 
-      <BalancesPanel v-else :trip="trip" />
+      <div v-else class="tt-anim-rise">
+        <BalancesPanel :trip="trip" />
+      </div>
     </div>
     </template>
 

@@ -144,7 +144,7 @@ async function saveEdit() {
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- lista de plantillas -->
       <div class="bg-white rounded-xl border border-slate-200 p-4">
-        <ul class="flex flex-col gap-1 mb-4">
+        <ul class="tt-stagger flex flex-col gap-1 mb-4">
           <li v-for="template in store.templates" :key="template.id">
             <button
               class="w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-colors"

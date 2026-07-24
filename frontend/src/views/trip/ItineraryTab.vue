@@ -282,7 +282,7 @@ function onEventDrop(info: EventDropArg) {
       <Button label="Nueva actividad" icon="pi pi-plus" @click="openNew()" />
     </EmptyState>
 
-    <div v-else-if="view === 'agenda'" class="flex flex-col gap-4">
+    <div v-else-if="view === 'agenda'" class="tt-stagger flex flex-col gap-4">
       <div
         v-for="day in days"
         :key="day"

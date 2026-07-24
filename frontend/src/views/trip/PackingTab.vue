@@ -349,7 +349,7 @@ async function saveTemplate() {
       subtitle="Añade elementos o aplica una plantilla"
     />
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+    <div v-else class="tt-stagger grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
       <div
         v-for="group in grouped"
         :key="group.name"
@@ -375,7 +375,10 @@ async function saveTemplate() {
               binary
               @update:modelValue="store.toggle(item)"
             />
-            <span class="flex-1" :class="{ 'line-through text-slate-400': item.checked }">
+            <span
+              class="flex-1 transition-colors duration-200"
+              :class="{ 'line-through text-slate-400': item.checked }"
+            >
               {{ item.name }}
               <a
                 v-if="item.url"

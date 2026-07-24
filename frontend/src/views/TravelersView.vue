@@ -86,7 +86,7 @@ function remove(traveler: Traveler) {
     </div>
 
     <div class="bg-white rounded-xl border border-slate-200 p-5">
-      <ul class="flex flex-col gap-1.5 mb-4">
+      <ul class="tt-stagger flex flex-col gap-1.5 mb-4">
         <li
           v-for="traveler in travelers.items"
           :key="traveler.id"

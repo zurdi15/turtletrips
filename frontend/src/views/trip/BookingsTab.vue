@@ -114,7 +114,7 @@ function copyCode(code: string) {
       subtitle="Guarda aquí hoteles, vuelos y actividades con sus PDFs"
     />
 
-    <div v-else class="flex flex-col gap-8">
+    <div v-else class="tt-stagger flex flex-col gap-8">
       <section v-for="group in grouped" :key="group.type">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400 mb-3">
           <i :class="BOOKING_TYPE_ICONS[group.type]" class="mr-1.5" />

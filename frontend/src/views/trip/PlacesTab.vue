@@ -137,13 +137,13 @@ function removePlace(place: Place) {
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div
-        class="flex-col gap-2 max-h-[70vh] lg:max-h-[600px] overflow-y-auto pr-1"
+        class="tt-stagger flex-col gap-2 max-h-[70vh] lg:max-h-[600px] overflow-y-auto pr-1"
         :class="mobilePanel === 'map' ? 'hidden lg:flex' : 'flex'"
       >
         <div
           v-for="place in filtered"
           :key="place.id"
-          class="bg-white rounded-xl border p-3 cursor-pointer transition-colors"
+          class="tt-lift bg-white rounded-xl border p-3 cursor-pointer"
           :class="
             selectedId === place.id
               ? 'border-[var(--p-primary-color)] ring-1 ring-[var(--p-primary-color)]'

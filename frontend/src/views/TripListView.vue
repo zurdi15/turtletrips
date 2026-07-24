@@ -275,7 +275,7 @@ function dateRange(trip: Trip): string {
           {{ group.title }}
           <span class="font-normal normal-case">· {{ group.trips.length }}</span>
         </h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="tt-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <router-link
             v-for="trip in group.trips"
             :key="trip.id"
@@ -283,7 +283,7 @@ function dateRange(trip: Trip): string {
             class="no-underline"
           >
             <div
-              class="bg-white rounded-xl border border-slate-200 overflow-hidden h-full hover:shadow-md transition-shadow group"
+              class="tt-lift bg-white rounded-xl border border-slate-200 overflow-hidden h-full group"
             >
               <div class="relative h-32 bg-slate-200 overflow-hidden">
                 <img
@@ -309,7 +309,7 @@ function dateRange(trip: Trip): string {
                   <span class="text-sm">{{ trip.countries.map(flagEmoji).join(' ') }}</span>
                   <span
                     v-if="trip.debts_settled"
-                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700"
+                    class="tt-pop-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700"
                     v-tooltip.top="'Deudas saldadas entre viajeros'"
                   >
                     <i class="pi pi-check-circle text-[10px]" />

@@ -61,7 +61,8 @@ const navItems = [
       </div>
     </header>
     <main class="max-w-6xl mx-auto px-4 py-6">
-      <router-view />
+      <!-- cada vista entra con un rise suave al montarse (la clase cae en su raíz) -->
+      <router-view class="tt-anim-rise" />
     </main>
     <Toast position="bottom-right" />
     <ConfirmDialog />

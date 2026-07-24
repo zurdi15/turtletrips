@@ -73,7 +73,7 @@ const initialLoading = computed(
   </div>
   <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 flex flex-col gap-6">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div class="tt-stagger grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl border border-slate-200 p-4 text-center">
           <p class="text-2xl font-bold text-slate-800">{{ tripDays ?? '—' }}</p>
           <p class="text-xs text-slate-400 mt-1">días de viaje</p>
@@ -125,7 +125,7 @@ const initialLoading = computed(
 
       <div class="bg-white rounded-xl border border-slate-200 p-4">
         <h3 class="text-sm font-semibold text-slate-600 mb-3">Próximas reservas</h3>
-        <div v-if="nextBookings.length" class="flex flex-col gap-2">
+        <div v-if="nextBookings.length" class="tt-stagger flex flex-col gap-2">
           <div
             v-for="b in nextBookings"
             :key="b.id"

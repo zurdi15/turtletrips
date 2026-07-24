@@ -20,7 +20,7 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="flex flex-col gap-4">
+  <div class="tt-stagger flex flex-col gap-4">
     <EmptyState
       v-if="empty"
       icon="pi pi-globe"
