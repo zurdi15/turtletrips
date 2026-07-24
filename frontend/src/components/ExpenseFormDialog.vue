@@ -10,6 +10,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { useToast } from 'primevue/usetoast'
 import ExpenseSplitEditor, { type SplitState } from './ExpenseSplitEditor.vue'
+import PayerSelect from './PayerSelect.vue'
 import { api } from '../api/client'
 import type { Expense, Place, RateRead, Trip } from '../api/types'
 import { CURRENCIES } from '../constants'
@@ -59,23 +60,6 @@ const categoryOptions = computed(() => {
   }
   return options
 })
-type PayerValue = number | 'common' | null
-interface PayerOption {
-  value: PayerValue
-  label: string
-  color?: string | null
-}
-
-const memberOptions = computed<PayerOption[]>(() => [
-  { value: null, label: 'Sin asignar' },
-  ...props.trip.travelers.map((t) => ({ value: t.id, label: t.name, color: t.color })),
-  { value: 'common', label: 'Fondo común' },
-])
-
-function payerOption(value: PayerValue): PayerOption | undefined {
-  return memberOptions.value.find((o) => o.value === value)
-}
-
 const isForeign = computed(() => currency.value !== props.trip.base_currency)
 const converted = computed(() => {
   if (!isForeign.value || amount.value == null || exchangeRate.value == null) return null
@@ -280,49 +264,7 @@ async function save() {
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Pagado por</label>
-          <Select
-            v-model="paidById"
-            :options="memberOptions"
-            optionLabel="label"
-            optionValue="value"
-          >
-            <template #option="{ option }">
-              <span
-                v-if="option.value === 'common'"
-                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700"
-              >
-                <i class="pi pi-wallet text-[10px]" />
-                {{ option.label }}
-              </span>
-              <span v-else-if="option.value === null" class="text-slate-400">
-                {{ option.label }}
-              </span>
-              <span v-else class="inline-flex items-center gap-1.5">
-                <span
-                  class="w-2 h-2 rounded-full shrink-0"
-                  :style="{ background: option.color ?? '#94a3b8' }"
-                />
-                {{ option.label }}
-              </span>
-            </template>
-            <template #value="{ value }">
-              <span
-                v-if="value === 'common'"
-                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700"
-              >
-                <i class="pi pi-wallet text-[10px]" />
-                Fondo común
-              </span>
-              <span v-else-if="value == null" class="text-slate-400">Sin asignar</span>
-              <span v-else class="inline-flex items-center gap-1.5">
-                <span
-                  class="w-2 h-2 rounded-full shrink-0"
-                  :style="{ background: payerOption(value)?.color ?? '#94a3b8' }"
-                />
-                {{ payerOption(value)?.label }}
-              </span>
-            </template>
-          </Select>
+          <PayerSelect v-model="paidById" :travelers="trip.travelers" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium">Sitio</label>

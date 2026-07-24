@@ -64,7 +64,9 @@ function flyTo(place: WorldPlace) {
 
 function flagIcon(code: string | null, selected: boolean): Icon {
   return divIcon({
-    html: `<span style="font-size:${selected ? 30 : 24}px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))">${code ? flagEmoji(code) : '📍'}</span>`,
+    html: code
+      ? `<span style="font-size:${selected ? 30 : 24}px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))">${flagEmoji(code)}</span>`
+      : `<i class="mdi mdi-map-marker" style="font-size:${selected ? 30 : 24}px;color:#e11d48;filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))"></i>`,
     className: 'tt-flag-marker',
     iconSize: [30, 30],
     iconAnchor: [15, 15],

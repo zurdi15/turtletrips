@@ -185,7 +185,10 @@ function removePlace(place: WorldPlace) {
         <span class="text-slate-400">({{ stats.worldPct }}% del mundo)</span>
       </span>
       <span>🏙 <span class="font-semibold text-slate-700">{{ stats.cities }}</span> ciudades</span>
-      <span>📍 <span class="font-semibold text-slate-700">{{ stats.places }}</span> sitios</span>
+      <span>
+        <i class="pi pi-map-marker text-xs" />
+        <span class="font-semibold text-slate-700">{{ stats.places }}</span> sitios
+      </span>
       <span>💬 <span class="font-semibold text-slate-700">{{ stats.notes }}</span> notas</span>
       <div class="w-full sm:w-56 h-1.5 rounded-full bg-slate-100 overflow-hidden">
         <div

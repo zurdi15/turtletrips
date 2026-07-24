@@ -21,6 +21,8 @@ class BookingBase(BaseModel):
     cost_amount: Decimal | None = Field(default=None, ge=0)
     cost_currency: str | None = Field(default=None, min_length=3, max_length=3)
     notes: str | None = None
+    paid_by_id: int | None = None
+    paid_by_common: bool = False
 
 
 class BookingCreate(BookingBase):
@@ -52,6 +54,9 @@ class BookingRead(BaseModel):
     cost_amount: float | None
     cost_currency: str | None
     notes: str | None
+    place_id: int | None
+    paid_by_id: int | None
+    paid_by_common: bool
 
 
 class CreateExpenseFromBooking(BaseModel):

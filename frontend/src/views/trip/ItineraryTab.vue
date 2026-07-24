@@ -14,7 +14,8 @@ import ItineraryFormDialog from '../../components/ItineraryFormDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import { API_BASE } from '../../api/client'
-import type { ItineraryItem, Trip } from '../../api/types'
+import type { Booking, BookingType, ItineraryItem, Trip } from '../../api/types'
+import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
 import { useItineraryStore } from '../../stores/itinerary'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
@@ -48,6 +49,77 @@ watch(() => props.trip.id, loadAll)
 
 // ---- Agenda ----
 
+// reservas con hueco propio en la agenda: transportes el día de salida y
+// alojamiento en cada noche (check-in → noche anterior al check-out)
+const TRANSPORT_TYPES: BookingType[] = ['flight', 'train', 'bus', 'ferry']
+
+const transportsByDay = computed(() => {
+  const map = new Map<string, Booking[]>()
+  for (const b of bookings.items) {
+    if (!TRANSPORT_TYPES.includes(b.type) || !b.start_dt) continue
+    const day = b.start_dt.slice(0, 10)
+    map.set(day, [...(map.get(day) ?? []), b])
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => a.start_dt!.localeCompare(b.start_dt!))
+  }
+  return map
+})
+
+// resto de reservas con fecha (actividades, coche, otros): aparecen en su día
+const otherBookingsByDay = computed(() => {
+  const map = new Map<string, Booking[]>()
+  for (const b of bookings.items) {
+    if (b.type === 'hotel' || TRANSPORT_TYPES.includes(b.type) || !b.start_dt) continue
+    const day = b.start_dt.slice(0, 10)
+    map.set(day, [...(map.get(day) ?? []), b])
+  }
+  for (const list of map.values()) {
+    list.sort((a, b) => a.start_dt!.localeCompare(b.start_dt!))
+  }
+  return map
+})
+
+const lodgingByDay = computed(() => {
+  const map = new Map<string, Booking[]>()
+  const add = (day: string, b: Booking) => map.set(day, [...(map.get(day) ?? []), b])
+  for (const b of bookings.items) {
+    if (b.type !== 'hotel' || !b.start_dt) continue
+    const checkin = b.start_dt.slice(0, 10)
+    const checkout = b.end_dt ? b.end_dt.slice(0, 10) : null
+    if (!checkout || checkout <= checkin) {
+      add(checkin, b)
+      continue
+    }
+    const cursor = parseIsoDate(checkin)
+    while (toIsoDate(cursor) < checkout) {
+      add(toIsoDate(cursor), b)
+      cursor.setDate(cursor.getDate() + 1)
+    }
+  }
+  return map
+})
+
+function lodgingTimeLabel(b: Booking, day: string): string {
+  if (b.start_dt && b.start_dt.slice(0, 10) === day) {
+    const t = b.start_dt.slice(11, 16)
+    return t !== '00:00' ? `in ${t}` : 'check-in'
+  }
+  return 'noche'
+}
+
+function transportTime(b: Booking): string {
+  const t = b.start_dt ? b.start_dt.slice(11, 16) : ''
+  return t !== '00:00' ? t : '—'
+}
+
+function transportLabel(b: Booking): string {
+  if (b.origin || b.destination) {
+    return `${BOOKING_TYPE_LABELS[b.type]}: ${b.origin ?? '?'} → ${b.destination ?? '?'}`
+  }
+  return b.title
+}
+
 const days = computed<string[]>(() => {
   const set = new Set<string>()
   const addRange = (from: string, to: string) => {
@@ -65,6 +137,9 @@ const days = computed<string[]>(() => {
     if (item.end_day && item.end_day > item.day) addRange(item.day, item.end_day)
     else set.add(item.day)
   }
+  for (const day of transportsByDay.value.keys()) set.add(day)
+  for (const day of lodgingByDay.value.keys()) set.add(day)
+  for (const day of otherBookingsByDay.value.keys()) set.add(day)
   return [...set].sort()
 })
 
@@ -198,16 +273,54 @@ const calendarOptions = computed<CalendarOptions>(() => ({
     }),
     ...bookings.items
       .filter((b) => b.start_dt)
-      .map((b) => ({
-        id: `b-${b.id}`,
-        title: `🎫 ${b.title}`,
-        start: b.start_dt!,
-        end: b.end_dt ?? undefined,
-        editable: false,
-        backgroundColor: '#94a3b8',
-        borderColor: '#94a3b8',
-      })),
+      .map((b) => {
+        // hoteles: banda all-day del check-in al check-out
+        if (b.type === 'hotel' && b.end_dt && b.end_dt.slice(0, 10) > b.start_dt!.slice(0, 10)) {
+          const endExclusive = parseIsoDate(b.end_dt.slice(0, 10))
+          endExclusive.setDate(endExclusive.getDate() + 1)
+          return {
+            id: `b-${b.id}`,
+            title: b.title,
+            start: b.start_dt!.slice(0, 10),
+            end: toIsoDate(endExclusive),
+            allDay: true,
+            editable: false,
+            backgroundColor: '#7c3aed',
+            borderColor: '#7c3aed',
+            extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
+          }
+        }
+        const isTransport = TRANSPORT_TYPES.includes(b.type)
+        const color = b.type === 'hotel' ? '#7c3aed' : isTransport ? '#0284c7' : '#94a3b8'
+        return {
+          id: `b-${b.id}`,
+          title: isTransport ? transportLabel(b) : b.title,
+          start: b.start_dt!,
+          end: b.end_dt ?? undefined,
+          editable: false,
+          backgroundColor: color,
+          borderColor: color,
+          extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
+        }
+      }),
   ],
+  // icono (mdi/pi) delante del título — los eventos de reservas lo declaran
+  // en extendedProps.icon; los de itinerario se renderizan igual pero sin él
+  eventContent: (arg) => {
+    const icon = arg.event.extendedProps.icon as string | undefined
+    const wrap = document.createElement('div')
+    wrap.className = 'flex items-center gap-1 overflow-hidden px-0.5'
+    if (icon) {
+      const i = document.createElement('i')
+      i.className = `${icon} text-[11px] shrink-0`
+      wrap.append(i)
+    }
+    const text = document.createElement('span')
+    text.className = 'truncate'
+    text.textContent = arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title
+    wrap.append(text)
+    return { domNodes: [wrap] }
+  },
   eventDrop: onEventDrop,
   eventClick: (info) => {
     if (!info.event.id.startsWith('i-')) return
@@ -302,6 +415,56 @@ function onEventDrop(info: EventDropArg) {
             @click="openNew(day)"
           />
         </div>
+        <!-- transportes del día: sección propia con cabecera -->
+        <div
+          v-if="(transportsByDay.get(day) ?? []).length"
+          class="bg-sky-50 border-b border-slate-100 py-1.5"
+        >
+          <p
+            class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-sky-600 flex items-center gap-1.5"
+          >
+            <i class="mdi mdi-plane-train" /> Transporte
+          </p>
+          <router-link
+            v-for="b in transportsByDay.get(day) ?? []"
+            :key="`t-${b.id}`"
+            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+            class="flex items-center gap-3 px-4 py-1 text-sky-700 no-underline"
+          >
+            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-xs w-4 text-center" />
+            <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
+              {{ transportTime(b) }}
+            </span>
+            <span class="font-medium text-sm truncate">{{ transportLabel(b) }}</span>
+            <i class="pi pi-ticket text-[10px] ml-auto opacity-50" />
+          </router-link>
+        </div>
+
+        <!-- otras reservas del día (actividades, coche…) -->
+        <div
+          v-if="(otherBookingsByDay.get(day) ?? []).length"
+          class="bg-amber-50 border-b border-slate-100 py-1.5"
+        >
+          <p
+            class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 flex items-center gap-1.5"
+          >
+            <i class="mdi mdi-ticket-outline" /> Reservas
+          </p>
+          <router-link
+            v-for="b in otherBookingsByDay.get(day) ?? []"
+            :key="`o-${b.id}`"
+            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+            class="flex items-center gap-3 px-4 py-1 text-amber-700 no-underline"
+          >
+            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-xs w-4 text-center" />
+            <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
+              {{ transportTime(b) }}
+            </span>
+            <span class="font-medium text-sm truncate">{{ b.title }}</span>
+            <i class="pi pi-ticket text-[10px] ml-auto opacity-50" />
+          </router-link>
+        </div>
+
         <draggable
           :list="lists[day]"
           group="itinerary"
@@ -360,8 +523,38 @@ function onEventDrop(info: EventDropArg) {
           <span class="w-24 shrink-0 text-xs">sigue</span>
           <span class="italic">{{ cont.title }}</span>
         </div>
+        <!-- dónde se duerme esa noche: sección propia al pie del día -->
+        <div
+          v-if="(lodgingByDay.get(day) ?? []).length"
+          class="bg-violet-50 border-t border-slate-100 py-1.5"
+        >
+          <p
+            class="px-4 pb-0.5 text-[11px] font-semibold uppercase tracking-wide text-violet-600 flex items-center gap-1.5"
+          >
+            <i class="mdi mdi-bed" /> Alojamiento
+          </p>
+          <router-link
+            v-for="b in lodgingByDay.get(day) ?? []"
+            :key="`l-${b.id}`"
+            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+            class="flex items-center gap-3 px-4 py-1 text-violet-700 no-underline"
+          >
+            <i class="mdi mdi-bed text-xs w-4 text-center" />
+            <span class="text-xs sm:text-sm font-mono w-16 sm:w-24 shrink-0 opacity-70">
+              {{ lodgingTimeLabel(b, day) }}
+            </span>
+            <span class="font-medium text-sm truncate">{{ b.title }}</span>
+            <i class="pi pi-ticket text-[10px] ml-auto opacity-50" />
+          </router-link>
+        </div>
         <p
-          v-if="!lists[day]?.length && !(continuations.get(day) ?? []).length"
+          v-if="
+            !lists[day]?.length &&
+            !(continuations.get(day) ?? []).length &&
+            !(transportsByDay.get(day) ?? []).length &&
+            !(otherBookingsByDay.get(day) ?? []).length &&
+            !(lodgingByDay.get(day) ?? []).length
+          "
           class="px-4 pb-3 pt-1 text-xs text-slate-300"
         >
           Sin actividades

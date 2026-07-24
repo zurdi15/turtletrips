@@ -14,8 +14,9 @@ from ..schemas.booking import (
     CreateExpenseFromBooking,
 )
 from ..schemas.expense import ExpenseRead
+from ..services.booking_place import ensure_booking_place
 from ..services.rates import resolve_rate, to_base
-from .common import delete_by_id, get_or_404, save_new, save_updates
+from .common import apply_updates, delete_by_id, get_or_404
 
 router = APIRouter(tags=["bookings"])
 
@@ -42,16 +43,41 @@ def list_bookings(trip_id: int, type: BookingType | None = None, db: Session = D
     ).all()
 
 
+def _enforce_common_exclusivity(data: dict) -> None:
+    """paid_by_common y paid_by_id son excluyentes: el último gana."""
+    if data.get("paid_by_common"):
+        data["paid_by_id"] = None
+    elif data.get("paid_by_id") is not None:
+        data["paid_by_common"] = False
+
+
 @router.post("/trips/{trip_id}/bookings", response_model=BookingRead, status_code=201)
 def create_booking(trip_id: int, payload: BookingCreate, db: Session = Depends(get_db)):
     get_or_404(db, Trip, trip_id)
-    return save_new(db, Booking(trip_id=trip_id), payload.model_dump())
+    booking = Booking(trip_id=trip_id)
+    data = payload.model_dump()
+    _enforce_common_exclusivity(data)
+    apply_updates(booking, data)
+    db.add(booking)
+    ensure_booking_place(db, booking)
+    db.commit()
+    db.refresh(booking)
+    return booking
 
 
 @router.patch("/bookings/{booking_id}", response_model=BookingRead)
 def update_booking(booking_id: int, payload: BookingUpdate, db: Session = Depends(get_db)):
     booking = get_or_404(db, Booking, booking_id)
-    return save_updates(db, booking, payload.model_dump(exclude_unset=True))
+    data = payload.model_dump(exclude_unset=True)
+    _enforce_common_exclusivity(data)
+    apply_updates(booking, data)
+    # coordenadas nuevas → el sitio enlazado deja de valer y se recalcula
+    if "lat" in data or "lon" in data:
+        booking.place_id = None
+    ensure_booking_place(db, booking)
+    db.commit()
+    db.refresh(booking)
+    return booking
 
 
 @router.delete("/bookings/{booking_id}", status_code=204)
@@ -70,6 +96,10 @@ async def create_expense_from_booking(
         raise HTTPException(
             status_code=400, detail="La reserva no tiene coste o moneda definidos"
         )
+    # una reserva genera como mucho un gasto; borrar el gasto (no la reserva)
+    # permite volver a generarlo
+    if db.scalar(select(Expense.id).where(Expense.booking_id == booking.id)) is not None:
+        raise HTTPException(status_code=400, detail="La reserva ya tiene un gasto enlazado")
     trip = db.get(Trip, booking.trip_id)
     day = booking.start_dt.date() if booking.start_dt else date.today()
     provided = payload.exchange_rate if payload else None
@@ -80,6 +110,9 @@ async def create_expense_from_booking(
     expense = Expense(
         trip_id=booking.trip_id,
         booking_id=booking.id,
+        place_id=booking.place_id,
+        paid_by_id=booking.paid_by_id,
+        paid_by_common=booking.paid_by_common,
         day=day,
         category=BOOKING_EXPENSE_CATEGORY.get(booking.type, "Otros"),
         description=booking.title,

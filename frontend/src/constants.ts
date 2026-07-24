@@ -23,6 +23,7 @@ export const PLACE_CATEGORY_LABELS: Record<PlaceCategory, string> = {
   nature: 'Naturaleza',
   viewpoint: 'Mirador',
   shopping: 'Compras',
+  lodging: 'Alojamiento',
   other: 'Otro',
 }
 
@@ -35,6 +36,7 @@ export const PLACE_CATEGORY_COLORS: Record<PlaceCategory, string> = {
   nature: '#16a34a',
   viewpoint: '#0ea5e9',
   shopping: '#ec4899',
+  lodging: '#7c3aed',
   other: '#64748b',
 }
 
@@ -47,6 +49,7 @@ export const PLACE_CATEGORY_ICONS: Record<PlaceCategory, string> = {
   nature: 'pi pi-sun',
   viewpoint: 'pi pi-camera',
   shopping: 'pi pi-shopping-bag',
+  lodging: 'mdi mdi-bed',
   other: 'pi pi-map-marker',
 }
 
@@ -61,15 +64,16 @@ export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
   other: 'Otro',
 }
 
+// MDI para lo que PrimeIcons no cubre bien (cama, avión, tren, ferry…)
 export const BOOKING_TYPE_ICONS: Record<BookingType, string> = {
-  hotel: 'pi pi-home',
-  flight: 'pi pi-send',
-  train: 'pi pi-arrow-right-arrow-left',
-  bus: 'pi pi-truck',
-  ferry: 'pi pi-compass',
-  car_rental: 'pi pi-car',
-  activity: 'pi pi-ticket',
-  other: 'pi pi-bookmark',
+  hotel: 'mdi mdi-bed',
+  flight: 'mdi mdi-airplane',
+  train: 'mdi mdi-train',
+  bus: 'mdi mdi-bus',
+  ferry: 'mdi mdi-ferry',
+  car_rental: 'mdi mdi-car',
+  activity: 'mdi mdi-ticket-outline',
+  other: 'mdi mdi-bookmark-outline',
 }
 
 // paleta de colores para categorías y viajeros (settings)

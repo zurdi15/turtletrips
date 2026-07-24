@@ -11,7 +11,7 @@ import PlaceMap from '../../components/PlaceMap.vue'
 import PlaceFormDialog from '../../components/PlaceFormDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
-import type { Place, Trip } from '../../api/types'
+import type { Booking, Place, Trip } from '../../api/types'
 import {
   PLACE_CATEGORY_COLORS,
   PLACE_CATEGORY_ICONS,
@@ -71,6 +71,15 @@ const visitedOptions = [
   { value: 'pending', label: 'Pendientes' },
   { value: 'visited', label: 'Visitados' },
 ]
+
+// reservas enlazadas a cada sitio (chip → pestaña Reservas)
+const bookingsByPlace = computed(() => {
+  const map = new Map<number, Booking[]>()
+  for (const b of bookings.items) {
+    if (b.place_id != null) map.set(b.place_id, [...(map.get(b.place_id) ?? []), b])
+  }
+  return map
+})
 
 const filtered = computed(() =>
   store.items.filter((p) => {
@@ -163,7 +172,11 @@ function removePlace(place: Place) {
                 <span class="font-medium" :class="{ 'line-through text-slate-400': place.visited }">
                   {{ place.name }}
                 </span>
-                <span v-if="place.priority > 0" v-tooltip.top="'Imprescindible'">⭐</span>
+                <i
+                  v-if="place.priority > 0"
+                  class="pi pi-star-fill text-amber-400 text-xs"
+                  v-tooltip.top="'Imprescindible'"
+                />
                 <Tag
                   :value="PLACE_CATEGORY_LABELS[place.category]"
                   :style="{
@@ -173,6 +186,16 @@ function removePlace(place: Place) {
                   class="text-xs"
                 />
               </div>
+              <router-link
+                v-for="b in bookingsByPlace.get(place.id) ?? []"
+                :key="`bk-${b.id}`"
+                :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: b.id } }"
+                class="mt-0.5 flex items-center gap-1 w-fit text-xs text-violet-600 hover:underline no-underline"
+                v-tooltip.top="'Ver la reserva'"
+                @click.stop
+              >
+                <i class="pi pi-ticket text-[10px]" /> {{ b.title }}
+              </router-link>
               <p v-if="place.notes" class="text-sm text-slate-500 mt-0.5 truncate">{{ place.notes }}</p>
               <a
                 v-if="place.url"

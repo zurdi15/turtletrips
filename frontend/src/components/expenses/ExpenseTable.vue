@@ -16,7 +16,6 @@ const props = defineProps<{
   memberById: Map<number, Traveler>
   placeById: Map<number, Place>
   trip: Trip
-  loading: boolean
   catColor: (name: string) => string
 }>()
 
@@ -64,7 +63,6 @@ function toggleGroup(row: ExpenseRow) {
     dataKey="id"
     size="small"
     stripedRows
-    :loading="loading"
     paginator
     :rows="50"
     :rowsPerPageOptions="[25, 50, 100, 200]"
@@ -111,18 +109,21 @@ function toggleGroup(row: ExpenseRow) {
     <Column header="Descripción" field="description">
       <template #body="{ data }">
         <span>{{ data.description }}</span>
-        <i
+        <router-link
           v-if="data.booking_id"
-          class="pi pi-ticket text-xs text-slate-400 ml-1"
-          v-tooltip.top="'Creado desde una reserva'"
-        />
+          :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: data.booking_id } }"
+          class="ml-2 text-slate-400 hover:text-sky-600 no-underline"
+          v-tooltip.top="'Ver reserva'"
+        >
+          <i class="pi pi-ticket text-xs" />
+        </router-link>
         <router-link
           v-if="data.place_id && placeById.get(data.place_id)"
           :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: data.place_id } }"
           class="mt-1.5 flex items-center gap-0.5 w-fit whitespace-nowrap text-xs text-emerald-600 hover:underline no-underline"
-          v-tooltip.top="'Ver en Sitios'"
+          v-tooltip.top="'Ver sitio'"
         >
-          <i class="pi pi-map-marker text-[10px]" />
+          <i class="pi pi-map-marker text-[10px] no-underline" />
           <span>{{ placeById.get(data.place_id)!.name }}</span>
         </router-link>
         <p v-if="data.notes" class="mt-1.5 text-xs text-slate-400 truncate max-w-[16rem]">
@@ -186,5 +187,57 @@ function toggleGroup(row: ExpenseRow) {
 .tt-grouped
   :deep(.p-datatable-tbody > tr:not(.p-datatable-row-group-header) > td:first-child) {
   padding-left: 1.75rem;
+}
+
+/* el contenedor interno solo necesita scroll horizontal (el vertical es de la
+   página): sin esto, las filas entrando desde +8px hacen aparecer un scrollbar
+   vertical fugaz durante la animación. !important porque PrimeVue pone su
+   overflow: auto como estilo inline (inlineStyles.tableContainer). */
+:deep(.p-datatable-table-container) {
+  overflow-y: hidden !important;
+}
+
+/* las filas entran en cascada rápida al montarse (o al cambiar de página);
+   a partir de la 12ª entran juntas para no alargar la espera */
+:deep(.p-datatable-tbody > tr) {
+  animation: tt-rise-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+:deep(.p-datatable-tbody > tr:nth-child(2)) {
+  animation-delay: 25ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(3)) {
+  animation-delay: 50ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(4)) {
+  animation-delay: 75ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(5)) {
+  animation-delay: 100ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(6)) {
+  animation-delay: 125ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(7)) {
+  animation-delay: 150ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(8)) {
+  animation-delay: 175ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(9)) {
+  animation-delay: 200ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(10)) {
+  animation-delay: 225ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(11)) {
+  animation-delay: 250ms;
+}
+:deep(.p-datatable-tbody > tr:nth-child(n + 12)) {
+  animation-delay: 275ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :deep(.p-datatable-tbody > tr) {
+    animation: none;
+  }
 }
 </style>

@@ -39,6 +39,7 @@ class PlaceCategory(str, enum.Enum):
     shopping = "shopping"
     city = "city"
     town = "town"
+    lodging = "lodging"
     other = "other"
 
 
@@ -229,8 +230,21 @@ class Booking(TimestampMixin, Base):
     cost_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     cost_currency: Mapped[str | None] = mapped_column(String(3))
     notes: Mapped[str | None] = mapped_column(Text)
+    # sitio enlazado automáticamente a partir de las coordenadas de la reserva
+    place_id: Mapped[int | None] = mapped_column(
+        ForeignKey("places.id", ondelete="SET NULL")
+    )
+    # pagador del coste: lo hereda el gasto generado (mismo modelo que Expense)
+    paid_by_id: Mapped[int | None] = mapped_column(
+        ForeignKey("travelers.id", ondelete="SET NULL")
+    )
+    paid_by_common: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0"
+    )
 
     trip: Mapped[Trip] = relationship(back_populates="bookings")
+    place: Mapped["Place | None"] = relationship()
+    paid_by: Mapped["Traveler | None"] = relationship()
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="booking")
 
 

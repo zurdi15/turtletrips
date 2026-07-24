@@ -76,6 +76,111 @@ def test_booking_create_expense(client, trip):
     assert expense["booking_id"] == booking["id"]
 
 
+def test_booking_links_place(client, trip):
+    # sin sitios previos: crea el sitio (lodging) y lo enlaza
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "hotel", "title": "Hotel Gracery", "address": "Kabukicho, Tokio",
+            "lat": 35.6955, "lon": 139.7022, "cost_amount": "90", "cost_currency": "EUR",
+        },
+    ).json()
+    places = client.get(f"/api/v1/trips/{trip['id']}/places").json()
+    assert len(places) == 1
+    assert places[0]["name"] == "Hotel Gracery"
+    assert places[0]["category"] == "lodging"
+    assert places[0]["address"] == "Kabukicho, Tokio"
+    assert booking["place_id"] == places[0]["id"]
+
+    # otra reserva pegada al mismo sitio lo reutiliza, no duplica
+    other = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "activity", "title": "Cena cerca", "lat": 35.6956, "lon": 139.7023},
+    ).json()
+    assert other["place_id"] == places[0]["id"]
+    assert len(client.get(f"/api/v1/trips/{trip['id']}/places").json()) == 1
+
+    # el gasto generado hereda el sitio de la reserva
+    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    assert expense["place_id"] == places[0]["id"]
+
+    # transporte sin coordenadas: ni sitio nuevo ni enlace
+    flight = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "flight", "title": "Vuelo", "origin": "MAD", "destination": "NRT"},
+    ).json()
+    assert flight["place_id"] is None
+    assert len(client.get(f"/api/v1/trips/{trip['id']}/places").json()) == 1
+
+
+def test_booking_links_nearby_city(client, trip):
+    city = client.post(
+        f"/api/v1/trips/{trip['id']}/places",
+        json={"name": "Tokio", "category": "city", "lat": 35.6812, "lon": 139.7671},
+    ).json()
+    # a ~7 km del centro: dentro del radio de captura de la ciudad
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "hotel", "title": "Hotel en Shinjuku", "lat": 35.6955, "lon": 139.7022},
+    ).json()
+    assert booking["place_id"] == city["id"]
+    assert len(client.get(f"/api/v1/trips/{trip['id']}/places").json()) == 1
+
+    # editar las coordenadas fuera de la ciudad re-enlaza (crea sitio nuevo)
+    updated = client.patch(
+        f"/api/v1/bookings/{booking['id']}", json={"lat": 34.6937, "lon": 135.5023}
+    ).json()
+    assert updated["place_id"] != city["id"]
+    assert len(client.get(f"/api/v1/trips/{trip['id']}/places").json()) == 2
+
+
+def test_booking_create_expense_only_once(client, trip):
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={"type": "hotel", "title": "Hotel", "cost_amount": "100", "cost_currency": "EUR"},
+    ).json()
+    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+
+    # segundo intento: la reserva ya tiene gasto enlazado
+    resp = client.post(f"/api/v1/bookings/{booking['id']}/create-expense")
+    assert resp.status_code == 400
+    assert "ya tiene un gasto" in resp.json()["detail"]
+
+    # borrar el gasto no toca la reserva y permite regenerarlo
+    assert client.delete(f"/api/v1/expenses/{expense['id']}").status_code == 204
+    remaining = client.get(f"/api/v1/trips/{trip['id']}/bookings").json()
+    assert [b["id"] for b in remaining] == [booking["id"]]
+    resp = client.post(f"/api/v1/bookings/{booking['id']}/create-expense")
+    assert resp.status_code == 201
+
+
+def test_booking_payer_inherited_by_expense(client, trip):
+    from conftest import add_traveler
+
+    traveler = add_traveler(client, trip["id"], "Ana")
+
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "hotel", "title": "Hotel", "cost_amount": "80",
+            "cost_currency": "EUR", "paid_by_id": traveler["id"],
+        },
+    ).json()
+    assert booking["paid_by_id"] == traveler["id"]
+    assert booking["paid_by_common"] is False
+
+    expense = client.post(f"/api/v1/bookings/{booking['id']}/create-expense").json()
+    assert expense["paid_by_id"] == traveler["id"]
+    assert expense["paid_by_common"] is False
+
+    # marcar fondo común suelta al pagador (excluyentes)
+    updated = client.patch(
+        f"/api/v1/bookings/{booking['id']}", json={"paid_by_common": True}
+    ).json()
+    assert updated["paid_by_common"] is True
+    assert updated["paid_by_id"] is None
+
+
 def test_booking_create_expense_requires_cost(client, trip):
     booking = client.post(
         f"/api/v1/trips/{trip['id']}/bookings",

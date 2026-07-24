@@ -33,16 +33,21 @@ const locatedBookings = computed(
 )
 const countryCenter = computed(() => centerFor(props.countryCode))
 
-const BOOKING_ICONS: Partial<Record<BookingType, string>> = {
-  hotel: '🏨',
-  activity: '🎟️',
-  car_rental: '🚗',
+const BOOKING_MARKERS: Partial<Record<BookingType, { icon: string; color: string }>> = {
+  hotel: { icon: 'mdi mdi-bed', color: '#7c3aed' },
+  activity: { icon: 'mdi mdi-ticket-outline', color: '#0ea5e9' },
+  car_rental: { icon: 'mdi mdi-car', color: '#64748b' },
 }
 
 function bookingIcon(booking: Booking): Icon {
-  const emoji = BOOKING_ICONS[booking.type] ?? '📌'
+  const marker =
+    BOOKING_MARKERS[booking.type] ?? { icon: 'mdi mdi-map-marker', color: '#64748b' }
   return divIcon({
-    html: `<span style="font-size:22px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))">${emoji}</span>`,
+    html:
+      `<span style="display:flex;align-items:center;justify-content:center;` +
+      `width:26px;height:26px;border-radius:9999px;background:${marker.color};` +
+      `color:#fff;box-shadow:0 1px 4px rgb(0 0 0 / .45)">` +
+      `<i class="${marker.icon}" style="font-size:15px"></i></span>`,
     className: 'tt-booking-marker',
     iconSize: [26, 26],
     iconAnchor: [13, 13],

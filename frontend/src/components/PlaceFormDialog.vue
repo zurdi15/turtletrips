@@ -111,7 +111,7 @@ async function save() {
           @item-select="onGeocodeSelect"
         />
         <p v-if="lat != null && lon != null" class="text-xs text-slate-400">
-          📍 {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
+          <i class="pi pi-map-marker text-[10px]" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
         </p>
       </div>
 
@@ -152,7 +152,8 @@ async function save() {
       </div>
       <div class="flex items-center gap-6">
         <label class="flex items-center gap-2 text-sm">
-          <Checkbox v-model="mustSee" binary /> Imprescindible ⭐
+          <Checkbox v-model="mustSee" binary /> Imprescindible
+          <i class="pi pi-star-fill text-amber-400 text-xs" />
         </label>
         <label class="flex items-center gap-2 text-sm">
           <Checkbox v-model="visited" binary /> Visitado

@@ -323,6 +323,12 @@ body {
 .tt-dark .border-sky-200 { border-color: rgb(12 74 110 / 0.8); }
 .tt-dark .text-sky-700 { color: #7dd3fc; }
 .tt-dark .text-sky-600 { color: #38bdf8; }
+.tt-dark .bg-violet-50 { background-color: rgb(76 29 149 / 0.35); }
+.tt-dark .text-violet-700 { color: #c4b5fd; }
+.tt-dark .text-violet-600 { color: #a78bfa; }
+.tt-dark .bg-amber-50 { background-color: rgb(120 53 15 / 0.35); }
+.tt-dark .text-amber-700 { color: #fcd34d; }
+.tt-dark .text-amber-600 { color: #fbbf24; }
 .tt-dark .bg-teal-50 { background-color: rgb(19 78 74 / 0.5); }
 .tt-dark .text-teal-700 { color: #5eead4; }
 .tt-dark .hover\:bg-teal-50\/50:hover { background-color: rgb(19 78 74 / 0.3); }

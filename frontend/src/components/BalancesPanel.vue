@@ -125,8 +125,8 @@ async function undo(settlementId: number) {
 
       <div v-else class="bg-white rounded-xl border border-slate-200 p-4">
         <h3 class="text-sm font-semibold text-slate-700 mb-3">Liquidación sugerida</h3>
-        <p v-if="!data.settlements.length" class="text-sm text-slate-400">
-          Todo cuadra: nadie debe nada. 🎉
+        <p v-if="!data.settlements.length" class="text-sm text-slate-400 flex items-center gap-1.5">
+          <i class="pi pi-check-circle text-emerald-500" /> Todo cuadra: nadie debe nada.
         </p>
         <TransitionGroup v-else tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li

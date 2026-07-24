@@ -179,7 +179,10 @@ function dateRange(trip: Trip): string {
             <div class="flex items-end justify-between gap-3 sm:gap-4 flex-wrap">
               <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-widest text-white/70 mb-1">
-                  {{ heroTrip.status === 'ongoing' ? '✈ En curso' : 'Próximo viaje' }}
+                  <template v-if="heroTrip.status === 'ongoing'">
+                    <i class="mdi mdi-airplane text-xs" /> En curso
+                  </template>
+                  <template v-else>Próximo viaje</template>
                 </p>
                 <h2 class="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 flex-wrap">
                   {{ heroTrip.name }}
@@ -297,7 +300,10 @@ function dateRange(trip: Trip): string {
                   v-else
                   class="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-sky-100 to-indigo-100"
                 >
-                  {{ trip.countries.length ? trip.countries.map(flagEmoji).join(' ') : '🧳' }}
+                  <template v-if="trip.countries.length">
+                    {{ trip.countries.map(flagEmoji).join(' ') }}
+                  </template>
+                  <i v-else class="mdi mdi-bag-suitcase-outline text-slate-400" />
                 </div>
                 <div class="absolute top-2 right-2">
                   <StatusTag :status="trip.status" />

@@ -323,7 +323,6 @@ function removeExpense(expense: Expense) {
           :memberById="memberById"
           :placeById="placeById"
           :trip="trip"
-          :loading="store.loading"
           :catColor="catColor"
           @edit="openEdit"
           @remove="removeExpense"

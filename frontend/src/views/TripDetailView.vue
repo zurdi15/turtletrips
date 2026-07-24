@@ -144,7 +144,7 @@ function deleteTrip() {
             <span
               v-if="store.current.debts_settled"
               class="tt-pop-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700"
-              v-tooltip.bottom="'Deudas saldadas entre viajeros'"
+              v-tooltip.bottom="'Deudas saldadas'"
             >
               <i class="pi pi-check-circle text-[10px]" />
               Saldado

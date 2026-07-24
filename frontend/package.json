@@ -17,6 +17,7 @@
     "@fullcalendar/interaction": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@fullcalendar/vue3": "^6.1.15",
+    "@mdi/font": "^7.4.47",
     "@primeuix/themes": "^1.0.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "chart.js": "^4.4.7",

@@ -1,6 +1,6 @@
 export type TripStatus = 'planning' | 'upcoming' | 'ongoing' | 'done'
 export type PlaceCategory =
-  | 'sight' | 'food' | 'museum' | 'nature' | 'viewpoint' | 'shopping' | 'city' | 'town' | 'other'
+  | 'sight' | 'food' | 'museum' | 'nature' | 'viewpoint' | 'shopping' | 'city' | 'town' | 'lodging' | 'other'
 export type BookingType =
   | 'hotel' | 'flight' | 'train' | 'bus' | 'ferry' | 'car_rental' | 'activity' | 'other'
 
@@ -118,6 +118,9 @@ export interface Booking {
   cost_amount: number | null
   cost_currency: string | null
   notes: string | null
+  place_id: number | null
+  paid_by_id: number | null
+  paid_by_common: boolean
 }
 
 export type SplitMode = 'equal' | 'amount' | 'percent'
