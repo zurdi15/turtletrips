@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Traveler } from '../api/types'
+import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 
 defineProps<{ member: Traveler }>()
 </script>
@@ -10,7 +11,7 @@ defineProps<{ member: Traveler }>()
   >
     <span
       class="w-2 h-2 rounded-full"
-      :style="{ background: member.color ?? '#94a3b8' }"
+      :style="{ background: member.color ?? FALLBACK_CATEGORY_COLOR }"
     />
     {{ member.name }}
   </span>

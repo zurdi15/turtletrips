@@ -1,14 +1,13 @@
 import { computed, ref, watch } from 'vue'
 import type { Expense, Trip } from '../api/types'
-import { CATEGORY_PALETTE } from '../constants'
+import { CATEGORY_PALETTE, CHART_LINE_COLOR } from '../theme'
+import { cssVar } from './useTheme'
 import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 import { aggregate, cumulative } from '../utils/expenses'
 import { formatDate, formatMoney } from './useMoney'
 
 export type ChartDim = 'category' | 'payer' | 'place' | 'day'
 export type ChartKind = 'pie' | 'bar' | 'line' | 'cumulative'
-
-const LINE_COLOR = '#0ea5e9'
 
 /** Configuración y series del gráfico de gastos (dimensión + tipo, Chart.js). */
 export function useExpenseCharts(ctx: {
@@ -79,7 +78,7 @@ export function useExpenseCharts(ctx: {
       a.label.localeCompare(b.label),
     )
     const points = chartType.value === 'cumulative' ? cumulative(series) : series
-    return points.map((d) => ({ ...d, color: LINE_COLOR }))
+    return points.map((d) => ({ ...d, color: CHART_LINE_COLOR }))
   })
 
   const chartTotal = computed(() => ctx.filtered().reduce((acc, e) => acc + e.amount_base, 0))
@@ -102,8 +101,8 @@ export function useExpenseCharts(ctx: {
         datasets: [
           {
             data: values,
-            borderColor: LINE_COLOR,
-            backgroundColor: `${LINE_COLOR}55`,
+            borderColor: CHART_LINE_COLOR,
+            backgroundColor: `${CHART_LINE_COLOR}55`,
             fill: chartType.value === 'cumulative',
             tension: 0.25,
             pointRadius: 3,
@@ -128,8 +127,9 @@ export function useExpenseCharts(ctx: {
   const chartOptions = computed(() => {
     const currency = ctx.trip().base_currency
     const money = (v: number) => formatMoney(v, currency)
-    const textColor = ctx.isDark() ? '#cbd5e1' : '#475569'
-    const gridColor = ctx.isDark() ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'
+    ctx.isDark() // dependencia reactiva: relee los tokens al cambiar de tema
+    const textColor = cssVar('--tt-ink-secondary')
+    const gridColor = cssVar('--tt-chart-grid')
     if (chartJsType.value === 'doughnut') {
       return {
         cutout: '58%',

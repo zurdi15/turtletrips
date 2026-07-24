@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import Popover from 'primevue/popover'
-import { CATEGORY_PALETTE } from '../../constants'
+import { CATEGORY_PALETTE } from '../../theme'
 
 withDefaults(defineProps<{ colors?: string[] }>(), { colors: () => CATEGORY_PALETTE })
 const emit = defineEmits<{ select: [color: string] }>()

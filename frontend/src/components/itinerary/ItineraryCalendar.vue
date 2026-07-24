@@ -8,6 +8,7 @@ import esLocale from '@fullcalendar/core/locales/es'
 import type { CalendarOptions, EventDropArg } from '@fullcalendar/core'
 import type { Booking, ItineraryItem, Trip } from '../../api/types'
 import { BOOKING_TYPE_ICONS, isTransport } from '../../constants'
+import { ALLDAY_EVENT_COLOR, BOOKING_MARKER_COLORS, FALLBACK_COLOR } from '../../theme'
 import { useItineraryStore } from '../../stores/itinerary'
 import { parseIsoDate, toIsoDate } from '../../composables/useMoney'
 import { rangeNights, transportLabel } from '../../utils/itinerary'
@@ -38,8 +39,8 @@ const calendarOptions = computed<CalendarOptions>(() => ({
           start: item.day,
           end: toIsoDate(endExclusive),
           allDay: true,
-          backgroundColor: '#0f766e',
-          borderColor: '#0f766e',
+          backgroundColor: ALLDAY_EVENT_COLOR,
+          borderColor: ALLDAY_EVENT_COLOR,
         }
       }
       return {
@@ -66,13 +67,17 @@ const calendarOptions = computed<CalendarOptions>(() => ({
             end: toIsoDate(endExclusive),
             allDay: true,
             editable: false,
-            backgroundColor: '#7c3aed',
-            borderColor: '#7c3aed',
+            backgroundColor: BOOKING_MARKER_COLORS.hotel,
+            borderColor: BOOKING_MARKER_COLORS.hotel,
             extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
           }
         }
         const transport = isTransport(b.type)
-        const color = b.type === 'hotel' ? '#7c3aed' : transport ? '#0284c7' : '#94a3b8'
+        const color = b.type === 'hotel'
+          ? BOOKING_MARKER_COLORS.hotel
+          : transport
+            ? BOOKING_MARKER_COLORS.transport
+            : FALLBACK_COLOR
         return {
           id: `b-${b.id}`,
           title: transport ? transportLabel({ b, arrival: false }) : b.title,

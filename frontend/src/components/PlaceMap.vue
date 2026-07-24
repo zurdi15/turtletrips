@@ -3,11 +3,8 @@ import { computed, ref, watch } from 'vue'
 import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
 import type { Booking, BookingType, Place } from '../api/types'
-import {
-  BOOKING_TYPE_LABELS,
-  PLACE_CATEGORY_COLORS,
-  PLACE_CATEGORY_LABELS,
-} from '../constants'
+import { BOOKING_MARKER_COLORS, PLACE_CATEGORY_COLORS, WHITE } from '../theme'
+import { BOOKING_TYPE_LABELS, PLACE_CATEGORY_LABELS } from '../constants'
 import { useCountryCenter } from '../composables/useCountryCenter'
 import { useMapTiles } from '../composables/useMapTiles'
 import { formatDate } from '../composables/useMoney'
@@ -34,19 +31,19 @@ const locatedBookings = computed(
 const countryCenter = computed(() => centerFor(props.countryCode))
 
 const BOOKING_MARKERS: Partial<Record<BookingType, { icon: string; color: string }>> = {
-  hotel: { icon: 'mdi mdi-bed', color: '#7c3aed' },
-  activity: { icon: 'mdi mdi-ticket-outline', color: '#0ea5e9' },
-  car_rental: { icon: 'mdi mdi-car', color: '#64748b' },
+  hotel: { icon: 'mdi mdi-bed', color: BOOKING_MARKER_COLORS.hotel! },
+  activity: { icon: 'mdi mdi-ticket-outline', color: BOOKING_MARKER_COLORS.activity! },
+  car_rental: { icon: 'mdi mdi-car', color: BOOKING_MARKER_COLORS.car_rental! },
 }
 
 function bookingIcon(booking: Booking): Icon {
   const marker =
-    BOOKING_MARKERS[booking.type] ?? { icon: 'mdi mdi-map-marker', color: '#64748b' }
+    BOOKING_MARKERS[booking.type] ?? { icon: 'mdi mdi-map-marker', color: BOOKING_MARKER_COLORS.fallback }
   return divIcon({
     html:
       `<span style="display:flex;align-items:center;justify-content:center;` +
       `width:26px;height:26px;border-radius:9999px;background:${marker.color};` +
-      `color:#fff;box-shadow:0 1px 4px rgb(0 0 0 / .45)">` +
+      `color:${WHITE};box-shadow:var(--tt-shadow-marker)">` +
       `<i class="${marker.icon}" style="font-size:15px"></i></span>`,
     className: 'tt-booking-marker',
     iconSize: [26, 26],

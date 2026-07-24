@@ -5,6 +5,7 @@ import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leafle
 import type { WorldPlace } from '../../api/types'
 import { countryName, flagEmoji } from '../../countries'
 import { KIND_COLORS, KIND_LABELS, displayName } from '../../utils/worldGrouping'
+import { WHITE } from '../../theme'
 import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useMapTiles } from '../../composables/useMapTiles'
 
@@ -65,8 +66,8 @@ function flyTo(place: WorldPlace) {
 function flagIcon(code: string | null, selected: boolean): Icon {
   return divIcon({
     html: code
-      ? `<span style="font-size:${selected ? 30 : 24}px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))">${flagEmoji(code)}</span>`
-      : `<i class="mdi mdi-map-marker" style="font-size:${selected ? 30 : 24}px;color:#e11d48;filter: drop-shadow(0 1px 2px rgb(0 0 0 / .4))"></i>`,
+      ? `<span style="font-size:${selected ? 30 : 24}px; filter:var(--tt-shadow-flag)">${flagEmoji(code)}</span>`
+      : `<i class="mdi mdi-map-marker" style="font-size:${selected ? 30 : 24}px;color:${KIND_COLORS.place};filter:var(--tt-shadow-flag)"></i>`,
     className: 'tt-flag-marker',
     iconSize: [30, 30],
     iconAnchor: [15, 15],
@@ -115,7 +116,7 @@ defineExpose({ flyTo, fitAll })
           v-else
           :lat-lng="pos"
           :radius="selectedId === place.id ? 12 : place.kind === 'city' ? 9 : 7"
-          color="#ffffff"
+          :color="WHITE"
           :weight="2"
           :fillColor="KIND_COLORS[place.kind]"
           :fillOpacity="0.95"

@@ -7,11 +7,7 @@ export const KIND_LABELS: Record<WorldPlaceKind, string> = {
   place: 'Sitio',
 }
 
-export const KIND_COLORS: Record<WorldPlaceKind, string> = {
-  country: '#f59e0b',
-  city: '#0ea5e9',
-  place: '#e11d48',
-}
+export { KIND_COLORS } from '../theme'
 
 /** Los países auto guardan el código ISO como nombre; se muestra traducido. */
 export function displayName(place: WorldPlace): string {

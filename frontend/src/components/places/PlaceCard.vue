@@ -4,11 +4,8 @@ import Tag from 'primevue/tag'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import type { Booking, Expense, Place } from '../../api/types'
-import {
-  PLACE_CATEGORY_COLORS,
-  PLACE_CATEGORY_ICONS,
-  PLACE_CATEGORY_LABELS,
-} from '../../constants'
+import { PLACE_CATEGORY_ICONS, PLACE_CATEGORY_LABELS } from '../../constants'
+import { PLACE_CATEGORY_COLORS } from '../../theme'
 import { formatMoney } from '../../composables/useMoney'
 
 defineProps<{

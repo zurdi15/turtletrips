@@ -23,3 +23,12 @@ export function useTheme() {
   }
   return { isDark, toggle }
 }
+
+/**
+ * Valor resuelto de un token CSS (--tt-*) para consumidores que no leen CSS
+ * (canvas de Chart.js). apply() togglea la clase de tema síncronamente, así
+ * que el valor leído siempre corresponde al modo actual.
+ */
+export function cssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}

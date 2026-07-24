@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 import { api } from '../api/client'
 import type { Category } from '../api/types'
 
-export const FALLBACK_CATEGORY_COLOR = '#94a3b8'
+import { FALLBACK_COLOR } from '../theme'
+
+// alias histórico: mismo fallback para categorías y viajeros
+export const FALLBACK_CATEGORY_COLOR = FALLBACK_COLOR
 
 export const useCategoriesStore = defineStore('categories', {
   state: () => ({

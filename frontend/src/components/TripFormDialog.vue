@@ -11,7 +11,9 @@ import FormDialog from './ui/FormDialog.vue'
 import FormField from './ui/FormField.vue'
 import type { Trip, TripStatus } from '../api/types'
 import { api } from '../api/client'
-import { CURRENCIES, MEMBER_COLORS, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
+import { CURRENCIES, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
+import { MEMBER_COLORS } from '../theme'
+import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 import { COUNTRY_OPTIONS, countryName } from '../countries'
 import { useTripsStore } from '../stores/trips'
 import { useTravelersStore } from '../stores/travelers'
@@ -216,7 +218,7 @@ const { saving, save } = useFormDialog({
           <span class="flex items-center gap-2">
             <span
               class="w-3 h-3 rounded-full shrink-0"
-              :style="{ background: option.color ?? '#94a3b8' }"
+              :style="{ background: option.color ?? FALLBACK_CATEGORY_COLOR }"
             />
             {{ option.name }}
           </span>
