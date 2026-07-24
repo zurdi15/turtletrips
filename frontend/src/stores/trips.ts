@@ -10,6 +10,7 @@ export interface TripInput {
   status_override?: string | null
   base_currency?: string
   budget_amount?: number | string | null
+  album_url?: string | null
   notes?: string | null
 }
 

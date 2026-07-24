@@ -17,15 +17,19 @@ body {
   color: var(--p-text-color);
 }
 
-/* difuminado del banner del viaje hacia el fondo de la página:
-   la zona inferior queda sólida para que el contenido superpuesto se lea bien */
-.banner-fade {
-  background: linear-gradient(
-    to bottom,
-    rgb(2 6 23 / 0.3),
-    rgb(2 6 23 / 0.05) 30%,
-    var(--tt-page-bg) 76%
-  );
+/* difuminado del banner del viaje: la imagen se desvanece solo hacia abajo,
+   fundiéndose con el fondo para que el contenido superpuesto se lea bien */
+.banner-fade-y {
+  -webkit-mask-image: linear-gradient(to bottom, black 32%, transparent 84%);
+  mask-image: linear-gradient(to bottom, black 32%, transparent 84%);
+}
+
+/* botones superpuestos al banner: fondo sólido para que se vean sobre la imagen */
+.tt-banner-btn.p-button {
+  background: #ffffff;
+}
+.tt-dark .tt-banner-btn.p-button {
+  background: #1e293b;
 }
 
 .leaflet-container {

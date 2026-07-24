@@ -28,6 +28,7 @@ const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 const baseCurrency = ref('EUR')
 const budget = ref<number | null>(null)
+const albumUrl = ref('')
 const notes = ref('')
 const statusOverride = ref<string | null>(null)
 const saving = ref(false)
@@ -48,6 +49,7 @@ watch(visible, (open) => {
   endDate.value = t?.end_date ? parseIsoDate(t.end_date) : null
   baseCurrency.value = t?.base_currency ?? 'EUR'
   budget.value = t?.budget_amount ?? null
+  albumUrl.value = t?.album_url ?? ''
   notes.value = t?.notes ?? ''
   statusOverride.value = t?.status_override ?? null
 })
@@ -88,6 +90,7 @@ async function save() {
       end_date: endDate.value ? toIsoDate(endDate.value) : null,
       base_currency: baseCurrency.value,
       budget_amount: budget.value,
+      album_url: albumUrl.value.trim() || null,
       notes: notes.value || null,
       status_override: statusOverride.value,
     }
@@ -185,6 +188,11 @@ async function save() {
             Sin foto se usa una imagen del país automáticamente
           </span>
         </div>
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">Álbum de fotos</label>
+        <InputText v-model="albumUrl" type="url" placeholder="https://photos.app.goo.gl/…" />
+        <span class="text-xs text-slate-400">Enlace externo (Google Photos, etc.), accesible desde la cabecera del viaje</span>
       </div>
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Notas</label>

@@ -88,6 +88,7 @@ class Trip(TimestampMixin, Base):
     status_override: Mapped[str | None] = mapped_column(String(20))
     base_currency: Mapped[str] = mapped_column(String(3), default="EUR")
     budget_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    album_url: Mapped[str | None] = mapped_column(String(500))  # enlace a álbum de fotos externo
     notes: Mapped[str | None] = mapped_column(Text)
 
     travelers: Mapped[list["Traveler"]] = relationship(

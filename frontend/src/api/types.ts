@@ -21,6 +21,7 @@ export interface Trip {
   status_override: TripStatus | null
   base_currency: string
   budget_amount: number | null
+  album_url: string | null
   notes: string | null
   travelers: Traveler[]
   created_at: string

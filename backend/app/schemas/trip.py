@@ -43,6 +43,7 @@ class TripCreate(BaseModel):
     status_override: TripStatus | None = None
     base_currency: str = Field(default="EUR", min_length=3, max_length=3)
     budget_amount: Decimal | None = Field(default=None, ge=0)
+    album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
 
     @field_validator("countries")
@@ -59,6 +60,7 @@ class TripUpdate(BaseModel):
     status_override: TripStatus | None = None
     base_currency: str | None = Field(default=None, min_length=3, max_length=3)
     budget_amount: Decimal | None = Field(default=None, ge=0)
+    album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
 
     @field_validator("countries")
@@ -80,6 +82,7 @@ class TripRead(BaseModel):
     status_override: TripStatus | None
     base_currency: str
     budget_amount: float | None
+    album_url: str | None
     notes: str | None
     travelers: list[TravelerRead] = []
     created_at: datetime

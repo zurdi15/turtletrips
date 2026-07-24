@@ -16,6 +16,14 @@ def test_trip_crud(client):
     assert resp.status_code == 200
     assert resp.json()["budget_amount"] == 1500.5
 
+    # enlace a álbum de fotos externo
+    resp = client.patch(
+        f"/api/v1/trips/{trip['id']}", json={"album_url": "https://photos.app.goo.gl/abc123"}
+    )
+    assert resp.json()["album_url"] == "https://photos.app.goo.gl/abc123"
+    resp = client.patch(f"/api/v1/trips/{trip['id']}", json={"album_url": None})
+    assert resp.json()["album_url"] is None
+
     # varios países en un mismo viaje
     resp = client.patch(f"/api/v1/trips/{trip['id']}", json={"countries": ["is", "NO"]})
     assert resp.json()["countries"] == ["IS", "NO"]

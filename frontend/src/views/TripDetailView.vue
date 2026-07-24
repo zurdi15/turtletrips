@@ -80,13 +80,16 @@ function deleteTrip() {
       <ProgressSpinner style="width: 40px" />
     </div>
     <div v-else>
-      <!-- banner con la imagen del viaje difuminada hacia el fondo de la página -->
+      <!-- banner con la imagen del viaje desvanecida hacia el fondo de la página -->
       <div
         v-if="bannerImage"
-        class="relative h-44 sm:h-60 rounded-2xl overflow-hidden -mb-16 sm:-mb-20"
+        class="relative h-44 sm:h-60 -mb-16 sm:-mb-20 rounded-t-2xl overflow-hidden"
       >
-        <img :src="bannerImage" class="absolute inset-0 w-full h-full object-cover" alt="" />
-        <div class="absolute inset-0 banner-fade" />
+        <img
+          :src="bannerImage"
+          class="absolute inset-0 w-full h-full object-cover banner-fade-y"
+          alt=""
+        />
       </div>
 
       <div
@@ -122,10 +125,24 @@ function deleteTrip() {
             <MemberChip v-for="t in store.current.travelers" :key="t.id" :member="t" />
           </div>
           <Button
+            v-if="store.current.album_url"
+            as="a"
+            :href="store.current.album_url"
+            target="_blank"
+            rel="noopener"
+            icon="pi pi-images"
+            severity="secondary"
+            outlined
+            size="small"
+            class="tt-banner-btn"
+            v-tooltip.bottom="'Álbum de fotos'"
+          />
+          <Button
             icon="pi pi-users"
             severity="secondary"
             outlined
             size="small"
+            class="tt-banner-btn"
             v-tooltip.bottom="'Viajeros'"
             @click="showTravelers = true"
           />
@@ -134,6 +151,7 @@ function deleteTrip() {
             severity="secondary"
             outlined
             size="small"
+            class="tt-banner-btn"
             v-tooltip.bottom="'Editar viaje'"
             @click="showEdit = true"
           />
@@ -142,6 +160,7 @@ function deleteTrip() {
             severity="danger"
             outlined
             size="small"
+            class="tt-banner-btn"
             v-tooltip.bottom="'Eliminar viaje'"
             @click="deleteTrip"
           />
