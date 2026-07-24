@@ -4,6 +4,8 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import AutoComplete from 'primevue/autocomplete'
+import PageHeader from '../components/ui/PageHeader.vue'
+import ProgressMeter from '../components/ui/ProgressMeter.vue'
 import WorldMapPanel from '../components/world/WorldMapPanel.vue'
 import WorldCountryList from '../components/world/WorldCountryList.vue'
 import WorldPlaceDialog, {
@@ -159,18 +161,11 @@ function removePlace(place: WorldPlace) {
 
 <template>
   <div>
-    <div class="flex items-center gap-2 mb-1">
-      <h1 class="text-2xl font-bold text-slate-800">Mapa</h1>
-      <button
-        class="text-slate-400 hover:text-slate-600 transition-colors"
-        v-tooltip.bottom="
-          'El diario de vuestros viajes: países, ciudades y sitios visitados, con notas. Se rellena solo con los viajes terminados, los sitios marcados como visitados y los sitios con gastos — y puedes añadir lo que quieras a mano.'
-        "
-        aria-label="Información sobre el mapa"
-      >
-        <i class="pi pi-info-circle" />
-      </button>
-    </div>
+    <PageHeader
+      title="Mapa"
+      info="El diario de vuestros viajes: países, ciudades y sitios visitados, con notas. Se rellena solo con los viajes terminados, los sitios marcados como visitados y los sitios con gastos — y puedes añadir lo que quieras a mano."
+      class="mb-1"
+    />
 
     <!-- estadísticas de diario -->
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-sm text-slate-500">
@@ -184,12 +179,7 @@ function removePlace(place: WorldPlace) {
         <span class="font-semibold text-slate-700">{{ stats.places }}</span> sitios
       </span>
       <span>💬 <span class="font-semibold text-slate-700">{{ stats.notes }}</span> notas</span>
-      <div class="w-full sm:w-56 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-        <div
-          class="h-full rounded-full bg-amber-500 transition-all"
-          :style="{ width: `${stats.worldPct}%` }"
-        />
-      </div>
+      <ProgressMeter :value="stats.worldPct" color="warn" size="xs" class="w-full sm:w-56" />
     </div>
 
     <!-- añadir + vista -->

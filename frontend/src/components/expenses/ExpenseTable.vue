@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Tag from 'primevue/tag'
 import MemberChip from '../MemberChip.vue'
+import Pill from '../ui/Pill.vue'
+import RowActions from '../ui/RowActions.vue'
+import EntityLink from '../trip/EntityLink.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
 import type { ExpenseGroupBy, ExpenseRow } from '../../utils/expenses'
 import { formatDate, formatMoney } from '../../composables/useMoney'
@@ -155,22 +157,14 @@ watch(
           v-if="data.booking_id || (data.place_id && placeById.get(data.place_id))"
           class="inline-flex items-center gap-2 ml-2 align-middle"
         >
-          <router-link
-            v-if="data.booking_id"
-            :to="{ name: 'trip-bookings', params: { id: trip.id }, query: { booking: data.booking_id } }"
-            class="text-violet-600 no-underline"
-            v-tooltip.top="'Ver reserva'"
-          >
-            <i class="pi pi-ticket text-xs" />
-          </router-link>
-          <router-link
+          <EntityLink v-if="data.booking_id" type="booking" :tripId="trip.id" :targetId="data.booking_id" />
+          <EntityLink
             v-if="data.place_id && placeById.get(data.place_id)"
-            :to="{ name: 'trip-places', params: { id: trip.id }, query: { place: data.place_id } }"
-            class="text-emerald-600 no-underline"
-            v-tooltip.top="`Sitio: ${placeById.get(data.place_id)!.name}`"
-          >
-            <i class="pi pi-map-marker text-xs" />
-          </router-link>
+            type="place"
+            :tripId="trip.id"
+            :targetId="data.place_id"
+            :tooltip="`Sitio: ${placeById.get(data.place_id)!.name}`"
+          />
         </span>
         <p v-if="data.notes" class="mt-1.5 text-xs text-slate-400 truncate max-w-[16rem]">
           {{ data.notes }}
@@ -189,14 +183,14 @@ watch(
     </Column>
     <Column header="Pagó" field="payer_name" style="width: 7rem">
       <template #body="{ data }">
-        <span
+        <Pill
           v-if="data.paid_by_common"
-          class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700"
+          color="warn"
+          icon="pi pi-wallet"
           v-tooltip.top="'Pagado del fondo común: no entra en los saldos'"
         >
-          <i class="pi pi-wallet text-[10px]" />
           Común
-        </span>
+        </Pill>
         <MemberChip
           v-else-if="data.paid_by_id != null && memberById.get(data.paid_by_id)"
           :member="memberById.get(data.paid_by_id)!"
@@ -206,22 +200,12 @@ watch(
     </Column>
     <Column style="width: 5.5rem">
       <template #body="{ data }">
-        <div class="flex gap-1 justify-end">
-          <Button
-            icon="pi pi-pencil"
-            text
-            size="small"
-            severity="secondary"
-            @click="$emit('edit', data)"
-          />
-          <Button
-            icon="pi pi-trash"
-            text
-            size="small"
-            severity="danger"
-            @click="$emit('remove', data)"
-          />
-        </div>
+        <RowActions
+          always
+          class="justify-end"
+          @edit="$emit('edit', data)"
+          @remove="$emit('remove', data)"
+        />
       </template>
     </Column>
   </DataTable>

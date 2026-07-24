@@ -6,6 +6,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
+import UploadButton from './ui/UploadButton.vue'
 import type { ImportResult, Trip } from '../api/types'
 import { useExpensesStore } from '../stores/expenses'
 import { formatDate, formatMoney } from '../composables/useMoney'
@@ -22,17 +23,13 @@ const file = ref<File | null>(null)
 const preview = ref<ImportResult | null>(null)
 const loading = ref(false)
 const importing = ref(false)
-const fileInput = ref<HTMLInputElement>()
 
 function reset() {
   file.value = null
   preview.value = null
 }
 
-async function onFileChosen(event: Event) {
-  const target = event.target as HTMLInputElement
-  const chosen = target.files?.[0]
-  if (!chosen) return
+async function onFileChosen(chosen: File) {
   file.value = chosen
   loading.value = true
   try {
@@ -42,7 +39,6 @@ async function onFileChosen(event: Event) {
     reset()
   } finally {
     loading.value = false
-    target.value = ''
   }
 }
 
@@ -83,18 +79,12 @@ async function confirmImport() {
         heredan la de la fila anterior, y el lugar se guarda en las notas. Primero verás una
         previsualización; no se importa nada hasta que confirmes.
       </p>
-      <input
-        ref="fileInput"
-        type="file"
-        accept=".csv,text/csv"
-        class="hidden"
-        @change="onFileChosen"
-      />
-      <Button
+      <UploadButton
         label="Elegir fichero CSV"
         icon="pi pi-upload"
+        accept=".csv,text/csv"
         :loading="loading"
-        @click="fileInput?.click()"
+        @file="onFileChosen"
       />
     </div>
 

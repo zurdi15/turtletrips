@@ -14,6 +14,7 @@ import ExpenseTable from '../../components/expenses/ExpenseTable.vue'
 import ExpenseChartsPanel from '../../components/expenses/ExpenseChartsPanel.vue'
 import BalancesPanel from '../../components/BalancesPanel.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
+import FilterToggleButton from '../../components/ui/FilterToggleButton.vue'
 import type { Expense, Trip } from '../../api/types'
 import { useExpensesStore } from '../../stores/expenses'
 import { useCategoriesStore } from '../../stores/categories'
@@ -224,14 +225,10 @@ const {
     <!-- barra de acciones -->
     <div class="flex flex-wrap items-center gap-2 mb-3">
       <Button label="Nuevo gasto" icon="pi pi-plus" @click="openNew" />
-      <Button
+      <FilterToggleButton
         v-if="viewMode !== 'balances'"
-        label="Filtros"
-        :icon="showFilters ? 'pi pi-chevron-up' : 'pi pi-sliders-h'"
-        severity="secondary"
-        :outlined="!showFilters && !activeFilterCount"
-        :badge="activeFilterCount ? String(activeFilterCount) : undefined"
-        @click="showFilters = !showFilters"
+        v-model="showFilters"
+        :count="activeFilterCount"
       />
       <Select
         v-if="viewMode === 'table'"

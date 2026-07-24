@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import Button from 'primevue/button'
 import PlaceMap from '../../components/PlaceMap.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
+import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import type { Trip } from '../../api/types'
 import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
 import { useExpensesStore } from '../../stores/expenses'
@@ -98,13 +99,7 @@ const initialLoading = computed(
           </span>
         </div>
         <div v-if="budgetPct != null" class="mt-3">
-          <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-            <div
-              class="h-full rounded-full transition-all"
-              :class="budgetPct >= 100 ? 'bg-red-500' : budgetPct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'"
-              :style="{ width: `${budgetPct}%` }"
-            />
-          </div>
+          <ProgressMeter :value="budgetPct" thresholds size="md" />
         </div>
         <p v-else class="text-xs text-slate-400 mt-2">
           Define un presupuesto al editar el viaje para ver el progreso.

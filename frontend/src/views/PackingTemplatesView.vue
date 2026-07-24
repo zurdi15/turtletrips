@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import EmptyState from '../components/EmptyState.vue'
+import PageHeader from '../components/ui/PageHeader.vue'
 import type { PackingTemplateItem } from '../api/types'
 import { usePackingTemplatesStore } from '../stores/packingTemplates'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
@@ -115,18 +116,11 @@ async function saveEdit() {
 
 <template>
   <div>
-    <div class="flex items-center gap-2 mb-5">
-      <h1 class="text-2xl font-bold text-slate-800">Maletas</h1>
-      <button
-        class="text-slate-400 hover:text-slate-600 transition-colors"
-        v-tooltip.bottom="
-          'Plantillas de maleta reutilizables. Al aplicarlas en un viaje se copian: puedes modificar la maleta del viaje sin tocar la plantilla, y desde el viaje también puedes guardar los cambios de vuelta a la plantilla.'
-        "
-        aria-label="Información sobre las maletas"
-      >
-        <i class="pi pi-info-circle" />
-      </button>
-    </div>
+    <PageHeader
+      title="Maletas"
+      info="Plantillas de maleta reutilizables. Al aplicarlas en un viaje se copian: puedes modificar la maleta del viaje sin tocar la plantilla, y desde el viaje también puedes guardar los cambios de vuelta a la plantilla."
+      class="mb-5"
+    />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
       <!-- lista de plantillas -->

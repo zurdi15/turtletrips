@@ -7,6 +7,7 @@ import Checkbox from 'primevue/checkbox'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import FormDialog from '../../components/ui/FormDialog.vue'
+import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
@@ -262,12 +263,7 @@ async function saveTemplate() {
         />
       </div>
       <div v-if="activeProgress.total" class="mt-3">
-        <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
-          <div
-            class="h-full rounded-full bg-emerald-500 transition-all"
-            :style="{ width: `${activeProgress.pct}%` }"
-          />
-        </div>
+        <ProgressMeter :value="activeProgress.pct" />
         <p class="text-xs text-slate-400 mt-1">
           {{ activeProgress.done }}/{{ activeProgress.total }} preparado · {{ activeProgress.pct }}%
         </p>

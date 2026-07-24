@@ -2,8 +2,11 @@
 import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
-import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
+import PageHeader from '../components/ui/PageHeader.vue'
+import EditableListItem from '../components/ui/EditableListItem.vue'
+import ColorSwatchPopover from '../components/ui/ColorSwatchPopover.vue'
+import UploadButton from '../components/ui/UploadButton.vue'
 import { api, API_BASE } from '../api/client'
 import type { Category } from '../api/types'
 import { CATEGORY_PALETTE } from '../constants'
@@ -33,14 +36,9 @@ const themeOptions = [
 // ---- copia de seguridad ----
 
 const backupExportUrl = `${API_BASE}/backup/export`
-const restoreInput = ref<HTMLInputElement | null>(null)
 const restoring = ref(false)
 
-function onRestoreFilePicked(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  input.value = ''
-  if (!file) return
+function onRestoreFilePicked(file: File) {
   confirmAction({
     message:
       'Esto reemplazará TODOS los datos actuales (viajes, gastos, adjuntos…) ' +
@@ -70,11 +68,9 @@ onMounted(() => {
 })
 
 const newNames = ref<Record<string, string>>({ expense: '', packing: '' })
-const editingId = ref<number | null>(null)
-const editingName = ref('')
 
 const colorTarget = ref<{ kind: 'expense' | 'packing'; id: number } | null>(null)
-const colorPopover = ref()
+const colorPopover = ref<InstanceType<typeof ColorSwatchPopover>>()
 
 function openColorPicker(event: Event, kind: 'expense' | 'packing', id: number) {
   colorTarget.value = { kind, id }
@@ -88,7 +84,6 @@ async function pickColor(color: string) {
   } catch (err) {
     notify.error('Error al cambiar el color', err)
   }
-  colorPopover.value?.hide()
 }
 
 async function addCategory(kind: 'expense' | 'packing') {
@@ -103,16 +98,9 @@ async function addCategory(kind: 'expense' | 'packing') {
   }
 }
 
-function startRename(category: Category) {
-  editingId.value = category.id
-  editingName.value = category.name
-}
-
-async function confirmRename(kind: 'expense' | 'packing') {
-  if (editingId.value == null || !editingName.value.trim()) return
+async function renameCategory(kind: 'expense' | 'packing', category: Category, name: string) {
   try {
-    await categories.update(editingId.value, kind, { name: editingName.value.trim() })
-    editingId.value = null
+    await categories.update(category.id, kind, { name })
   } catch (err) {
     notify.error('Error al renombrar', err)
   }
@@ -142,7 +130,7 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
 
 <template>
   <div class="max-w-3xl mx-auto">
-    <h1 class="text-2xl font-bold text-slate-800 mb-6">Ajustes</h1>
+    <PageHeader title="Ajustes" class="mb-6" />
 
     <div class="flex flex-col gap-6">
       <section class="bg-white rounded-xl border border-slate-200 p-5">
@@ -173,43 +161,16 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
         <h2 class="font-semibold text-slate-700 mb-1">{{ section.title }}</h2>
         <p class="text-xs text-slate-400 mb-4">{{ section.hint }}</p>
         <ul class="flex flex-col gap-1.5 mb-4">
-          <li
+          <EditableListItem
             v-for="category in categories[section.kind]"
             :key="category.id"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 group"
-          >
-            <button
-              class="w-5 h-5 rounded-full shrink-0 ring-1 ring-slate-200 hover:scale-110 transition-transform"
-              :style="{ background: category.color ?? FALLBACK_CATEGORY_COLOR }"
-              v-tooltip.top="'Cambiar color'"
-              @click="openColorPicker($event, section.kind, category.id)"
-            />
-            <template v-if="editingId === category.id">
-              <InputText
-                v-model="editingName"
-                size="small"
-                class="flex-1"
-                autofocus
-                @keyup.enter="confirmRename(section.kind)"
-                @keyup.escape="editingId = null"
-              />
-              <Button icon="pi pi-check" text size="small" @click="confirmRename(section.kind)" />
-              <Button icon="pi pi-times" text size="small" severity="secondary" @click="editingId = null" />
-            </template>
-            <template v-else>
-              <span class="flex-1 text-slate-700">{{ category.name }}</span>
-              <div class="flex gap-1 hover-actions">
-                <Button icon="pi pi-pencil" text size="small" severity="secondary" @click="startRename(category)" />
-                <Button
-                  icon="pi pi-trash"
-                  text
-                  size="small"
-                  severity="danger"
-                  @click="removeCategory(section.kind, category)"
-                />
-              </div>
-            </template>
-          </li>
+            :name="category.name"
+            :color="category.color"
+            :colorFallback="FALLBACK_CATEGORY_COLOR"
+            @rename="(name) => renameCategory(section.kind, category, name)"
+            @remove="removeCategory(section.kind, category)"
+            @pick-color="(event) => openColorPicker(event, section.kind, category.id)"
+          />
         </ul>
         <div class="flex gap-2">
           <InputText
@@ -236,35 +197,19 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
           <a :href="backupExportUrl" download>
             <Button label="Descargar copia" icon="pi pi-download" severity="secondary" outlined />
           </a>
-          <Button
+          <UploadButton
             label="Restaurar desde copia…"
             icon="pi pi-upload"
             severity="danger"
             outlined
-            :loading="restoring"
-            @click="restoreInput?.click()"
-          />
-          <input
-            ref="restoreInput"
-            type="file"
             accept=".zip,application/zip"
-            class="hidden"
-            @change="onRestoreFilePicked"
+            :loading="restoring"
+            @file="onRestoreFilePicked"
           />
         </div>
       </section>
     </div>
 
-    <Popover ref="colorPopover">
-      <div class="grid grid-cols-6 gap-2 p-1">
-        <button
-          v-for="color in CATEGORY_PALETTE"
-          :key="color"
-          class="w-6 h-6 rounded-full ring-1 ring-slate-200 hover:scale-110 transition-transform"
-          :style="{ background: color }"
-          @click="pickColor(color)"
-        />
-      </div>
-    </Popover>
+    <ColorSwatchPopover ref="colorPopover" @select="pickColor" />
   </div>
 </template>

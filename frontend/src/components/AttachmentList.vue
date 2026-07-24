@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Button from 'primevue/button'
+import UploadButton from './ui/UploadButton.vue'
 import { useAttachmentsStore } from '../stores/attachments'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
@@ -13,7 +14,6 @@ const props = withDefaults(
 const store = useAttachmentsStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
-const fileInput = ref<HTMLInputElement>()
 const uploading = ref(false)
 
 const items = computed(() =>
@@ -22,10 +22,7 @@ const items = computed(() =>
     : store.items,
 )
 
-async function onFileChosen(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+async function onFileChosen(file: File) {
   uploading.value = true
   try {
     await store.upload(file, props.bookingId)
@@ -33,7 +30,6 @@ async function onFileChosen(event: Event) {
     notify.error('Error al subir', err)
   } finally {
     uploading.value = false
-    target.value = ''
   }
 }
 
@@ -79,21 +75,15 @@ function remove(id: number, name: string) {
           />
         </div>
       </template>
-      <input
-        ref="fileInput"
-        type="file"
-        accept="application/pdf,image/*"
-        class="hidden"
-        @change="onFileChosen"
-      />
-      <Button
+      <UploadButton
         label="Adjuntar"
         icon="pi pi-paperclip"
         severity="secondary"
         outlined
         size="small"
+        accept="application/pdf,image/*"
         :loading="uploading"
-        @click="fileInput?.click()"
+        @file="onFileChosen"
       />
     </div>
   </div>

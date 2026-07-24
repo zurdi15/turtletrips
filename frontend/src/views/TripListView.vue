@@ -8,6 +8,8 @@ import ProgressSpinner from 'primevue/progressspinner'
 import StatusTag from '../components/StatusTag.vue'
 import TripFormDialog from '../components/TripFormDialog.vue'
 import EmptyState from '../components/EmptyState.vue'
+import SettledPill from '../components/trip/SettledPill.vue'
+import FilterToggleButton from '../components/ui/FilterToggleButton.vue'
 import { useTripsStore } from '../stores/trips'
 import { useCountryImage } from '../composables/useCountryImage'
 import { countryLabel, countryName, flagEmoji } from '../countries'
@@ -165,14 +167,7 @@ function tripImage(trip: Trip): string | null {
             :allowEmpty="false"
             class="flex-1 [&_.p-togglebutton]:flex-1"
           />
-          <Button
-            label="Filtros"
-            :icon="showFilters ? 'pi pi-chevron-up' : 'pi pi-sliders-h'"
-            severity="secondary"
-            :outlined="!showFilters && !activeFilterCount"
-            :badge="activeFilterCount ? String(activeFilterCount) : undefined"
-            @click="showFilters = !showFilters"
-          />
+          <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
         </div>
 
         <!-- controles de búsqueda y filtrado (colapsados por defecto);
@@ -257,14 +252,7 @@ function tripImage(trip: Trip): string | null {
                 <h3 class="font-semibold text-slate-800 flex items-center gap-2">
                   {{ trip.name }}
                   <span class="text-sm">{{ trip.countries.map(flagEmoji).join(' ') }}</span>
-                  <span
-                    v-if="trip.debts_settled"
-                    class="tt-pop-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700"
-                    v-tooltip.top="'Deudas saldadas entre viajeros'"
-                  >
-                    <i class="pi pi-check-circle text-[10px]" />
-                    Saldado
-                  </span>
+                  <SettledPill v-if="trip.debts_settled" />
                 </h3>
                 <p class="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
                   <i class="pi pi-calendar text-xs" /> {{ tripDateRange(trip) }}

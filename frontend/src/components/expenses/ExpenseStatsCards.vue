@@ -3,6 +3,7 @@ import type { TripSummary } from '../../api/types'
 import type { ExpenseStats } from '../../utils/expenses'
 import { formatMoney } from '../../composables/useMoney'
 import { useAnimatedNumber } from '../../composables/useAnimatedNumber'
+import ProgressMeter from '../ui/ProgressMeter.vue'
 
 const props = defineProps<{
   stats: ExpenseStats
@@ -41,13 +42,7 @@ const perDayPerson = useAnimatedNumber(() => props.stats.perDayPerson)
           }}
         </p>
         <div v-if="budgetPct != null" class="mt-1.5">
-          <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <div
-              class="tt-bar h-full rounded-full"
-              :class="budgetPct >= 100 ? 'bg-red-500' : budgetPct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'"
-              :style="{ width: `${budgetPct}%` }"
-            />
-          </div>
+          <ProgressMeter :value="budgetPct" thresholds size="xs" />
           <p class="text-xs text-slate-400 mt-0.5">{{ budgetPct }}% usado</p>
         </div>
       </div>
