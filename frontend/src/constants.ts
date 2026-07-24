@@ -9,7 +9,7 @@ export const TRIP_STATUS_LABELS: Record<TripStatus, string> = {
 
 export const TRIP_STATUS_SEVERITY: Record<TripStatus, string> = {
   planning: 'info',
-  upcoming: 'warn',
+  upcoming: 'success',
   ongoing: 'success',
   done: 'secondary',
 }

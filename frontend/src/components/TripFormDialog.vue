@@ -11,9 +11,10 @@ import DateRangePicker from './DateRangePicker.vue'
 import { useToast } from 'primevue/usetoast'
 import type { Trip, TripStatus } from '../api/types'
 import { api } from '../api/client'
-import { CURRENCIES, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
+import { CURRENCIES, MEMBER_COLORS, TRIP_STATUS_LABELS, toSelectOptions } from '../constants'
 import { COUNTRY_OPTIONS, countryName } from '../countries'
 import { useTripsStore } from '../stores/trips'
+import { useTravelersStore } from '../stores/travelers'
 import { parseIsoDate, toIsoDate } from '../composables/useMoney'
 
 const props = defineProps<{ trip?: Trip | null }>()
@@ -22,9 +23,12 @@ const emit = defineEmits<{ saved: [trip: Trip] }>()
 
 const toast = useToast()
 const store = useTripsStore()
+const travelersStore = useTravelersStore()
 
 const name = ref('')
 const countries = ref<string[]>([])
+const travelerIds = ref<number[]>([])
+const newTravelerName = ref('')
 const startDate = ref<Date | null>(null)
 const endDate = ref<Date | null>(null)
 const baseCurrency = ref('EUR')
@@ -96,9 +100,12 @@ async function applyPhoto(result: ImageResult) {
 
 watch(visible, (open) => {
   if (!open) return
+  travelersStore.load()
   const t = props.trip
   name.value = t?.name ?? ''
   countries.value = t?.countries ? [...t.countries] : []
+  travelerIds.value = t?.travelers?.map((tr) => tr.id) ?? []
+  newTravelerName.value = ''
   startDate.value = t?.start_date ? parseIsoDate(t.start_date) : null
   endDate.value = t?.end_date ? parseIsoDate(t.end_date) : null
   baseCurrency.value = t?.base_currency ?? 'EUR'
@@ -111,6 +118,19 @@ watch(visible, (open) => {
   photoResults.value = []
   photoSearched.value = false
 })
+
+async function addNewTraveler() {
+  const nm = newTravelerName.value.trim()
+  if (!nm) return
+  try {
+    const color = MEMBER_COLORS[travelersStore.items.length % MEMBER_COLORS.length]
+    const traveler = await travelersStore.create(nm, color)
+    if (!travelerIds.value.includes(traveler.id)) travelerIds.value.push(traveler.id)
+    newTravelerName.value = ''
+  } catch (err) {
+    toast.add({ severity: 'error', summary: 'Error', detail: String(err), life: 4000 })
+  }
+}
 
 async function onCoverChosen(event: Event) {
   if (!props.trip) return
@@ -151,6 +171,7 @@ async function save() {
       album_url: albumUrl.value.trim() || null,
       notes: notes.value || null,
       status_override: statusOverride.value === 'auto' ? null : statusOverride.value,
+      traveler_ids: travelerIds.value,
     }
     const trip = props.trip
       ? await store.updateTrip(props.trip.id, payload)
@@ -190,6 +211,48 @@ async function save() {
           :maxSelectedLabels="6"
           :virtualScrollerOptions="{ itemSize: 38 }"
         />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-sm font-medium">Viajeros</label>
+        <MultiSelect
+          v-model="travelerIds"
+          :options="travelersStore.items"
+          optionLabel="name"
+          optionValue="id"
+          filter
+          display="chip"
+          placeholder="Selecciona viajeros…"
+          :maxSelectedLabels="8"
+        >
+          <template #option="{ option }">
+            <span class="flex items-center gap-2">
+              <span
+                class="w-3 h-3 rounded-full shrink-0"
+                :style="{ background: option.color ?? '#94a3b8' }"
+              />
+              {{ option.name }}
+            </span>
+          </template>
+        </MultiSelect>
+        <div class="flex gap-2">
+          <InputText
+            v-model="newTravelerName"
+            placeholder="Crear un viajero nuevo…"
+            class="flex-1 min-w-0"
+            @keyup.enter="addNewTraveler"
+          />
+          <Button
+            label="Añadir"
+            icon="pi pi-plus"
+            severity="secondary"
+            outlined
+            class="shrink-0 max-sm:[&_.p-button-label]:hidden"
+            @click="addNewTraveler"
+          />
+        </div>
+        <span class="text-xs text-slate-400">
+          Globales y reutilizables: marca quién viaja para poder repartir gastos
+        </span>
       </div>
       <div class="flex flex-col gap-1">
         <label class="text-sm font-medium">Fechas</label>

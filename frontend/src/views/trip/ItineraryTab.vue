@@ -433,7 +433,7 @@ function onEventDrop(info: EventDropArg) {
           severity="secondary"
           outlined
           v-tooltip.bottom="'Descargar calendario (.ics)'"
-          class="max-sm:[&_.p-button-label]:hidden"
+          class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
         />
       </a>
       <Button
@@ -442,7 +442,7 @@ function onEventDrop(info: EventDropArg) {
         severity="secondary"
         outlined
         v-tooltip.bottom="'URL de suscripción: tu calendario se actualiza solo'"
-        class="max-sm:[&_.p-button-label]:hidden"
+        class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
         @click="showSubscribe = true"
       />
       <span class="flex-1" />
@@ -452,6 +452,7 @@ function onEventDrop(info: EventDropArg) {
         optionLabel="label"
         optionValue="value"
         :allowEmpty="false"
+        class="max-sm:basis-full max-sm:w-full max-sm:flex max-sm:[&_.p-togglebutton]:flex-1"
       />
     </div>
 

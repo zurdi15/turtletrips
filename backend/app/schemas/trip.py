@@ -45,6 +45,7 @@ class TripCreate(BaseModel):
     budget_amount: Decimal | None = Field(default=None, ge=0)
     album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
+    traveler_ids: list[int] = []
 
     @field_validator("countries")
     @classmethod
@@ -62,6 +63,7 @@ class TripUpdate(BaseModel):
     budget_amount: Decimal | None = Field(default=None, ge=0)
     album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
+    traveler_ids: list[int] | None = None
 
     @field_validator("countries")
     @classmethod

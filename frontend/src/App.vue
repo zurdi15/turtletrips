@@ -31,14 +31,14 @@ const navItems = [
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
-            class="px-2.5 sm:px-3 py-1.5 rounded-lg text-sm font-medium no-underline transition-colors whitespace-nowrap"
+            class="inline-flex items-center justify-center px-3 sm:px-3.5 py-2 rounded-lg text-sm font-medium no-underline transition-colors whitespace-nowrap"
             :class="
               item.match(route.path)
                 ? 'bg-slate-100 text-slate-900'
                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
             "
           >
-            <i :class="item.icon" class="text-xs sm:mr-1.5" />
+            <i :class="item.icon" class="text-sm sm:mr-1.5" />
             <span class="hidden sm:inline">{{ item.label }}</span>
           </router-link>
         </nav>
@@ -65,6 +65,6 @@ const navItems = [
       <router-view class="tt-anim-rise" />
     </main>
     <Toast position="bottom-right" />
-    <ConfirmDialog />
+    <ConfirmDialog class="w-full max-w-md mx-4" />
   </div>
 </template>

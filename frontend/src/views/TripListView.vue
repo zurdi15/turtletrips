@@ -213,13 +213,13 @@ function dateRange(trip: Trip): string {
             class="w-full sm:w-auto"
             @click="showForm = true"
           />
-          <span class="flex-1" />
           <SelectButton
             v-model="grouping"
             :options="groupingOptions"
             optionLabel="label"
             optionValue="value"
             :allowEmpty="false"
+            class="flex-1 [&_.p-togglebutton]:flex-1"
           />
           <Button
             label="Filtros"

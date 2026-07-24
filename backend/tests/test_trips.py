@@ -87,6 +87,43 @@ def test_travelers_global_and_reusable(client, trip):
     assert resp.json()["color"] == "#16a34a"
 
 
+def test_trip_create_and_update_with_traveler_ids(client):
+    ana = client.post("/api/v1/travelers", json={"name": "Ana"}).json()
+    romm = client.post("/api/v1/travelers", json={"name": "Romm"}).json()
+    leo = client.post("/api/v1/travelers", json={"name": "Leo"}).json()
+
+    # crear un viaje ya con viajeros asociados (dedup + orden preservado)
+    created = client.post(
+        "/api/v1/trips",
+        json={"name": "Japón", "traveler_ids": [ana["id"], romm["id"], ana["id"]]},
+    ).json()
+    trip_id = created["id"]
+    assert sorted(t["name"] for t in created["travelers"]) == ["Ana", "Romm"]
+
+    # patch con traveler_ids REEMPLAZA el conjunto (quita Ana, añade Leo)
+    updated = client.patch(
+        f"/api/v1/trips/{trip_id}",
+        json={"traveler_ids": [romm["id"], leo["id"]]},
+    ).json()
+    assert sorted(t["name"] for t in updated["travelers"]) == ["Leo", "Romm"]
+
+    # lista vacía deja el viaje sin viajeros
+    cleared = client.patch(f"/api/v1/trips/{trip_id}", json={"traveler_ids": []}).json()
+    assert cleared["travelers"] == []
+
+    # patch sin traveler_ids NO toca los viajeros
+    client.patch(f"/api/v1/trips/{trip_id}", json={"traveler_ids": [romm["id"]]})
+    client.patch(f"/api/v1/trips/{trip_id}", json={"name": "Japón 2026"})
+    detail = client.get(f"/api/v1/trips/{trip_id}").json()
+    assert [t["name"] for t in detail["travelers"]] == ["Romm"]
+
+    # id inexistente → 404
+    assert (
+        client.post("/api/v1/trips", json={"name": "X", "traveler_ids": [9999]}).status_code
+        == 404
+    )
+
+
 def test_delete_trip_cascades(client, trip):
     trip_id = trip["id"]
     client.post(f"/api/v1/trips/{trip_id}/places", json={"name": "Fushimi Inari"})

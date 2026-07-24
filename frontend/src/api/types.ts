@@ -252,7 +252,7 @@ export interface RateRead {
 
 export type TripInput = Partial<
   Omit<Trip, 'id' | 'status' | 'travelers' | 'created_at' | 'updated_at' | 'cover_url' | 'budget_amount'>
-> & { budget_amount?: number | string | null }
+> & { budget_amount?: number | string | null; traveler_ids?: number[] }
 export type PlaceInput = Partial<Omit<Place, 'id' | 'trip_id'>>
 export type BookingInput = Partial<Omit<Booking, 'id' | 'trip_id' | 'cost_amount'>> & {
   cost_amount?: number | string | null

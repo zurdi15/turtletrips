@@ -6,6 +6,7 @@ node_modules/
 dist/
 backend/static/
 data/
+!frontend/src/data/
 *.db
 *.db-wal
 *.db-shm

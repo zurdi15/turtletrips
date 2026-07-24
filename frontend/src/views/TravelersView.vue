@@ -102,7 +102,7 @@ function remove(traveler: Traveler) {
             <InputText
               v-model="editingName"
               size="small"
-              class="flex-1"
+              class="flex-1 min-w-0"
               autofocus
               @keyup.enter="confirmRename"
               @keyup.escape="editingId = null"

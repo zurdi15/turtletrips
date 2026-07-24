@@ -6,10 +6,14 @@ app/db.py
 app/main.py
 app/models.py
 tests/test_attachments.py
+tests/test_backup.py
+tests/test_balances.py
 tests/test_csv.py
 tests/test_expenses.py
+tests/test_ics.py
 tests/test_itinerary_bookings.py
 tests/test_packing_categories.py
+tests/test_static.py
 tests/test_trips.py
 tests/test_world.py
 tt_backend.egg-info/PKG-INFO

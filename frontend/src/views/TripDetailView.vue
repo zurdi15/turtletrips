@@ -8,7 +8,6 @@ import { useToast } from 'primevue/usetoast'
 import StatusTag from '../components/StatusTag.vue'
 import MemberChip from '../components/MemberChip.vue'
 import TripFormDialog from '../components/TripFormDialog.vue'
-import TravelersDialog from '../components/TravelersDialog.vue'
 import TabSkeleton from '../components/TabSkeleton.vue'
 import { useTripsStore } from '../stores/trips'
 import { formatDate } from '../composables/useMoney'
@@ -24,7 +23,6 @@ const store = useTripsStore()
 
 const tripId = computed(() => Number(props.id))
 const showEdit = ref(false)
-const showTravelers = ref(false)
 const notFound = ref(false)
 
 const { imageFor } = useCountryImage()
@@ -124,7 +122,7 @@ function deleteTrip() {
       <!-- banner con la imagen del viaje desvanecida hacia el fondo de la página -->
       <div
         v-if="bannerImage"
-        class="relative h-44 sm:h-60 -mb-16 sm:-mb-20 rounded-t-2xl overflow-hidden"
+        class="relative h-44 sm:h-60 -mt-6 sm:mt-0 -mx-4 sm:mx-0 -mb-16 sm:-mb-20 overflow-hidden sm:rounded-t-2xl"
       >
         <img
           :src="bannerImage"
@@ -168,8 +166,8 @@ function deleteTrip() {
             </span>
           </p>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <div class="flex gap-1 mr-2 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap max-sm:w-full">
+          <div class="flex gap-1 mr-2 flex-wrap max-sm:flex-1">
             <MemberChip v-for="t in store.current.travelers" :key="t.id" :member="t" />
           </div>
           <Button
@@ -184,15 +182,6 @@ function deleteTrip() {
             size="small"
             class="tt-banner-btn"
             v-tooltip.bottom="'Álbum de fotos'"
-          />
-          <Button
-            icon="pi pi-users"
-            severity="secondary"
-            outlined
-            size="small"
-            class="tt-banner-btn"
-            v-tooltip.bottom="'Viajeros'"
-            @click="showTravelers = true"
           />
           <Button
             icon="pi pi-pencil"
@@ -243,7 +232,6 @@ function deleteTrip() {
       <router-view v-else :trip="store.current" class="tt-anim-rise" />
 
       <TripFormDialog v-model:visible="showEdit" :trip="store.current" />
-      <TravelersDialog v-model:visible="showTravelers" :trip-id="tripId" />
     </div>
   </div>
 </template>

@@ -17,6 +17,11 @@ from .common import delete_by_id, get_or_404, save_new, save_updates
 router = APIRouter(tags=["trips"])
 
 
+def _resolve_travelers(db: Session, ids: list[int]) -> list[Traveler]:
+    """Viajeros por id (dedup, conserva orden); 404 si alguno no existe."""
+    return [get_or_404(db, Traveler, tid) for tid in dict.fromkeys(ids)]
+
+
 @router.get("/trips", response_model=list[TripRead])
 def list_trips(db: Session = Depends(get_db)):
     return db.scalars(
@@ -29,9 +34,13 @@ def list_trips(db: Session = Depends(get_db)):
 @router.post("/trips", response_model=TripRead, status_code=201)
 def create_trip(payload: TripCreate, db: Session = Depends(get_db)):
     data = payload.model_dump()
+    traveler_ids = data.pop("traveler_ids", None)
     if not data.get("base_currency"):
         data["base_currency"] = get_settings().default_currency
-    return save_new(db, Trip(), data)
+    trip = Trip()
+    if traveler_ids:
+        trip.travelers = _resolve_travelers(db, traveler_ids)
+    return save_new(db, trip, data)
 
 
 @router.get("/trips/{trip_id}", response_model=TripRead)
@@ -42,7 +51,10 @@ def get_trip(trip_id: int, db: Session = Depends(get_db)):
 @router.patch("/trips/{trip_id}", response_model=TripRead)
 def update_trip(trip_id: int, payload: TripUpdate, db: Session = Depends(get_db)):
     trip = get_or_404(db, Trip, trip_id)
-    return save_updates(db, trip, payload.model_dump(exclude_unset=True))
+    data = payload.model_dump(exclude_unset=True)
+    if "traveler_ids" in data:
+        trip.travelers = _resolve_travelers(db, data.pop("traveler_ids") or [])
+    return save_updates(db, trip, data)
 
 
 @router.delete("/trips/{trip_id}", status_code=204)
