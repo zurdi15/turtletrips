@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.engine import Engine
@@ -72,6 +72,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
             app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
         @app.get("/{full_path:path}", include_in_schema=False)
+        @app.head("/{full_path:path}", include_in_schema=False)
         def spa_fallback(full_path: str):
             if full_path.startswith("api/"):
                 return FileResponse(STATIC_DIR / "index.html", status_code=404)
@@ -82,6 +83,13 @@ def create_app(engine: Engine | None = None) -> FastAPI:
                 and candidate.is_file()
             ):
                 return FileResponse(candidate)
-            return FileResponse(STATIC_DIR / "index.html")
+            if full_path == "favicon.ico":
+                # el favicon va inline en el HTML; sin fichero real, 404 limpio
+                raise HTTPException(status_code=404)
+            # el index nunca debe cachearse: referencia assets con hash que
+            # cambian en cada build (index viejo = assets rotos tras desplegar)
+            return FileResponse(
+                STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"}
+            )
 
     return app
