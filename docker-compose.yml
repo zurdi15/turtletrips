@@ -3,15 +3,12 @@ services:
     build: .
     container_name: tt
     ports:
-      - "8000:8000"
+      - 8000:8000
     volumes:
       # base de datos + ficheros subidos juntos: un único directorio que respaldar
-      - tt_data:/data
+      - /path/to/data:/data
     environment:
       - TT_DEFAULT_CURRENCY=EUR
       # - TT_NOMINATIM_URL=https://nominatim.openstreetmap.org
       # - TT_RATES_URL=https://api.frankfurter.dev/v1
     restart: unless-stopped
-
-volumes:
-  tt_data:
