@@ -1,18 +1,34 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Popover from 'primevue/popover'
+import SelectButton from 'primevue/selectbutton'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { api, API_BASE } from '../api/client'
 import type { Category } from '../api/types'
 import { CATEGORY_PALETTE } from '../constants'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { useTheme } from '../composables/useTheme'
 
 const categories = useCategoriesStore()
 const confirm = useConfirm()
 const toast = useToast()
+
+// ---- apariencia (tema claro/oscuro) ----
+
+const { isDark, toggle } = useTheme()
+const theme = computed<'light' | 'dark'>({
+  get: () => (isDark.value ? 'dark' : 'light'),
+  set: (v) => {
+    if ((v === 'dark') !== isDark.value) toggle()
+  },
+})
+const themeOptions = [
+  { value: 'light', label: 'Claro', icon: 'pi pi-sun' },
+  { value: 'dark', label: 'Oscuro', icon: 'pi pi-moon' },
+]
 
 // ---- copia de seguridad ----
 
@@ -143,6 +159,26 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
     <h1 class="text-2xl font-bold text-slate-800 mb-6">Ajustes</h1>
 
     <div class="flex flex-col gap-6">
+      <section class="bg-white rounded-xl border border-slate-200 p-5">
+        <h2 class="font-semibold text-slate-700 mb-1">Apariencia</h2>
+        <p class="text-xs text-slate-400 mb-4">Tema de la interfaz.</p>
+        <SelectButton
+          v-model="theme"
+          :options="themeOptions"
+          optionLabel="label"
+          optionValue="value"
+          :allowEmpty="false"
+          aria-label="Tema de la interfaz"
+        >
+          <template #option="{ option }">
+            <span class="flex items-center gap-2">
+              <i :class="option.icon" />
+              {{ option.label }}
+            </span>
+          </template>
+        </SelectButton>
+      </section>
+
       <section
         v-for="section in sections"
         :key="section.kind"

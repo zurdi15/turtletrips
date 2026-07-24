@@ -58,7 +58,7 @@ function remove(id: number, name: string) {
         Ficheros del viaje (billetes, seguros, documentación…). Los adjuntos de reservas también
         aparecen aquí.
       </p>
-      <AttachmentList v-if="!store.items.length" />
+      <AttachmentList :show-list="false" />
     </div>
 
     <TabSkeleton v-if="store.loading && !store.items.length" variant="table" :rows="4" />
@@ -130,9 +130,5 @@ function remove(id: number, name: string) {
         </template>
       </Column>
     </DataTable>
-
-    <div v-if="store.items.length" class="mt-4">
-      <AttachmentList />
-    </div>
   </div>
 </template>

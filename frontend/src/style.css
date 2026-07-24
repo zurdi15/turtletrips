@@ -106,6 +106,19 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   max-width: calc(100vw - 2rem);
 }
 
+/* AutoComplete: el panel se monta en <body> y crecía con el contenido. Las
+   direcciones de Nominatim (display_name) son larguísimas y sin cortar
+   desbordaban en horizontal, generando scroll y arrastrando el diálogo entero
+   hacia un lado en móvil. Se limita al ancho de pantalla y el texto largo se
+   parte en varias líneas en vez de salirse. */
+.p-autocomplete-overlay {
+  max-width: calc(100vw - 2rem);
+}
+.p-autocomplete-overlay .p-autocomplete-option {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* tooltips informativos: más anchos y legibles, sin salirse de pantalla */
 .p-tooltip {
   max-width: min(22rem, calc(100vw - 2rem));

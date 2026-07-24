@@ -3,10 +3,8 @@ import { useRoute } from 'vue-router'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
 import BrandMark from './components/BrandMark.vue'
-import { useTheme } from './composables/useTheme'
 
 const route = useRoute()
-const { isDark, toggle } = useTheme()
 
 const navItems = [
   { to: '/', label: 'Viajes', icon: 'pi pi-compass', match: (p: string) => p === '/' || p.startsWith('/trips') },
@@ -43,13 +41,6 @@ const navItems = [
           </router-link>
         </nav>
         <span class="flex-1" />
-        <button
-          class="text-slate-400 hover:text-slate-600 transition-colors"
-          :title="isDark ? 'Tema claro' : 'Tema oscuro'"
-          @click="toggle"
-        >
-          <i :class="isDark ? 'pi pi-sun' : 'pi pi-moon'" class="text-lg" />
-        </button>
         <router-link
           to="/settings"
           class="transition-colors"
