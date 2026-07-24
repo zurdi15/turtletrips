@@ -4,10 +4,10 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { api } from '../api/client'
-import { useNotify } from '../composables/useNotify'
-import type { Trip } from '../api/types'
-import { useTripsStore } from '../stores/trips'
+import { api } from '../../api/client'
+import { useNotify } from '../../composables/useNotify'
+import type { Trip } from '../../api/types'
+import { useTripsStore } from '../../stores/trips'
 
 const props = defineProps<{ trip: Trip }>()
 const visible = defineModel<boolean>('visible', { required: true })

@@ -6,22 +6,22 @@ import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import AutoComplete from 'primevue/autocomplete'
-import DateRangePicker from './DateRangePicker.vue'
-import PayerSelect, { type PayerValue } from './PayerSelect.vue'
-import FormDialog from './ui/FormDialog.vue'
-import FormField from './ui/FormField.vue'
-import type { Booking, BookingType, GeocodeResult, Trip } from '../api/types'
+import DateRangePicker from '../DateRangePicker.vue'
+import PayerSelect, { type PayerValue } from '../PayerSelect.vue'
+import FormDialog from '../ui/FormDialog.vue'
+import FormField from '../ui/FormField.vue'
+import type { Booking, BookingType, GeocodeResult, Trip } from '../../api/types'
 import {
   BOOKING_TYPE_LABELS,
   CURRENCIES,
   isTransport as isTransportType,
   toSelectOptions,
-} from '../constants'
-import { useBookingsStore } from '../stores/bookings'
-import { useFormDialog } from '../composables/useFormDialog'
-import { useGeocodeSearch } from '../composables/useGeocode'
-import { toIsoDate } from '../composables/useMoney'
-import { flagEmoji } from '../countries'
+} from '../../constants'
+import { useBookingsStore } from '../../stores/bookings'
+import { useFormDialog } from '../../composables/useFormDialog'
+import { useGeocodeSearch } from '../../composables/useGeocode'
+import { toIsoDate } from '../../composables/useMoney'
+import { flagEmoji } from '../../countries'
 
 const props = defineProps<{ trip: Trip; booking?: Booking | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
@@ -90,7 +90,7 @@ const airportOptions = ref<Airport[]>([])
 
 async function loadAirports(): Promise<Airport[]> {
   if (!airportsCache) {
-    const raw = (await import('../data/airports.json')).default as [
+    const raw = (await import('../../data/airports.json')).default as [
       string, string, string, string,
     ][]
     airportsCache = raw.map(([code, name, city, country]) => ({ code, name, city, country }))

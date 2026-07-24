@@ -1,44 +1,43 @@
 import { defineStore } from 'pinia'
-import { api } from '../api/client'
 import type { Category } from '../api/types'
-
+import { useGlobalResource } from './globalResource'
 import { FALLBACK_COLOR } from '../theme'
 
 // alias histórico: mismo fallback para categorías y viajeros
 export const FALLBACK_CATEGORY_COLOR = FALLBACK_COLOR
 
-export const useCategoriesStore = defineStore('categories', {
-  state: () => ({
-    expense: [] as Category[],
-    packing: [] as Category[],
-    loaded: { expense: false, packing: false },
-  }),
-  getters: {
-    colorOf() {
-      return (kind: 'expense' | 'packing', name: string): string =>
-        this[kind].find((c) => c.name === name)?.color ?? FALLBACK_CATEGORY_COLOR
-    },
-  },
-  actions: {
-    async load(kind: 'expense' | 'packing', force = false) {
-      if (this.loaded[kind] && !force) return
-      this[kind] = await api.get<Category[]>(`/categories?kind=${kind}`)
-      this.loaded[kind] = true
-    },
-    async create(kind: 'expense' | 'packing', name: string, color: string) {
-      const category = await api.post<Category>('/categories', { kind, name, color })
-      this[kind].push(category)
-      return category
-    },
-    async update(id: number, kind: 'expense' | 'packing', payload: { name?: string; color?: string | null }) {
-      const category = await api.patch<Category>(`/categories/${id}`, payload)
-      const idx = this[kind].findIndex((c) => c.id === id)
-      if (idx >= 0) this[kind][idx] = category
-      return category
-    },
-    async remove(id: number, kind: 'expense' | 'packing') {
-      await api.delete(`/categories/${id}`)
-      this[kind] = this[kind].filter((c) => c.id !== id)
-    },
-  },
+type Kind = 'expense' | 'packing'
+
+interface CategoryPayload {
+  name?: string
+  color?: string | null
+}
+
+export const useCategoriesStore = defineStore('categories', () => {
+  // dos colecciones independientes (gastos y maleta) sobre la misma base
+  const kinds: Record<Kind, ReturnType<typeof makeKind>> = {
+    expense: makeKind('expense'),
+    packing: makeKind('packing'),
+  }
+
+  function makeKind(kind: Kind) {
+    return useGlobalResource<Category, CategoryPayload & { kind: Kind }, CategoryPayload>({
+      listPath: `/categories?kind=${kind}`,
+      itemPath: (id) => `/categories/${id}`,
+    })
+  }
+
+  function colorOf(kind: Kind, name: string): string {
+    return kinds[kind].items.value.find((c) => c.name === name)?.color ?? FALLBACK_CATEGORY_COLOR
+  }
+
+  return {
+    expense: kinds.expense.items,
+    packing: kinds.packing.items,
+    colorOf,
+    load: (kind: Kind, force = false) => kinds[kind].load(force),
+    create: (kind: Kind, name: string, color: string) => kinds[kind].create({ kind, name, color }),
+    update: (id: number, kind: Kind, payload: CategoryPayload) => kinds[kind].update(id, payload),
+    remove: (id: number, kind: Kind) => kinds[kind].remove(id),
+  }
 })

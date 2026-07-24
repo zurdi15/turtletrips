@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProgressSpinner from 'primevue/progressspinner'
-import TripFormDialog from '../components/TripFormDialog.vue'
+import TripFormDialog from '../components/trips/TripFormDialog.vue'
 import TabSkeleton from '../components/TabSkeleton.vue'
 import TripHeader from '../components/trip/TripHeader.vue'
 import TripTabsNav from '../components/trip/TripTabsNav.vue'

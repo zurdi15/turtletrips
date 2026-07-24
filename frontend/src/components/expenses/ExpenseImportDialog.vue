@@ -6,11 +6,11 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
-import UploadButton from './ui/UploadButton.vue'
-import type { ImportResult, Trip } from '../api/types'
-import { useExpensesStore } from '../stores/expenses'
-import { formatDate, formatMoney } from '../composables/useMoney'
-import { useNotify } from '../composables/useNotify'
+import UploadButton from '../ui/UploadButton.vue'
+import type { ImportResult, Trip } from '../../api/types'
+import { useExpensesStore } from '../../stores/expenses'
+import { formatDate, formatMoney } from '../../composables/useMoney'
+import { useNotify } from '../../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
 const visible = defineModel<boolean>('visible', { required: true })

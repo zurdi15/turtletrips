@@ -126,7 +126,7 @@ defineExpose({ refresh })
       :key="place.id"
       :lat-lng="[place.lat!, place.lon!]"
       :radius="place.id === selectedId ? 12 : 9"
-      :color="'#ffffff'"
+      :color="WHITE"
       :weight="2"
       :fillColor="PLACE_CATEGORY_COLORS[place.category]"
       :fillOpacity="place.visited ? 0.35 : 0.95"

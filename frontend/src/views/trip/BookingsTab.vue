@@ -2,7 +2,7 @@
 import { computed, nextTick, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
-import BookingFormDialog from '../../components/BookingFormDialog.vue'
+import BookingFormDialog from '../../components/bookings/BookingFormDialog.vue'
 import BookingCard from '../../components/bookings/BookingCard.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'

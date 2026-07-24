@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import type { Expense, Trip } from '../api/types'
-import { CATEGORY_PALETTE, CHART_LINE_COLOR } from '../theme'
+import { CATEGORY_PALETTE, CHART_LINE_COLOR, WHITE } from '../theme'
 import { cssVar } from './useTheme'
 import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 import { aggregate, cumulative } from '../utils/expenses'
@@ -118,7 +118,7 @@ export function useExpenseCharts(ctx: {
           backgroundColor: colors,
           borderRadius: chartJsType.value === 'bar' ? 4 : 0,
           borderWidth: chartJsType.value === 'doughnut' ? 2 : 0,
-          borderColor: '#ffffff',
+          borderColor: WHITE,
         },
       ],
     }

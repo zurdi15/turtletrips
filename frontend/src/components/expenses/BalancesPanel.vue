@@ -4,12 +4,12 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
-import MemberChip from './MemberChip.vue'
-import type { SettlementTransfer, Trip } from '../api/types'
-import { useExpensesStore } from '../stores/expenses'
-import { useTripsStore } from '../stores/trips'
-import { formatDate, formatMoney } from '../composables/useMoney'
-import { useNotify } from '../composables/useNotify'
+import MemberChip from '../MemberChip.vue'
+import type { SettlementTransfer, Trip } from '../../api/types'
+import { useExpensesStore } from '../../stores/expenses'
+import { useTripsStore } from '../../stores/trips'
+import { formatDate, formatMoney } from '../../composables/useMoney'
+import { useNotify } from '../../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
 const store = useExpensesStore()
