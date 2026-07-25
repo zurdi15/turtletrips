@@ -45,18 +45,18 @@ async function add() {
       icon="pi pi-link"
       severity="secondary"
       :outlined="!showUrlField"
-      v-tooltip.top="'Añadir enlace de compra'"
+      v-tooltip.top="$t('packing.addBar.linkTooltip')"
       @click="showUrlField = !showUrlField"
     />
     <InputText
       v-if="showUrlField"
       v-model="url"
-      placeholder="https://… (enlace de compra)"
+      :placeholder="$t('packing.addBar.urlPlaceholder')"
       class="w-full sm:w-56"
       @keyup.enter="add"
     />
     <Button
-      label="Añadir"
+      :label="$t('common.actions.add')"
       icon="pi pi-plus"
       class="shrink-0 max-sm:[&_.p-button-label]:hidden"
       @click="add"

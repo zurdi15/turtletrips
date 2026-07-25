@@ -39,7 +39,7 @@ defineProps<{ trip: Trip; image: string | null }>()
           <SettledPill v-if="trip.debts_settled" />
         </h3>
         <p class="text-sm text-ink-muted mt-1 flex items-center gap-1.5">
-          <i class="pi pi-calendar text-xs" /> {{ tripDateRange(trip) }}
+          <i class="pi pi-calendar text-xs" /> {{ tripDateRange(trip) ?? $t('trips.noDates') }}
         </p>
         <p
           v-if="trip.travelers.length"

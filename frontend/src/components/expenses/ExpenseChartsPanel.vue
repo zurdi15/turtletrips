@@ -45,7 +45,7 @@ const {
       <ClusterBtn v-model="chartType" :options="typeOptions" size="small" iconOnly />
     </div>
     <p v-if="!chartSeries.length" class="text-sm text-ink-faint text-center py-10">
-      Sin datos con los filtros actuales
+      {{ $t('expenses.charts.empty') }}
     </p>
     <div
       v-else
@@ -61,8 +61,10 @@ const {
       />
     </div>
     <p class="text-xs text-ink-faint mt-3 text-center">
-      {{ formatMoney(chartTotal, trip.base_currency) }} en total
-      <template v-if="excludedCategories.length"> · sin {{ excludedCategories.join(', ') }} </template>
+      {{ $t('expenses.charts.total', { amount: formatMoney(chartTotal, trip.base_currency) }) }}
+      <template v-if="excludedCategories.length">
+        {{ $t('expenses.charts.excluding', { list: excludedCategories.join(', ') }) }}
+      </template>
     </p>
   </div>
 </template>

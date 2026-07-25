@@ -14,10 +14,25 @@ import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categorie
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
 import { useTheme } from '../composables/useTheme'
+import { useI18n } from 'vue-i18n'
+import { setLocale, type AppLocale } from '../i18n'
 
 const categories = useCategoriesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
+const { t, locale } = useI18n()
+
+// ---- idioma ----
+
+const language = computed<AppLocale>({
+  get: () => locale.value as AppLocale,
+  set: (v) => setLocale(v),
+})
+// endónimos: el nombre de cada idioma no se traduce
+const languageOptions = [
+  { value: 'es', label: 'Español' },
+  { value: 'en', label: 'English' },
+] as const
 
 // ---- apariencia (tema claro/oscuro) ----
 
@@ -28,10 +43,13 @@ const theme = computed<'light' | 'dark'>({
     if ((v === 'dark') !== isDark.value) toggle()
   },
 })
-const themeOptions = [
-  { value: 'light', label: 'Claro', icon: 'pi pi-sun' },
-  { value: 'dark', label: 'Oscuro', icon: 'pi pi-moon' },
-] as const
+const themeOptions = computed(
+  () =>
+    [
+      { value: 'light', label: t('settings.appearance.light'), icon: 'pi pi-sun' },
+      { value: 'dark', label: t('settings.appearance.dark'), icon: 'pi pi-moon' },
+    ] as const,
+)
 
 // ---- copia de seguridad ----
 
@@ -40,22 +58,20 @@ const restoring = ref(false)
 
 function onRestoreFilePicked(file: File) {
   confirmAction({
-    message:
-      'Esto reemplazará TODOS los datos actuales (viajes, gastos, adjuntos…) ' +
-      'por los de la copia. Esta acción no se puede deshacer.',
-    header: 'Restaurar copia de seguridad',
-    acceptLabel: 'Restaurar',
+    message: t('settings.backup.confirm.message'),
+    header: t('settings.backup.confirm.header'),
+    acceptLabel: t('settings.backup.confirm.accept'),
     accept: async () => {
       restoring.value = true
       try {
         const form = new FormData()
         form.append('file', file)
         const result = await api.upload<{ trips: number }>('/backup/restore', form)
-        notify.success(`Copia restaurada (${result.trips} viajes)`)
+        notify.success(t('settings.backup.toast.restored', { n: result.trips }))
         // todas las stores quedan obsoletas tras el restore
         setTimeout(() => window.location.reload(), 800)
       } catch (err) {
-        notify.error('No se pudo restaurar', err)
+        notify.error(t('settings.backup.toast.restoreError'), err)
         restoring.value = false
       }
     },
@@ -82,7 +98,7 @@ async function pickColor(color: string) {
   try {
     await categories.update(colorTarget.value.id, colorTarget.value.kind, { color })
   } catch (err) {
-    notify.error('Error al cambiar el color', err)
+    notify.error(t('settings.categories.toast.colorError'), err)
   }
 }
 
@@ -94,7 +110,7 @@ async function addCategory(kind: 'expense' | 'packing') {
     await categories.create(kind, name, color)
     newNames.value[kind] = ''
   } catch (err) {
-    notify.error('Error al añadir', err)
+    notify.error(t('settings.categories.toast.addError'), err)
   }
 }
 
@@ -102,41 +118,47 @@ async function renameCategory(kind: 'expense' | 'packing', category: Category, n
   try {
     await categories.update(category.id, kind, { name })
   } catch (err) {
-    notify.error('Error al renombrar', err)
+    notify.error(t('settings.categories.toast.renameError'), err)
   }
 }
 
 function removeCategory(kind: 'expense' | 'packing', category: Category) {
   confirmAction({
-    message: `¿Eliminar la categoría "${category.name}"? Los elementos existentes conservan el nombre.`,
-    header: 'Eliminar categoría',
+    message: t('settings.categories.confirmDelete.message', { name: category.name }),
+    header: t('settings.categories.confirmDelete.header'),
     accept: () => categories.remove(category.id, kind),
   })
 }
 
-const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] = [
+const sections = computed<{ kind: 'expense' | 'packing'; title: string; hint: string }[]>(() => [
   {
     kind: 'expense',
-    title: 'Categorías de gastos',
-    hint: 'Renombrar una categoría actualiza también los gastos existentes.',
+    title: t('settings.categories.expense.title'),
+    hint: t('settings.categories.expense.hint'),
   },
   {
     kind: 'packing',
-    title: 'Categorías de maleta',
-    hint: 'Se usan para agrupar los elementos de las maletas y plantillas.',
+    title: t('settings.categories.packing.title'),
+    hint: t('settings.categories.packing.hint'),
   },
-]
+])
 </script>
 
 <template>
   <div class="max-w-3xl mx-auto">
-    <PageHeader title="Ajustes" class="mb-6" />
+    <PageHeader :title="t('settings.title')" class="mb-6" />
 
     <div class="flex flex-col gap-6">
       <section class="bg-surface rounded-card border border-line p-5">
-        <h2 class="font-semibold text-ink mb-1">Apariencia</h2>
-        <p class="text-xs text-ink-faint mb-4">Tema de la interfaz.</p>
-        <ClusterBtn v-model="theme" :options="themeOptions" aria-label="Tema de la interfaz" />
+        <h2 class="font-semibold text-ink mb-1">{{ t('settings.appearance.title') }}</h2>
+        <p class="text-xs text-ink-faint mb-4">{{ t('settings.appearance.hint') }}</p>
+        <ClusterBtn v-model="theme" :options="themeOptions" :aria-label="t('settings.appearance.title')" />
+      </section>
+
+      <section class="bg-surface rounded-card border border-line p-5">
+        <h2 class="font-semibold text-ink mb-1">{{ t('settings.language.title') }}</h2>
+        <p class="text-xs text-ink-faint mb-4">{{ t('settings.language.hint') }}</p>
+        <ClusterBtn v-model="language" :options="languageOptions" :aria-label="t('settings.language.title')" />
       </section>
 
       <section
@@ -161,12 +183,12 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
         <div class="flex gap-2">
           <InputText
             v-model="newNames[section.kind]"
-            placeholder="Nueva categoría…"
+            :placeholder="t('settings.categories.newPlaceholder')"
             class="flex-1 min-w-0"
             @keyup.enter="addCategory(section.kind)"
           />
           <Button
-            label="Añadir"
+            :label="t('common.actions.add')"
             icon="pi pi-plus"
             class="shrink-0 max-sm:[&_.p-button-label]:hidden"
             @click="addCategory(section.kind)"
@@ -175,16 +197,21 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
       </section>
 
       <section class="bg-surface rounded-card border border-line p-5">
-        <h2 class="font-semibold text-ink mb-1">Copia de seguridad</h2>
+        <h2 class="font-semibold text-ink mb-1">{{ t('settings.backup.title') }}</h2>
         <p class="text-xs text-ink-faint mb-4">
-          La copia incluye la base de datos completa y todos los adjuntos.
+          {{ t('settings.backup.hint') }}
         </p>
         <div class="flex flex-wrap gap-2">
           <a :href="backupExportUrl" download>
-            <Button label="Descargar copia" icon="pi pi-download" severity="secondary" outlined />
+            <Button
+              :label="t('settings.backup.download')"
+              icon="pi pi-download"
+              severity="secondary"
+              outlined
+            />
           </a>
           <UploadButton
-            label="Restaurar desde copia…"
+            :label="t('settings.backup.restore')"
             icon="pi pi-upload"
             severity="danger"
             outlined

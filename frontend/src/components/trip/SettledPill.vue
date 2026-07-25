@@ -7,8 +7,8 @@ import Pill from '../ui/Pill.vue'
     color="brand"
     icon="pi pi-check-circle"
     pop-in
-    v-tooltip.bottom="'Deudas saldadas entre viajeros'"
+    v-tooltip.bottom="$t('trips.settled.tooltip')"
   >
-    Saldado
+    {{ $t('trips.settled.label') }}
   </Pill>
 </template>

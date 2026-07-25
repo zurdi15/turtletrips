@@ -38,18 +38,28 @@ describe('splitRemaining', () => {
 
 describe('validateSplit', () => {
   it('equal solo exige participantes', () => {
-    expect(validateSplit('equal', 100, [])).toContain('participante')
+    expect(validateSplit('equal', 100, [])).toEqual({
+      key: 'expenses.split.errors.noParticipants',
+    })
     expect(validateSplit('equal', 100, [null, null])).toBeNull()
   })
 
   it('amount exige valores que sumen el total', () => {
-    expect(validateSplit('amount', 100, [50, null])).toContain('valor')
-    expect(validateSplit('amount', 100, [50, 40])).toContain('suman')
+    expect(validateSplit('amount', 100, [50, null])).toEqual({
+      key: 'expenses.split.errors.missingValues',
+    })
+    expect(validateSplit('amount', 100, [50, 40])).toEqual({
+      key: 'expenses.split.errors.amountSum',
+      params: { sum: 90, expected: 100 },
+    })
     expect(validateSplit('amount', 100, [50, 50])).toBeNull()
   })
 
   it('percent exige sumar 100', () => {
-    expect(validateSplit('percent', 80, [50, 40])).toContain('100')
+    expect(validateSplit('percent', 80, [50, 40])).toEqual({
+      key: 'expenses.split.errors.percentSum',
+      params: { sum: 90 },
+    })
     expect(validateSplit('percent', 80, [60, 40])).toBeNull()
   })
 })

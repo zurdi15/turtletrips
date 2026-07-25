@@ -1,0 +1,72 @@
+export default {
+  title: 'Map',
+  info: 'Your travel diary: countries, cities and places you have visited, with notes. It fills in on its own from finished trips, places marked as visited and places linked to expenses — and you can add anything else by hand.',
+  kind: {
+    country: 'Country',
+    city: 'City',
+    place: 'Place',
+  },
+  noCountry: 'No country assigned',
+  stats: {
+    countries: 'countries',
+    worldPct: '({pct}% of the world)',
+    cities: 'cities',
+    places: 'places',
+  },
+  search: {
+    placePlaceholder: 'Search for a city or place to add…',
+    countryPlaceholder: 'Mark a country as visited…',
+  },
+  view: {
+    map: 'Map',
+    list: 'List',
+  },
+  filters: {
+    all: 'Everything',
+    countries: 'Countries',
+    cities: 'Cities',
+    places: 'Places',
+    allCountries: 'All countries',
+    anySource: 'Any source',
+    fromTrips: 'From trips',
+    manual: 'Added by hand',
+    searchPlaceholder: 'Filter by name, note or trip…',
+  },
+  empty: {
+    title: 'Your diary is empty',
+    listHint: 'Mark your first country, search for a city, or finish a trip and it will show up on its own',
+    mapHint: 'Search for a city, mark a country as visited or finish a trip and it will show up on its own',
+  },
+  list: {
+    noMatch: 'Nothing matches the filters',
+    visited: 'visited',
+    tripOrigin: 'trip: {origin}',
+    placeCount: '{n} places',
+    viewOnMap: 'View on the map',
+  },
+  map: {
+    tripOrigin: 'Trip: {origin}',
+    editNote: 'Edit note',
+  },
+  form: {
+    addTitle: 'Add to the map',
+    editTitle: 'Edit place',
+    name: 'Name',
+    kind: 'Type',
+    country: 'Country',
+    note: 'Note',
+    notePlaceholder: 'Anything you want to remember about this place…',
+    autoInfo: 'Added automatically from the trip "{origin}".',
+    nameRequired: 'Name is required',
+  },
+  confirmRemove: {
+    header: 'Remove from the map',
+    accept: 'Remove',
+    messageAuto: '"{name}" comes from the trip "{origin}". It will be hidden from the map and will not reappear.',
+    messageManual: 'Remove "{name}" from the map?',
+  },
+  toast: {
+    countryAdded: '{flag} {name} added',
+    addError: 'Could not add',
+  },
+}

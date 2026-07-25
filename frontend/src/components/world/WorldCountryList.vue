@@ -3,7 +3,7 @@ import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import EmptyState from '../EmptyState.vue'
 import type { WorldPlace } from '../../api/types'
-import { KIND_COLORS, KIND_LABELS, type CountryGroup } from '../../utils/worldGrouping'
+import { KIND_COLORS, KIND_KEYS, type CountryGroup } from '../../utils/worldGrouping'
 
 defineProps<{
   groups: CountryGroup[]
@@ -24,11 +24,11 @@ defineEmits<{
     <EmptyState
       v-if="empty"
       icon="pi pi-globe"
-      title="Tu diario está vacío"
-      subtitle="Marca tu primer país, busca una ciudad, o termina un viaje y aparecerá solo"
+      :title="$t('world.empty.title')"
+      :subtitle="$t('world.empty.listHint')"
     />
     <p v-else-if="noMatch" class="text-center text-sm text-ink-faint py-10">
-      Nada coincide con los filtros
+      {{ $t('world.list.noMatch') }}
     </p>
     <section
       v-for="group in groups"
@@ -38,13 +38,13 @@ defineEmits<{
       <div class="px-4 py-3 bg-surface-muted border-b border-line-subtle">
         <div class="flex items-center gap-2.5 flex-wrap">
           <span class="text-xl">{{ group.flag }}</span>
-          <span class="font-semibold text-ink-heading">{{ group.title }}</span>
-          <Tag v-if="group.entry" value="visitado" severity="success" class="text-xs" />
+          <span class="font-semibold text-ink-heading">{{ group.title ?? $t('world.noCountry') }}</span>
+          <Tag v-if="group.entry" :value="$t('world.list.visited')" severity="success" class="text-xs" />
           <span v-if="group.entry?.origin" class="text-xs text-ink-faint">
-            viaje: {{ group.entry.origin }}
+            {{ $t('world.list.tripOrigin', { origin: group.entry.origin }) }}
           </span>
           <span class="text-xs text-ink-faint">
-            {{ group.children.length ? `${group.children.length} lugares` : '' }}
+            {{ group.children.length ? $t('world.list.placeCount', { n: group.children.length }) : '' }}
           </span>
           <span class="flex-1" />
           <div v-if="group.entry" class="flex gap-1">
@@ -53,7 +53,7 @@ defineEmits<{
               text
               size="small"
               severity="secondary"
-              v-tooltip.top="'Ver en el mapa'"
+              v-tooltip.top="$t('world.list.viewOnMap')"
               @click="$emit('fly-to', group.entry)"
             />
             <Button
@@ -88,11 +88,11 @@ defineEmits<{
             <span
               class="w-2.5 h-2.5 rounded-full shrink-0"
               :style="{ background: KIND_COLORS[place.kind] }"
-              v-tooltip.left="KIND_LABELS[place.kind]"
+              v-tooltip.left="$t(KIND_KEYS[place.kind])"
             />
             <span class="font-medium text-ink">{{ place.name }}</span>
             <span v-if="place.origin" class="text-xs text-ink-faint">
-              viaje: {{ place.origin }}
+              {{ $t('world.list.tripOrigin', { origin: place.origin }) }}
             </span>
             <span class="flex-1" />
             <div class="flex gap-1 hover-actions">

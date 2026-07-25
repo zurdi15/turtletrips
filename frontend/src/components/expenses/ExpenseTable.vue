@@ -122,23 +122,23 @@ watch(
         <Checkbox
           :modelValue="isGroupSelected(data)"
           binary
-          v-tooltip.right="'Seleccionar todo el grupo'"
+          v-tooltip.right="$t('expenses.table.selectGroup')"
           @update:modelValue="toggleGroup(data)"
           @click.stop
         />
         <span class="font-semibold text-ink">{{ groupLabel(data) }}</span>
         <span class="text-xs text-ink-faint">
-          {{ groupTotals.get(groupKey(data))?.count }} gastos
+          {{ $t('expenses.table.groupCount', { n: groupTotals.get(groupKey(data))?.count ?? 0 }) }}
         </span>
         <span class="ml-auto font-semibold text-ink">
           {{ formatMoney(groupTotals.get(groupKey(data))?.total ?? 0, trip.base_currency) }}
         </span>
       </div>
     </template>
-    <Column header="Fecha" field="day" style="width: 7rem">
+    <Column :header="$t('expenses.fields.date')" field="day" style="width: 7rem">
       <template #body="{ data }">{{ formatDate(data.day) }}</template>
     </Column>
-    <Column header="Categoría" field="category" style="width: 9rem">
+    <Column :header="$t('expenses.fields.category')" field="category" style="width: 9rem">
       <template #body="{ data }">
         <Tag
           :value="data.category"
@@ -149,7 +149,7 @@ watch(
         />
       </template>
     </Column>
-    <Column header="Descripción" field="description">
+    <Column :header="$t('expenses.fields.description')" field="description">
       <template #body="{ data }">
         <span>{{ data.description }}</span>
         <!-- reserva y sitio como iconos agrupados: fila propia en móvil
@@ -164,7 +164,7 @@ watch(
             type="place"
             :tripId="trip.id"
             :targetId="data.place_id"
-            :tooltip="`Sitio: ${placeById.get(data.place_id)!.name}`"
+            :tooltip="$t('expenses.table.placeTooltip', { name: placeById.get(data.place_id)!.name })"
           />
         </span>
         <p v-if="data.notes" class="mt-1.5 text-xs text-ink-faint truncate max-w-[16rem]">
@@ -172,7 +172,7 @@ watch(
         </p>
       </template>
     </Column>
-    <Column header="Importe" style="width: 8rem">
+    <Column :header="$t('expenses.fields.amount')" style="width: 8rem">
       <template #body="{ data }">
         <div class="text-right">
           <div class="font-medium">{{ formatMoney(data.amount_base, trip.base_currency) }}</div>
@@ -182,15 +182,15 @@ watch(
         </div>
       </template>
     </Column>
-    <Column header="Pagó" field="payer_name" style="width: 7rem">
+    <Column :header="$t('expenses.table.paid')" field="payer_name" style="width: 7rem">
       <template #body="{ data }">
         <Pill
           v-if="data.paid_by_common"
           color="warn"
           icon="pi pi-wallet"
-          v-tooltip.top="'Pagado del fondo común: no entra en los saldos'"
+          v-tooltip.top="$t('expenses.table.commonTooltip')"
         >
-          Común
+          {{ $t('expenses.table.commonPill') }}
         </Pill>
         <MemberChip
           v-else-if="data.paid_by_id != null && memberById.get(data.paid_by_id)"

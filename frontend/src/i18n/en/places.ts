@@ -1,0 +1,48 @@
+export default {
+  mustSee: 'Must-see',
+  form: {
+    newTitle: 'New place',
+    editTitle: 'Edit place',
+    addLabel: 'Add place',
+    location: 'Location',
+    locationPlaceholder: 'Search for a place or address…',
+    name: 'Name',
+    namePlaceholder: 'Fushimi Inari',
+    nameRequired: 'Name is required',
+    category: 'Category',
+    lat: 'Latitude',
+    lon: 'Longitude',
+    link: 'Link',
+    notes: 'Notes',
+    visited: 'Visited',
+  },
+  card: {
+    bookingTooltip: 'Booking: {title}',
+    expenseTooltip: 'Expense: {description} · {amount}',
+    link: 'link',
+    markPending: 'Mark as pending',
+    markVisited: 'Mark as visited',
+  },
+  filters: {
+    searchPlaceholder: 'Search…',
+    allCategories: 'All categories',
+    pending: 'Pending',
+    all: 'All',
+    visited: 'Visited',
+  },
+  view: {
+    list: 'List',
+    both: 'Both',
+    map: 'Map',
+  },
+  visitedCount: '{visited}/{total} visited',
+  empty: {
+    title: 'No saved places',
+    subtitle: 'Add the places you want to see on this trip',
+    noMatches: 'No places match the filters',
+  },
+  confirm: {
+    header: 'Delete place',
+    message: 'Delete "{name}"?',
+  },
+}

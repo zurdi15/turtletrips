@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
@@ -11,10 +12,11 @@ import MemberChip from '../MemberChip.vue'
 import FormField from '../ui/FormField.vue'
 import type { Traveler, Trip, TripStatus } from '../../api/types'
 import { api } from '../../api/client'
-import { CURRENCIES, TRIP_STATUS_LABELS, toSelectOptions } from '../../constants'
+import { CURRENCIES, TRIP_STATUS_KEYS, toSelectOptions } from '../../constants'
+import { intlLocale } from '../../i18n'
 import { MEMBER_COLORS } from '../../theme'
 import { FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
-import { COUNTRY_OPTIONS, countryName } from '../../countries'
+import { countryName, countryOptions as buildCountryOptions } from '../../countries'
 import { useTripsStore } from '../../stores/trips'
 import { useTravelersStore } from '../../stores/travelers'
 import { useNotify } from '../../composables/useNotify'
@@ -28,6 +30,7 @@ const props = withDefaults(defineProps<{ trip?: Trip | null; autofocus?: boolean
   autofocus: false,
 })
 
+const { t } = useI18n()
 const notify = useNotify()
 const store = useTripsStore()
 const travelersStore = useTravelersStore()
@@ -48,10 +51,13 @@ const statusOverride = ref<TripStatus | 'auto'>(props.trip?.status_override ?? '
 const uploadingCover = ref(false)
 const coverInput = ref<HTMLInputElement>()
 
-const statusOptions = [
-  { value: 'auto', label: 'Automático (según fechas)' },
-  ...toSelectOptions(TRIP_STATUS_LABELS),
-]
+const statusOptions = computed(() => [
+  { value: 'auto', label: t('trips.form.statusAuto') },
+  ...toSelectOptions(TRIP_STATUS_KEYS, t),
+])
+
+const countryOptions = computed(() => buildCountryOptions())
+const numberLocale = computed(() => intlLocale())
 
 // --- buscador de fotos online para la portada (Wikimedia Commons) ---
 interface ImageResult {
@@ -96,10 +102,10 @@ async function applyPhoto(result: ImageResult) {
   applyingPhoto.value = result.image_url
   try {
     await store.setCoverFromUrl(props.trip.id, result.image_url)
-    notify.success('Portada actualizada')
+    notify.success(t('trips.toast.coverUpdated'))
     showPhotoSearch.value = false
   } catch (err) {
-    notify.error('Error al guardar la portada', err)
+    notify.error(t('trips.toast.coverSaveError'), err)
   } finally {
     applyingPhoto.value = null
   }
@@ -118,7 +124,7 @@ async function addNewTraveler() {
     if (!travelerIds.value.includes(traveler.id)) travelerIds.value.push(traveler.id)
     newTravelerName.value = ''
   } catch (err) {
-    notify.error('Error al añadir', err)
+    notify.error(t('trips.toast.travelerAddError'), err)
   }
 }
 
@@ -130,9 +136,9 @@ async function onCoverChosen(event: Event) {
   uploadingCover.value = true
   try {
     await store.uploadCover(props.trip.id, file)
-    notify.success('Portada actualizada')
+    notify.success(t('trips.toast.coverUpdated'))
   } catch (err) {
-    notify.error('Error al subir la portada', err)
+    notify.error(t('trips.toast.coverUploadError'), err)
   } finally {
     uploadingCover.value = false
     target.value = ''
@@ -145,7 +151,7 @@ async function removeCover() {
 }
 
 function validate(): string | null {
-  return name.value.trim() ? null : 'El nombre es obligatorio'
+  return name.value.trim() ? null : t('trips.form.nameRequired')
 }
 
 async function submit(): Promise<Trip> {
@@ -171,23 +177,23 @@ defineExpose({ validate, submit })
 
 <template>
   <div class="flex flex-col gap-4">
-    <FormField label="Nombre" required>
-      <InputText v-model="name" placeholder="Japón 2026" :autofocus="autofocus" />
+    <FormField :label="t('trips.form.name')" required>
+      <InputText v-model="name" :placeholder="t('trips.form.namePlaceholder')" :autofocus="autofocus" />
     </FormField>
-    <FormField label="Países">
+    <FormField :label="t('trips.form.countries')">
       <MultiSelect
         v-model="countries"
-        :options="COUNTRY_OPTIONS"
+        :options="countryOptions"
         optionLabel="label"
         optionValue="code"
         filter
-        placeholder="Busca países…"
+        :placeholder="t('trips.form.countriesPlaceholder')"
         display="chip"
         :maxSelectedLabels="6"
         :virtualScrollerOptions="{ itemSize: 38 }"
       />
     </FormField>
-    <FormField label="Viajeros">
+    <FormField :label="t('trips.form.travelers')">
       <MultiSelect
         v-model="travelerIds"
         :options="travelersStore.items"
@@ -195,7 +201,7 @@ defineExpose({ validate, submit })
         optionValue="id"
         filter
         display="chip"
-        placeholder="Selecciona viajeros…"
+        :placeholder="t('trips.form.travelersPlaceholder')"
         :maxSelectedLabels="8"
       >
         <template #option="{ option }">
@@ -220,12 +226,12 @@ defineExpose({ validate, submit })
       <div class="flex gap-2">
         <InputText
           v-model="newTravelerName"
-          placeholder="Crear un viajero nuevo…"
+          :placeholder="t('trips.form.newTravelerPlaceholder')"
           class="flex-1 min-w-0"
           @keyup.enter="addNewTraveler"
         />
         <Button
-          label="Añadir"
+          :label="t('common.actions.add')"
           icon="pi pi-plus"
           severity="secondary"
           outlined
@@ -235,29 +241,29 @@ defineExpose({ validate, submit })
       </div>
       <template #hint>
         <span class="text-xs text-ink-faint">
-          Globales y reutilizables: marca quién viaja para poder repartir gastos
+          {{ t('trips.form.travelersHint') }}
         </span>
       </template>
     </FormField>
-    <FormField label="Fechas">
+    <FormField :label="t('trips.form.dates')">
       <DateRangePicker v-model:start="startDate" v-model:end="endDate" clearable />
     </FormField>
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Moneda base">
+      <FormField :label="t('trips.form.baseCurrency')">
         <Select v-model="baseCurrency" :options="CURRENCIES" filter />
       </FormField>
-      <FormField label="Presupuesto">
+      <FormField :label="t('trips.form.budget')">
         <InputNumber
           v-model="budget"
           mode="currency"
           :currency="baseCurrency"
-          locale="es-ES"
+          :locale="numberLocale"
           :min="0"
-          placeholder="Opcional"
+          :placeholder="t('trips.form.budgetPlaceholder')"
         />
       </FormField>
     </div>
-    <FormField label="Estado">
+    <FormField :label="t('trips.form.status')">
       <Select
         v-model="statusOverride"
         :options="statusOptions"
@@ -266,11 +272,11 @@ defineExpose({ validate, submit })
       />
     </FormField>
     <div v-if="trip" class="flex flex-col gap-1">
-      <label class="text-sm font-medium">Foto de portada</label>
+      <label class="text-sm font-medium">{{ t('trips.form.cover') }}</label>
       <div class="flex items-center gap-2">
         <input ref="coverInput" type="file" accept="image/*" class="hidden" @change="onCoverChosen" />
         <Button
-          :label="trip.cover_url ? 'Cambiar foto' : 'Subir foto'"
+          :label="trip.cover_url ? t('trips.form.changePhoto') : t('trips.form.uploadPhoto')"
           icon="pi pi-image"
           severity="secondary"
           outlined
@@ -279,7 +285,7 @@ defineExpose({ validate, submit })
           @click="coverInput?.click()"
         />
         <Button
-          label="Buscar online"
+          :label="t('trips.form.searchOnline')"
           icon="pi pi-search"
           severity="secondary"
           outlined
@@ -288,7 +294,7 @@ defineExpose({ validate, submit })
         />
         <Button
           v-if="trip.cover_url"
-          label="Quitar"
+          :label="t('trips.form.removePhoto')"
           severity="danger"
           text
           size="small"
@@ -296,7 +302,7 @@ defineExpose({ validate, submit })
         />
       </div>
       <span v-if="!trip.cover_url" class="text-xs text-ink-faint">
-        Sin foto se usa una imagen del país automáticamente
+        {{ t('trips.form.noCoverHint') }}
       </span>
 
       <!-- buscador de fotos (Wikimedia Commons): clic en una para usarla -->
@@ -304,7 +310,7 @@ defineExpose({ validate, submit })
         <div class="flex gap-2">
           <InputText
             v-model="photoQuery"
-            placeholder="Taiwán, Alishan, Jiufen…"
+            :placeholder="t('trips.form.photoSearchPlaceholder')"
             class="flex-1"
             @keyup.enter="searchPhotos"
           />
@@ -329,20 +335,20 @@ defineExpose({ validate, submit })
           </button>
         </div>
         <p v-else-if="photoSearched && !searchingPhotos" class="text-xs text-ink-faint">
-          Sin resultados: prueba con el nombre del país o la ciudad en inglés
+          {{ t('trips.form.photoNoResults') }}
         </p>
-        <p class="text-xs text-ink-faint">Fotos de Wikimedia Commons</p>
+        <p class="text-xs text-ink-faint">{{ t('trips.form.photoCredit') }}</p>
       </div>
     </div>
-    <FormField label="Álbum de fotos">
+    <FormField :label="t('trips.form.album')">
       <InputText v-model="albumUrl" type="url" placeholder="https://photos.app.goo.gl/…" />
       <template #hint>
         <span class="text-xs text-ink-faint">
-          Enlace externo (Google Photos, etc.), accesible desde la cabecera del viaje
+          {{ t('trips.form.albumHint') }}
         </span>
       </template>
     </FormField>
-    <FormField label="Notas">
+    <FormField :label="t('trips.form.notes')">
       <Textarea v-model="notes" rows="3" autoResize />
     </FormField>
   </div>

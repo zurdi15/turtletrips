@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
@@ -39,6 +40,7 @@ import {
 } from '../../utils/expenses'
 
 const props = defineProps<{ trip: Trip }>()
+const { t } = useI18n()
 const store = useExpensesStore()
 const categoriesStore = useCategoriesStore()
 const places = usePlacesStore()
@@ -52,20 +54,23 @@ function catColor(name: string): string {
 const showImport = ref(false)
 
 const tableGroup = ref<ExpenseGroupBy>('none')
-const tableGroupOptions = [
-  { value: 'none', label: 'Sin agrupar' },
-  { value: 'day', label: 'Agrupar por día' },
-  { value: 'category', label: 'Agrupar por categoría' },
-  { value: 'payer_name', label: 'Agrupar por pagador' },
-  { value: 'place_name', label: 'Agrupar por sitio' },
-]
+const tableGroupOptions = computed(() => [
+  { value: 'none', label: t('expenses.group.none') },
+  { value: 'day', label: t('expenses.group.byDay') },
+  { value: 'category', label: t('expenses.group.byCategory') },
+  { value: 'payer_name', label: t('expenses.group.byPayer') },
+  { value: 'place_name', label: t('expenses.group.byPlace') },
+])
 
 const viewMode = ref<'table' | 'charts' | 'balances'>('table')
-const viewOptions = [
-  { value: 'table', label: 'Tabla', icon: 'pi pi-table' },
-  { value: 'charts', label: 'Gráficos', icon: 'pi pi-chart-pie' },
-  { value: 'balances', label: 'Saldos', icon: 'pi pi-users' },
-] as const
+const viewOptions = computed(
+  () =>
+    [
+      { value: 'table', label: t('expenses.view.table'), icon: 'pi pi-table' },
+      { value: 'charts', label: t('expenses.view.charts'), icon: 'pi pi-chart-pie' },
+      { value: 'balances', label: t('expenses.view.balances'), icon: 'pi pi-users' },
+    ] as const,
+)
 
 // el cambio de vista se pinta en dos fases: primero el botón + skeleton (frame
 // inmediato) y en el siguiente frame se monta la vista pesada — así el click
@@ -142,13 +147,13 @@ const bulkCategoryOptions = computed(() =>
   allCategoryNames.value.map((name) => ({ value: name, label: name })),
 )
 const bulkPayerOptions = computed(() => [
-  ...props.trip.travelers.map((t) => ({
-    value: t.id as number | 'none' | 'common',
-    label: t.name,
-    color: t.color,
+  ...props.trip.travelers.map((traveler) => ({
+    value: traveler.id as number | 'none' | 'common',
+    label: traveler.name,
+    color: traveler.color,
   })),
-  { value: 'common' as const, label: 'Fondo común' },
-  { value: 'none' as const, label: 'Sin asignar' },
+  { value: 'common' as const, label: t('expenses.payer.commonFund') },
+  { value: 'none' as const, label: t('expenses.payer.unassigned') },
 ])
 
 function bulkPayerPayload(value: number | 'none' | 'common') {
@@ -166,7 +171,7 @@ async function applyBulk(payload: {
   try {
     const count = selected.value.length
     await store.bulkUpdate(selected.value.map((e) => e.id), payload)
-    notify.success(`${count} gastos actualizados`)
+    notify.success(t('expenses.toast.bulkUpdated', { n: count }))
     selected.value = []
   } finally {
     bulkWorking.value = false
@@ -176,14 +181,14 @@ async function applyBulk(payload: {
 function bulkDelete() {
   const count = selected.value.length
   confirmAction({
-    message: `¿Eliminar los ${count} gastos seleccionados?`,
-    header: 'Eliminar gastos',
-    acceptLabel: `Eliminar ${count}`,
+    message: t('expenses.confirm.bulkDeleteMessage', { n: count }),
+    header: t('expenses.confirm.bulkDeleteHeader'),
+    acceptLabel: t('expenses.confirm.bulkDeleteAccept', { n: count }),
     accept: async () => {
       bulkWorking.value = true
       try {
         await store.bulkRemove(selected.value.map((e) => e.id))
-        notify.success(`${count} gastos eliminados`)
+        notify.success(t('expenses.toast.bulkDeleted', { n: count }))
         selected.value = []
       } finally {
         bulkWorking.value = false
@@ -200,8 +205,8 @@ const {
   removeItem: removeExpense,
 } = useCrudView<Expense>({
   confirm: (expense) => ({
-    message: `¿Eliminar el gasto "${expense.description}"?`,
-    header: 'Eliminar gasto',
+    message: t('expenses.confirm.deleteMessage', { name: expense.description }),
+    header: t('expenses.confirm.deleteHeader'),
   }),
   remove: (expense) => store.remove(expense.id),
 })
@@ -226,7 +231,7 @@ const {
 
     <!-- barra de acciones -->
     <div class="flex flex-wrap items-center gap-2 mb-3">
-      <Button label="Nuevo gasto" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
+      <Button :label="$t('expenses.actions.newExpense')" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
       <FilterToggleButton
         v-if="viewMode !== 'balances'"
         v-model="showFilters"
@@ -265,7 +270,7 @@ const {
         icon="pi pi-file-import"
         severity="secondary"
         outlined
-        v-tooltip.bottom="'Importar CSV'"
+        v-tooltip.bottom="$t('expenses.actions.importCsv')"
         @click="showImport = true"
       />
       <a :href="store.exportUrl()" download>
@@ -273,7 +278,7 @@ const {
           icon="pi pi-file-export"
           severity="secondary"
           outlined
-          v-tooltip.bottom="'Exportar CSV'"
+          v-tooltip.bottom="$t('expenses.actions.exportCsv')"
         />
       </a>
     </div>
@@ -281,8 +286,8 @@ const {
     <EmptyState
       v-if="!store.loading && !store.items.length"
       icon="pi pi-wallet"
-      title="Sin gastos todavía"
-      subtitle="Añade el primero o importa tu Excel como CSV"
+      :title="$t('expenses.empty.title')"
+      :subtitle="$t('expenses.empty.subtitle')"
     />
 
     <div v-else>
@@ -295,7 +300,7 @@ const {
         v-else-if="renderedView !== 'balances' && !filtered.length"
         class="text-center text-sm text-ink-faint py-10"
       >
-        Ningún gasto coincide con los filtros
+        {{ $t('expenses.empty.noMatch') }}
       </p>
       <div v-else-if="renderedView === 'table'" class="tt-anim-rise">
         <ExpenseBulkBar

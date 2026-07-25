@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
 import ClusterBtn from '../components/ui/ClusterBtn.vue'
@@ -13,10 +14,12 @@ import TripHeroCard from '../components/trips/TripHeroCard.vue'
 import { useTripsStore } from '../stores/trips'
 import { useCountryImage } from '../composables/useCountryImage'
 import { countryLabel, countryName } from '../countries'
-import { TRIP_STATUS_LABELS } from '../constants'
+import { TRIP_STATUS_KEYS, toSelectOptions } from '../constants'
+import { intlLocale } from '../i18n'
 import { groupTrips, pickHeroTrip } from '../utils/trips'
 import type { Trip, TripStatus } from '../api/types'
 
+const { t } = useI18n()
 const store = useTripsStore()
 const { imageFor } = useCountryImage()
 const showForm = ref(false)
@@ -43,25 +46,28 @@ function clearFilters() {
 
 onMounted(() => store.loadTrips())
 
-const statusOptions = [
-  { value: 'all', label: 'Todos los estados' },
-  ...Object.entries(TRIP_STATUS_LABELS).map(([value, label]) => ({ value, label })),
-]
+const statusOptions = computed(() => [
+  { value: 'all', label: t('trips.filters.allStatuses') },
+  ...toSelectOptions(TRIP_STATUS_KEYS, t),
+])
 
 const countryOptions = computed(() => {
   const codes = new Set(store.trips.flatMap((t) => t.countries))
   return [
-    { value: 'all', label: 'Todos los países' },
+    { value: 'all', label: t('trips.filters.allCountries') },
     ...[...codes]
       .map((code) => ({ value: code, label: countryLabel(code) }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'es')),
+      .sort((a, b) => a.label.localeCompare(b.label, intlLocale())),
   ]
 })
 
-const groupingOptions = [
-  { value: 'year', label: 'Por año', icon: 'pi pi-calendar' },
-  { value: 'status', label: 'Por estado', icon: 'pi pi-flag' },
-] as const
+const groupingOptions = computed(
+  () =>
+    [
+      { value: 'year', label: t('trips.grouping.byYear'), icon: 'pi pi-calendar' },
+      { value: 'status', label: t('trips.grouping.byStatus'), icon: 'pi pi-flag' },
+    ] as const,
+)
 
 const filtered = computed(() =>
   store.trips.filter((t) => {
@@ -95,10 +101,10 @@ function tripImage(trip: Trip): string | null {
     <EmptyState
       v-else-if="!store.trips.length"
       icon="pi pi-compass"
-      title="Todavía no hay viajes"
-      subtitle="Crea tu primer viaje para empezar a planificar"
+      :title="t('trips.empty.title')"
+      :subtitle="t('trips.empty.subtitle')"
     >
-      <Button label="Crear viaje" icon="pi pi-plus" @click="showForm = true" />
+      <Button :label="t('trips.actions.createTrip')" icon="pi pi-plus" @click="showForm = true" />
     </EmptyState>
 
     <div v-else class="flex flex-col gap-6">
@@ -109,7 +115,7 @@ function tripImage(trip: Trip): string | null {
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap items-center gap-2">
           <Button
-            label="Nuevo viaje"
+            :label="t('trips.actions.newTrip')"
             icon="pi pi-plus"
             class="w-full sm:w-auto"
             @click="showForm = true"
@@ -136,11 +142,11 @@ function tripImage(trip: Trip): string | null {
 
       <!-- Grupos -->
       <p v-if="!filtered.length" class="text-center text-ink-faint py-10">
-        Ningún viaje coincide con los filtros
+        {{ t('trips.filters.noMatch') }}
       </p>
       <section v-for="group in groups" :key="group.key">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-faint mb-3">
-          {{ group.title }}
+          {{ group.titleKey ? t(group.titleKey) : group.title }}
           <span class="font-normal normal-case">· {{ group.trips.length }}</span>
         </h2>
         <div class="tt-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

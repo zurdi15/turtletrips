@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 defineProps<{ tripId: string }>()
 
 const route = useRoute()
+const { t } = useI18n()
 
-const tabs = [
-  { name: 'trip-overview', label: 'Resumen', icon: 'pi pi-home' },
-  { name: 'trip-places', label: 'Sitios', icon: 'pi pi-map-marker' },
-  { name: 'trip-itinerary', label: 'Itinerario', icon: 'pi pi-calendar' },
-  { name: 'trip-bookings', label: 'Reservas', icon: 'pi pi-ticket' },
-  { name: 'trip-expenses', label: 'Gastos', icon: 'pi pi-wallet' },
-  { name: 'trip-packing', label: 'Maleta', icon: 'pi pi-briefcase' },
-  { name: 'trip-files', label: 'Ficheros', icon: 'pi pi-paperclip' },
-  { name: 'trip-settings', label: 'Ajustes', icon: 'pi pi-cog' },
-]
+const tabs = computed(() => [
+  { name: 'trip-overview', label: t('trips.tabs.overview'), icon: 'pi pi-home' },
+  { name: 'trip-places', label: t('trips.tabs.places'), icon: 'pi pi-map-marker' },
+  { name: 'trip-itinerary', label: t('trips.tabs.itinerary'), icon: 'pi pi-calendar' },
+  { name: 'trip-bookings', label: t('trips.tabs.bookings'), icon: 'pi pi-ticket' },
+  { name: 'trip-expenses', label: t('trips.tabs.expenses'), icon: 'pi pi-wallet' },
+  { name: 'trip-packing', label: t('trips.tabs.packing'), icon: 'pi pi-briefcase' },
+  { name: 'trip-files', label: t('trips.tabs.files'), icon: 'pi pi-paperclip' },
+  { name: 'trip-settings', label: t('trips.tabs.settings'), icon: 'pi pi-cog' },
+])
 
 // la tab clicada se marca activa al momento (optimista), sin esperar al router
 const pendingTab = ref<string | null>(null)

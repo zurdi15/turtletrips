@@ -1,4 +1,5 @@
 import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Expense, Place, Trip } from '../api/types'
 import {
   countActiveFilters,
@@ -17,6 +18,7 @@ export function useExpenseFilters(ctx: {
   categoryNames: () => string[]
   placeById: () => Map<number, Place>
 }) {
+  const { t } = useI18n()
   const filters = reactive<ExpenseFilterState>(emptyFilters())
   const showFilters = ref(false)
 
@@ -24,15 +26,15 @@ export function useExpenseFilters(ctx: {
 
   function placeNameOf(e: Expense): string {
     return e.place_id != null
-      ? (ctx.placeById().get(e.place_id)?.name ?? 'Sin sitio')
-      : 'Sin sitio'
+      ? (ctx.placeById().get(e.place_id)?.name ?? t('expenses.noPlace'))
+      : t('expenses.noPlace')
   }
 
   function payerName(e: Expense): string {
-    if (e.paid_by_common) return 'Fondo común'
+    if (e.paid_by_common) return t('expenses.payer.commonFund')
     return e.paid_by_id != null
-      ? (memberById.value.get(e.paid_by_id)?.name ?? 'Sin asignar')
-      : 'Sin asignar'
+      ? (memberById.value.get(e.paid_by_id)?.name ?? t('expenses.payer.unassigned'))
+      : t('expenses.payer.unassigned')
   }
 
   const allCategoryNames = computed(() => {
@@ -42,28 +44,28 @@ export function useExpenseFilters(ctx: {
   })
 
   const categoryFilterOptions = computed(() => [
-    { value: 'all', label: 'Todas las categorías' },
+    { value: 'all', label: t('expenses.filters.allCategories') },
     ...allCategoryNames.value.map((name) => ({ value: name, label: name })),
   ])
   const excludeOptions = computed(() =>
     allCategoryNames.value.map((name) => ({ value: name, label: name })),
   )
   const payerFilterOptions = computed(() => [
-    { value: 'all' as const, label: 'Todos los pagadores' },
+    { value: 'all' as const, label: t('expenses.filters.allPayers') },
     ...ctx.trip().travelers.map((t) => ({ value: t.id, label: t.name, color: t.color })),
-    { value: 'common' as const, label: 'Fondo común' },
-    { value: 'none' as const, label: 'Sin asignar' },
+    { value: 'common' as const, label: t('expenses.payer.commonFund') },
+    { value: 'none' as const, label: t('expenses.payer.unassigned') },
   ])
   const placeFilterOptions = computed(() => {
     const usedIds = new Set(
       ctx.items().map((e) => e.place_id).filter((id): id is number => id != null),
     )
     return [
-      { value: 'all' as const, label: 'Todos los sitios' },
+      { value: 'all' as const, label: t('expenses.filters.allPlaces') },
       ...[...usedIds]
         .map((id) => ({ value: id, label: ctx.placeById().get(id)?.name ?? `#${id}` }))
         .sort((a, b) => a.label.localeCompare(b.label, 'es')),
-      { value: 'none' as const, label: 'Sin sitio' },
+      { value: 'none' as const, label: t('expenses.noPlace') },
     ]
   })
 

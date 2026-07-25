@@ -1,4 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotify } from './useNotify'
 
 interface FormDialogOptions<T> {
@@ -22,6 +23,7 @@ interface FormDialogOptions<T> {
  */
 export function useFormDialog<T>(opts: FormDialogOptions<T>) {
   const notify = useNotify()
+  const { t } = useI18n()
   const saving = ref(false)
 
   watch(opts.visible, (open) => {
@@ -41,7 +43,7 @@ export function useFormDialog<T>(opts: FormDialogOptions<T>) {
       opts.visible.value = false
       opts.onSaved?.()
     } catch (err) {
-      notify.error('Error al guardar', err)
+      notify.error(t('common.form.saveError'), err)
     } finally {
       saving.value = false
     }

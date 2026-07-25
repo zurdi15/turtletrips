@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import FormDialog from '../ui/FormDialog.vue'
@@ -17,6 +18,7 @@ const props = defineProps<{
 const visible = defineModel<boolean>('visible', { required: true })
 
 const store = usePackingStore()
+const { t } = useI18n()
 
 const name = ref('')
 const category = ref('')
@@ -32,7 +34,7 @@ const { saving, save } = useFormDialog({
     url.value = item?.url ?? ''
     traveler.value = item?.traveler_id ?? null
   },
-  validate: () => (name.value.trim() ? null : 'El nombre es obligatorio'),
+  validate: () => (name.value.trim() ? null : t('packing.itemDialog.nameRequired')),
   submit() {
     return store.update(props.item!.id, {
       name: name.value.trim(),
@@ -47,16 +49,16 @@ const { saving, save } = useFormDialog({
 <template>
   <FormDialog
     v-model:visible="visible"
-    header="Editar elemento"
+    :header="t('packing.itemDialog.title')"
     width="md"
     :saving="saving"
     @save="save"
   >
-    <FormField label="Nombre" required>
+    <FormField :label="t('packing.itemDialog.name')" required>
       <InputText v-model="name" />
     </FormField>
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Categoría">
+      <FormField :label="t('packing.itemDialog.category')">
         <Select
           v-model="category"
           :options="categoryOptions"
@@ -64,11 +66,11 @@ const { saving, save } = useFormDialog({
           optionValue="value"
         />
       </FormField>
-      <FormField label="Maleta de">
+      <FormField :label="t('packing.itemDialog.bag')">
         <Select v-model="traveler" :options="bagOptions" optionLabel="label" optionValue="value" />
       </FormField>
     </div>
-    <FormField label="Enlace de compra">
+    <FormField :label="t('packing.purchaseLink')">
       <InputText v-model="url" placeholder="https://…" />
     </FormField>
   </FormDialog>

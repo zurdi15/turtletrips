@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import DatePicker from 'primevue/datepicker'
@@ -14,6 +15,7 @@ import FormField from '../ui/FormField.vue'
 import { api } from '../../api/client'
 import type { Expense, Place, RateRead, Trip } from '../../api/types'
 import { CURRENCIES } from '../../constants'
+import { intlLocale } from '../../i18n'
 import { useExpensesStore } from '../../stores/expenses'
 import { useCategoriesStore } from '../../stores/categories'
 import { usePlacesStore } from '../../stores/places'
@@ -26,10 +28,13 @@ const props = defineProps<{ trip: Trip; expense?: Expense | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
+const { t } = useI18n()
 const notify = useNotify()
 const store = useExpensesStore()
 const categoriesStore = useCategoriesStore()
 const places = usePlacesStore()
+
+const numberLocale = computed(() => intlLocale())
 
 onMounted(() => categoriesStore.load('expense'))
 
@@ -115,12 +120,12 @@ const { saving, save } = useFormDialog({
   },
   validate() {
     if (!description.value.trim() || amount.value == null || amount.value <= 0) {
-      return 'Faltan descripción o importe'
+      return t('expenses.form.missingFields')
     }
     if (isForeign.value && exchangeRate.value == null) {
       return {
-        summary: 'Falta el tipo de cambio',
-        detail: 'No se pudo obtener automáticamente; introdúcelo a mano',
+        summary: t('expenses.form.missingRate'),
+        detail: t('expenses.form.missingRateDetail'),
       }
     }
     if (paidById.value !== 'common' && split.value.shares.length) {
@@ -129,7 +134,11 @@ const { saving, save } = useFormDialog({
         amount.value,
         split.value.shares.map((s) => s.value),
       )
-      if (splitError) return { summary: 'Reparto incompleto', detail: splitError }
+      if (splitError)
+        return {
+          summary: t('expenses.form.splitIncomplete'),
+          detail: t(splitError.key, splitError.params ?? {}),
+        }
     }
     return null
   },
@@ -146,7 +155,7 @@ const { saving, save } = useFormDialog({
       } else {
         const created = await places.create({ name, category: 'other' })
         placeId = created.id
-        notify.info(`Sitio "${name}" añadido a la pestaña Sitios`)
+        notify.info(t('expenses.toast.placeCreated', { name }))
       }
     }
     const payload = {
@@ -173,16 +182,16 @@ const { saving, save } = useFormDialog({
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="expense ? 'Editar gasto' : 'Nuevo gasto'"
+    :header="expense ? $t('expenses.form.editTitle') : $t('expenses.form.newTitle')"
     :saving="saving"
-    :saveLabel="expense ? 'Guardar' : 'Añadir gasto'"
+    :saveLabel="expense ? $t('common.actions.save') : $t('expenses.form.addLabel')"
     @save="save"
   >
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Fecha" required>
+      <FormField :label="$t('expenses.fields.date')" required>
         <DatePicker v-model="day" showIcon dateFormat="dd/mm/yy" />
       </FormField>
-      <FormField label="Categoría">
+      <FormField :label="$t('expenses.fields.category')">
         <Select
           v-model="category"
           :options="categoryOptions"
@@ -191,20 +200,20 @@ const { saving, save } = useFormDialog({
         />
       </FormField>
     </div>
-    <FormField label="Descripción" required>
-      <InputText v-model="description" placeholder="Cena en Ichiran" autofocus />
+    <FormField :label="$t('expenses.fields.description')" required>
+      <InputText v-model="description" :placeholder="$t('expenses.form.descriptionPlaceholder')" autofocus />
     </FormField>
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Importe" required>
+      <FormField :label="$t('expenses.fields.amount')" required>
         <InputNumber
           v-model="amount"
           :minFractionDigits="0"
           :maxFractionDigits="2"
-          locale="es-ES"
+          :locale="numberLocale"
           :min="0"
         />
       </FormField>
-      <FormField label="Moneda">
+      <FormField :label="$t('expenses.fields.currency')">
         <Select v-model="currency" :options="CURRENCIES" filter />
       </FormField>
     </div>
@@ -213,13 +222,13 @@ const { saving, save } = useFormDialog({
       <div class="flex items-end gap-3">
         <div class="flex flex-col gap-1 flex-1">
           <label class="text-sm font-medium">
-            Tipo de cambio {{ currency }} → {{ trip.base_currency }}
+            {{ $t('expenses.form.exchangeRate', { from: currency, to: trip.base_currency }) }}
           </label>
           <InputNumber
             v-model="exchangeRate"
             :minFractionDigits="2"
             :maxFractionDigits="6"
-            locale="es-ES"
+            :locale="numberLocale"
           />
         </div>
         <Button
@@ -227,31 +236,31 @@ const { saving, save } = useFormDialog({
           severity="secondary"
           outlined
           :loading="fetchingRate"
-          v-tooltip.top="'Obtener tipo de cambio'"
+          v-tooltip.top="$t('expenses.form.fetchRate')"
           @click="fetchRate"
         />
       </div>
       <p v-if="converted != null" class="text-sm text-ink-secondary mt-2">
         ≈ <strong>{{ formatMoney(converted, trip.base_currency) }}</strong>
-        <span v-if="rateSource === 'cache'" class="text-ink-faint"> (tasa cacheada)</span>
-        <span v-else-if="rateSource === 'api'" class="text-ink-faint"> (tasa del BCE)</span>
+        <span v-if="rateSource === 'cache'" class="text-ink-faint"> {{ $t('expenses.form.rateCached') }}</span>
+        <span v-else-if="rateSource === 'api'" class="text-ink-faint"> {{ $t('expenses.form.rateApi') }}</span>
       </p>
       <Message v-if="rateSource === 'error'" severity="warn" size="small" class="mt-2">
-        No se pudo obtener la tasa automáticamente; introdúcela a mano.
+        {{ $t('expenses.form.rateError') }}
       </Message>
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Pagado por">
+      <FormField :label="$t('expenses.fields.paidBy')">
         <PayerSelect v-model="paidById" :travelers="trip.travelers" />
       </FormField>
-      <FormField label="Sitio">
+      <FormField :label="$t('expenses.fields.place')">
         <AutoComplete
           v-model="placeValue"
           :suggestions="placeSuggestions"
           optionLabel="name"
           dropdown
-          placeholder="Elegir o crear…"
+          :placeholder="$t('expenses.form.placePlaceholder')"
           @complete="(e) => searchPlaces(e.query)"
         />
       </FormField>
@@ -264,12 +273,11 @@ const { saving, save } = useFormDialog({
       :currency="currency"
     />
     <p v-else class="text-xs text-ink-faint rounded-lg bg-surface-soft border border-line p-3">
-      <i class="pi pi-wallet mr-1" />Pagado del fondo común: cuenta en los totales pero no
-      genera deudas entre viajeros.
+      <i class="pi pi-wallet mr-1" />{{ $t('expenses.form.commonNote') }}
     </p>
 
-    <FormField label="Notas">
-      <InputText v-model="notes" placeholder="Opcional" />
+    <FormField :label="$t('expenses.fields.notes')">
+      <InputText v-model="notes" :placeholder="$t('expenses.form.notesPlaceholder')" />
     </FormField>
   </FormDialog>
 </template>

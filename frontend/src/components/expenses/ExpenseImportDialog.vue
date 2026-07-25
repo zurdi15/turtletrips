@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
@@ -16,6 +17,7 @@ const props = defineProps<{ trip: Trip }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ imported: [count: number] }>()
 
+const { t } = useI18n()
 const notify = useNotify()
 const store = useExpensesStore()
 
@@ -35,7 +37,7 @@ async function onFileChosen(chosen: File) {
   try {
     preview.value = await store.importCsv(chosen, true)
   } catch (err) {
-    notify.error('Error leyendo el CSV', err)
+    notify.error(t('expenses.import.readError'), err)
     reset()
   } finally {
     loading.value = false
@@ -47,12 +49,12 @@ async function confirmImport() {
   importing.value = true
   try {
     const result = await store.importCsv(file.value, false)
-    notify.success(`${result.imported} gastos importados`)
+    notify.success(t('expenses.import.imported', { n: result.imported }))
     emit('imported', result.imported)
     visible.value = false
     reset()
   } catch (err) {
-    notify.error('Error al importar', err)
+    notify.error(t('expenses.import.importError'), err)
   } finally {
     importing.value = false
   }
@@ -64,23 +66,22 @@ async function confirmImport() {
   <Dialog
     v-model:visible="visible"
     modal
-    header="Importar gastos desde CSV"
+    :header="$t('expenses.import.title')"
     class="w-full max-w-3xl mx-4"
     @hide="reset"
   >
     <div v-if="!preview" class="flex flex-col gap-4">
       <p class="text-sm text-ink-secondary">
-        Sube un CSV exportado de Excel. Se reconocen columnas como
-        <code class="text-xs bg-surface-muted px-1 rounded">descripción, cantidad, categoría, pagado por, lugar, fecha, notas</code>
-        (también en inglés), importes tipo
-        <code class="text-xs bg-surface-muted px-1 rounded">1.528,00 €</code> y fechas
-        <code class="text-xs bg-surface-muted px-1 rounded">dd/mm/aaaa</code> o
-        <code class="text-xs bg-surface-muted px-1 rounded">10 febrero 2026</code>. Las filas sin fecha
-        heredan la de la fila anterior, y el lugar se guarda en las notas. Primero verás una
-        previsualización; no se importa nada hasta que confirmes.
+        {{ $t('expenses.import.introColumns') }}
+        <code class="text-xs bg-surface-muted px-1 rounded">{{ $t('expenses.import.columnsExample') }}</code>
+        {{ $t('expenses.import.introAmounts') }}
+        <code class="text-xs bg-surface-muted px-1 rounded">1.528,00 €</code> {{ $t('expenses.import.introDates') }}
+        <code class="text-xs bg-surface-muted px-1 rounded">{{ $t('expenses.import.dateFormat') }}</code> {{ $t('expenses.import.or') }}
+        <code class="text-xs bg-surface-muted px-1 rounded">10 febrero 2026</code>.
+        {{ $t('expenses.import.introRest') }}
       </p>
       <UploadButton
-        label="Elegir fichero CSV"
+        :label="$t('expenses.import.chooseFile')"
         icon="pi pi-upload"
         accept=".csv,text/csv"
         :loading="loading"
@@ -90,14 +91,14 @@ async function confirmImport() {
 
     <div v-else class="flex flex-col gap-4">
       <div class="flex items-center gap-3 flex-wrap">
-        <Tag :value="`${preview.valid_rows.length} filas válidas`" severity="success" />
+        <Tag :value="$t('expenses.import.validRows', { n: preview.valid_rows.length })" severity="success" />
         <Tag
           v-if="preview.errors.length"
-          :value="`${preview.errors.length} filas con errores`"
+          :value="$t('expenses.import.errorRows', { n: preview.errors.length })"
           severity="danger"
         />
         <Button
-          label="Elegir otro fichero"
+          :label="$t('expenses.import.chooseAnother')"
           severity="secondary"
           text
           size="small"
@@ -109,9 +110,9 @@ async function confirmImport() {
       <Message v-if="preview.errors.length" severity="warn" size="small">
         <ul class="m-0 pl-4">
           <li v-for="err in preview.errors.slice(0, 8)" :key="err.row">
-            Fila {{ err.row }}: {{ err.error }}
+            {{ $t('expenses.import.rowError', { row: err.row, error: err.error }) }}
           </li>
-          <li v-if="preview.errors.length > 8">… y {{ preview.errors.length - 8 }} más</li>
+          <li v-if="preview.errors.length > 8">{{ $t('expenses.import.moreErrors', { n: preview.errors.length - 8 }) }}</li>
         </ul>
       </Message>
 
@@ -123,28 +124,28 @@ async function confirmImport() {
         :tableStyle="{ minWidth: '540px' }"
         class="text-sm"
       >
-        <Column header="Fecha">
+        <Column :header="$t('expenses.fields.date')">
           <template #body="{ data }">{{ formatDate(data.day) }}</template>
         </Column>
-        <Column field="category" header="Categoría" />
-        <Column field="description" header="Descripción" />
-        <Column header="Importe">
+        <Column field="category" :header="$t('expenses.fields.category')" />
+        <Column field="description" :header="$t('expenses.fields.description')" />
+        <Column :header="$t('expenses.fields.amount')">
           <template #body="{ data }">{{ formatMoney(data.amount, data.currency) }}</template>
         </Column>
-        <Column :header="`En ${trip.base_currency}`">
+        <Column :header="$t('expenses.import.inCurrency', { currency: trip.base_currency })">
           <template #body="{ data }">{{ formatMoney(data.amount_base, trip.base_currency) }}</template>
         </Column>
-        <Column field="paid_by" header="Pagado por" />
-        <Column field="place" header="Sitio" />
-        <Column field="notes" header="Notas" />
+        <Column field="paid_by" :header="$t('expenses.fields.paidBy')" />
+        <Column field="place" :header="$t('expenses.fields.place')" />
+        <Column field="notes" :header="$t('expenses.fields.notes')" />
       </DataTable>
     </div>
 
     <template #footer>
-      <Button label="Cancelar" severity="secondary" text @click="visible = false" />
+      <Button :label="$t('common.actions.cancel')" severity="secondary" text @click="visible = false" />
       <Button
         v-if="preview"
-        :label="`Importar ${preview.valid_rows.length} gastos`"
+        :label="$t('expenses.import.confirm', { n: preview.valid_rows.length })"
         icon="pi pi-check"
         :disabled="!preview.valid_rows.length"
         :loading="importing"

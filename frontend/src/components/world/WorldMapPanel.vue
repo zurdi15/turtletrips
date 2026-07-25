@@ -4,7 +4,7 @@ import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/v
 import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
 import type { WorldPlace } from '../../api/types'
 import { countryName, flagEmoji } from '../../countries'
-import { KIND_COLORS, KIND_LABELS, displayName } from '../../utils/worldGrouping'
+import { KIND_COLORS, KIND_KEYS, displayName } from '../../utils/worldGrouping'
 import { WHITE } from '../../theme'
 import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useMapTiles } from '../../composables/useMapTiles'
@@ -103,12 +103,14 @@ defineExpose({ flyTo, fitAll })
         >
           <LPopup>
             <div class="font-medium">{{ displayName(place) }}</div>
-            <div v-if="place.origin" class="text-xs text-ink-faint">Viaje: {{ place.origin }}</div>
+            <div v-if="place.origin" class="text-xs text-ink-faint">
+              {{ $t('world.map.tripOrigin', { origin: place.origin }) }}
+            </div>
             <div v-if="place.note" class="text-xs text-ink-muted max-w-52 whitespace-pre-wrap mt-1">
               {{ place.note }}
             </div>
             <button class="text-xs text-info hover:underline mt-1" @click="emit('edit', place)">
-              Editar nota
+              {{ $t('world.map.editNote') }}
             </button>
           </LPopup>
         </LMarker>
@@ -125,15 +127,17 @@ defineExpose({ flyTo, fitAll })
           <LPopup>
             <div class="font-medium">{{ place.name }}</div>
             <div class="text-xs text-ink-muted">
-              {{ KIND_LABELS[place.kind] }}
+              {{ $t(KIND_KEYS[place.kind]) }}
               <template v-if="place.country_code"> · {{ countryName(place.country_code) }}</template>
             </div>
-            <div v-if="place.origin" class="text-xs text-ink-faint">Viaje: {{ place.origin }}</div>
+            <div v-if="place.origin" class="text-xs text-ink-faint">
+              {{ $t('world.map.tripOrigin', { origin: place.origin }) }}
+            </div>
             <div v-if="place.note" class="text-xs text-ink-muted max-w-52 whitespace-pre-wrap mt-1">
               {{ place.note }}
             </div>
             <button class="text-xs text-info hover:underline mt-1" @click="emit('edit', place)">
-              Editar nota
+              {{ $t('world.map.editNote') }}
             </button>
           </LPopup>
         </LCircleMarker>
@@ -147,9 +151,9 @@ defineExpose({ flyTo, fitAll })
       <div
         class="bg-white/95 backdrop-blur rounded-card border border-line shadow-lg px-4 py-3 text-center"
       >
-        <p class="font-medium text-ink">🌍 Tu diario está vacío</p>
+        <p class="font-medium text-ink">🌍 {{ $t('world.empty.title') }}</p>
         <p class="text-xs text-ink-muted mt-0.5">
-          Busca una ciudad, marca un país visitado o termina un viaje y aparecerá solo
+          {{ $t('world.empty.mapHint') }}
         </p>
       </div>
     </div>

@@ -1,14 +1,18 @@
+import { intlLocale } from '../i18n'
+
 const formatters = new Map<string, Intl.NumberFormat>()
 
 export function formatMoney(amount: number, currency: string): string {
-  let fmt = formatters.get(currency)
+  const locale = intlLocale()
+  const cacheKey = `${locale}:${currency}`
+  let fmt = formatters.get(cacheKey)
   if (!fmt) {
     try {
-      fmt = new Intl.NumberFormat('es-ES', { style: 'currency', currency })
+      fmt = new Intl.NumberFormat(locale, { style: 'currency', currency })
     } catch {
-      fmt = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 })
+      fmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 })
     }
-    formatters.set(currency, fmt)
+    formatters.set(cacheKey, fmt)
   }
   return fmt.format(amount)
 }
@@ -16,12 +20,12 @@ export function formatMoney(amount: number, currency: string): string {
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = new Date(`${iso.slice(0, 10)}T00:00:00`)
-  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+  return d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('es-ES', {
+  return new Date(iso).toLocaleString(intlLocale(), {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',

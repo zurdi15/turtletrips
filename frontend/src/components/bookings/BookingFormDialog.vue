@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
@@ -12,11 +13,12 @@ import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import type { Booking, BookingType, GeocodeResult, Trip } from '../../api/types'
 import {
-  BOOKING_TYPE_LABELS,
+  BOOKING_TYPE_KEYS,
   CURRENCIES,
   isTransport as isTransportType,
   toSelectOptions,
 } from '../../constants'
+import { intlLocale } from '../../i18n'
 import { useBookingsStore } from '../../stores/bookings'
 import { useFormDialog } from '../../composables/useFormDialog'
 import { useGeocodeSearch } from '../../composables/useGeocode'
@@ -27,6 +29,7 @@ const props = defineProps<{ trip: Trip; booking?: Booking | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
+const { t } = useI18n()
 const store = useBookingsStore()
 const { results: geoResults, search: geoSearch } = useGeocodeSearch()
 
@@ -73,7 +76,8 @@ watch(address, () => {
   }
 })
 
-const typeOptions = toSelectOptions(BOOKING_TYPE_LABELS)
+const typeOptions = computed(() => toSelectOptions(BOOKING_TYPE_KEYS, t))
+const numberLocale = computed(() => intlLocale())
 
 const isTransport = computed(() => isTransportType(type.value))
 const isFlight = computed(() => type.value === 'flight')
@@ -114,13 +118,15 @@ async function searchAirports(event: { query: string }) {
   )
   airportOptions.value = [...byCode, ...byText].slice(0, 20)
 }
-const dateLabels = computed(() =>
-  type.value === 'hotel'
-    ? { start: 'Check-in', end: 'Check-out' }
-    : isTransport.value
-      ? { start: 'Salida', end: 'Llegada' }
-      : { start: 'Inicio', end: 'Fin' },
+const dateKind = computed(() =>
+  type.value === 'hotel' ? 'hotel' : isTransport.value ? 'transport' : 'generic',
 )
+const dateLabels = computed(() => ({
+  start: t(`bookings.form.dates.${dateKind.value}.start`),
+  end: t(`bookings.form.dates.${dateKind.value}.end`),
+  startTime: t(`bookings.form.dates.${dateKind.value}.startTime`),
+  endTime: t(`bookings.form.dates.${dateKind.value}.endTime`),
+}))
 
 function toNaiveIso(date: Date, time: Date | null): string {
   const hh = String(time?.getHours() ?? 0).padStart(2, '0')
@@ -188,7 +194,7 @@ const { saving, save } = useFormDialog({
     paidById.value = b?.paid_by_common ? 'common' : (b?.paid_by_id ?? null)
     notes.value = b?.notes ?? ''
   },
-  validate: () => (title.value.trim() ? null : 'El título es obligatorio'),
+  validate: () => (title.value.trim() ? null : t('bookings.form.titleRequired')),
   submit() {
     const payload = {
       type: type.value,
@@ -218,24 +224,24 @@ const { saving, save } = useFormDialog({
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="booking ? 'Editar reserva' : 'Nueva reserva'"
+    :header="booking ? $t('bookings.form.editTitle') : $t('bookings.newBooking')"
     :saving="saving"
-    :saveLabel="booking ? 'Guardar' : 'Añadir reserva'"
+    :saveLabel="booking ? $t('common.actions.save') : $t('bookings.form.addBooking')"
     @save="save"
   >
-    <FormField label="Tipo">
+    <FormField :label="$t('bookings.form.type')">
       <Select v-model="type" :options="typeOptions" optionLabel="label" optionValue="value" />
     </FormField>
 
     <!-- lo primero es el lugar, como en Sitios: la selección autorellena el título -->
     <div v-if="isTransport" class="grid grid-cols-2 gap-3">
-      <FormField label="Origen">
+      <FormField :label="$t('bookings.form.origin')">
         <AutoComplete
           v-if="isFlight"
           v-model="origin"
           :suggestions="airportOptions"
           optionLabel="code"
-          placeholder="MAD, Madrid…"
+          :placeholder="$t('bookings.form.originFlightPlaceholder')"
           dropdown
           fluid
           @complete="searchAirports"
@@ -249,15 +255,15 @@ const { saving, save } = useFormDialog({
             </div>
           </template>
         </AutoComplete>
-        <InputText v-else v-model="origin" placeholder="Madrid" />
+        <InputText v-else v-model="origin" :placeholder="$t('bookings.form.originPlaceholder')" />
       </FormField>
-      <FormField label="Destino">
+      <FormField :label="$t('bookings.form.destination')">
         <AutoComplete
           v-if="isFlight"
           v-model="destination"
           :suggestions="airportOptions"
           optionLabel="code"
-          placeholder="NRT, Tokio…"
+          :placeholder="$t('bookings.form.destinationFlightPlaceholder')"
           dropdown
           fluid
           @complete="searchAirports"
@@ -271,15 +277,19 @@ const { saving, save } = useFormDialog({
             </div>
           </template>
         </AutoComplete>
-        <InputText v-else v-model="destination" placeholder="Tokio" />
+        <InputText
+          v-else
+          v-model="destination"
+          :placeholder="$t('bookings.form.destinationPlaceholder')"
+        />
       </FormField>
     </div>
-    <FormField v-else label="Dirección">
+    <FormField v-else :label="$t('bookings.form.address')">
       <AutoComplete
         v-model="address"
         :suggestions="geoResults"
         optionLabel="display_name"
-        placeholder="Busca un lugar o dirección…"
+        :placeholder="$t('bookings.form.addressPlaceholder')"
         fluid
         autofocus
         @complete="(e) => geoSearch(e.query)"
@@ -293,23 +303,27 @@ const { saving, save } = useFormDialog({
     </FormField>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Título" required>
-        <InputText v-model="title" placeholder="Hotel Gracery Shinjuku" />
+      <FormField :label="$t('bookings.form.title')" required>
+        <InputText v-model="title" :placeholder="$t('bookings.form.titlePlaceholder')" />
       </FormField>
-      <FormField label="Proveedor">
-        <InputText v-model="provider" placeholder="Booking.com, Iberia…" />
+      <FormField :label="$t('bookings.form.provider')">
+        <InputText v-model="provider" :placeholder="$t('bookings.form.providerPlaceholder')" />
       </FormField>
     </div>
     <!-- en vuelos: código de reserva (booking) + número de vuelo -->
     <div v-if="isFlight" class="grid grid-cols-2 gap-3">
-      <FormField label="Código de reserva">
-        <InputText v-model="confirmationCode" placeholder="ABC123" />
+      <FormField :label="$t('bookings.form.bookingCode')">
+        <InputText v-model="confirmationCode" :placeholder="$t('bookings.form.bookingCodePlaceholder')" />
       </FormField>
-      <FormField label="Código de vuelo">
-        <InputText v-model="flightNumber" placeholder="IB6801" class="font-mono" />
+      <FormField :label="$t('bookings.form.flightNumber')">
+        <InputText
+          v-model="flightNumber"
+          :placeholder="$t('bookings.form.flightNumberPlaceholder')"
+          class="font-mono"
+        />
       </FormField>
     </div>
-    <FormField v-else label="Código de confirmación">
+    <FormField v-else :label="$t('bookings.form.confirmationCode')">
       <InputText v-model="confirmationCode" />
     </FormField>
     <DateRangePicker
@@ -320,39 +334,39 @@ const { saving, save } = useFormDialog({
       clearable
     />
     <div class="grid grid-cols-2 gap-3">
-      <FormField :label="`Hora ${dateLabels.start.toLowerCase()}`">
+      <FormField :label="dateLabels.startTime">
         <DatePicker v-model="startTime" timeOnly hourFormat="24" placeholder="—" />
       </FormField>
-      <FormField :label="`Hora ${dateLabels.end.toLowerCase()}`">
+      <FormField :label="dateLabels.endTime">
         <DatePicker v-model="endTime" timeOnly hourFormat="24" placeholder="—" />
       </FormField>
     </div>
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Coste">
+      <FormField :label="$t('bookings.form.cost')">
         <InputNumber
           v-model="costAmount"
           :minFractionDigits="0"
           :maxFractionDigits="2"
-          locale="es-ES"
+          :locale="numberLocale"
           :min="0"
-          placeholder="Opcional"
+          :placeholder="$t('bookings.form.costPlaceholder')"
         />
       </FormField>
-      <FormField label="Moneda">
+      <FormField :label="$t('bookings.form.currency')">
         <Select v-model="costCurrency" :options="CURRENCIES" filter />
       </FormField>
       <div class="col-span-2">
-        <FormField label="Pagado por">
+        <FormField :label="$t('bookings.form.paidBy')">
           <PayerSelect v-model="paidById" :travelers="trip.travelers" />
           <template #hint>
             <p class="text-xs text-ink-faint">
-              Con coste, la reserva crea su gasto automáticamente y hereda este pagador
+              {{ $t('bookings.form.payerHint') }}
             </p>
           </template>
         </FormField>
       </div>
     </div>
-    <FormField label="Notas">
+    <FormField :label="$t('bookings.form.notes')">
       <Textarea v-model="notes" rows="2" autoResize />
     </FormField>
   </FormDialog>

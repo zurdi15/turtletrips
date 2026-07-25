@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DatePicker from 'primevue/datepicker'
 import Popover from 'primevue/popover'
 import Button from 'primevue/button'
+import { intlLocale } from '../i18n'
 
 interface DayMeta {
   day: number
@@ -11,10 +13,11 @@ interface DayMeta {
   otherMonth?: boolean
 }
 
-withDefaults(defineProps<{ startLabel?: string; endLabel?: string; clearable?: boolean }>(), {
-  startLabel: 'Inicio',
-  endLabel: 'Fin',
-})
+const props = defineProps<{ startLabel?: string; endLabel?: string; clearable?: boolean }>()
+
+const { t } = useI18n()
+const startText = computed(() => props.startLabel ?? t('common.dateRange.start'))
+const endText = computed(() => props.endLabel ?? t('common.dateRange.end'))
 
 const start = defineModel<Date | null>('start', { default: null })
 const end = defineModel<Date | null>('end', { default: null })
@@ -46,7 +49,7 @@ const startKey = computed(() => (start.value ? keyOf(start.value) : null))
 const endKey = computed(() => (end.value ? keyOf(end.value) : null))
 
 function fmt(d: Date): string {
-  return d.toLocaleDateString('es-ES')
+  return d.toLocaleDateString(intlLocale())
 }
 
 function openFor(which: 'start' | 'end', event: Event) {
@@ -121,9 +124,9 @@ function onDayHover(meta: DayMeta) {
       @click="openFor('start', $event)"
     >
       <span class="flex-1 min-w-0">
-        <span class="block text-xs text-ink-faint">{{ startLabel }}</span>
+        <span class="block text-xs text-ink-faint">{{ startText }}</span>
         <span class="block text-sm truncate" :class="start ? 'text-ink' : 'text-ink-faint'">
-          {{ start ? fmt(start) : 'Elegir fecha' }}
+          {{ start ? fmt(start) : $t('common.dateRange.pickDate') }}
         </span>
       </span>
       <i
@@ -140,9 +143,9 @@ function onDayHover(meta: DayMeta) {
       @click="openFor('end', $event)"
     >
       <span class="flex-1 min-w-0">
-        <span class="block text-xs text-ink-faint">{{ endLabel }}</span>
+        <span class="block text-xs text-ink-faint">{{ endText }}</span>
         <span class="block text-sm truncate" :class="end ? 'text-ink' : 'text-ink-faint'">
-          {{ end ? fmt(end) : 'Elegir fecha' }}
+          {{ end ? fmt(end) : $t('common.dateRange.pickDate') }}
         </span>
       </span>
       <i
@@ -170,9 +173,9 @@ function onDayHover(meta: DayMeta) {
         </DatePicker>
         <div class="flex items-center justify-between gap-2 pt-1">
           <span class="text-xs text-ink-faint">
-            {{ active === 'start' ? 'Elige la fecha de inicio' : 'Elige la fecha de fin' }}
+            {{ active === 'start' ? $t('common.dateRange.pickStart') : $t('common.dateRange.pickEnd') }}
           </span>
-          <Button label="Aplicar" size="small" @click="close" />
+          <Button :label="$t('common.actions.apply')" size="small" @click="close" />
         </div>
       </div>
     </Popover>

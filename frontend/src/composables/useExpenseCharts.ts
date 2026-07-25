@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Expense, Trip } from '../api/types'
 import { CATEGORY_PALETTE, CHART_LINE_COLOR, WHITE } from '../theme'
 import { cssVar } from './useTheme'
@@ -18,26 +19,34 @@ export function useExpenseCharts(ctx: {
   placeNameOf: (e: Expense) => string
   isDark: () => boolean
 }) {
+  const { t } = useI18n()
   const chartDim = ref<ChartDim>('category')
   const chartType = ref<ChartKind>('pie')
 
-  const dimOptions = [
-    { value: 'category', label: 'Categoría', icon: 'pi pi-tag' },
-    { value: 'payer', label: 'Pagador', icon: 'pi pi-user' },
-    { value: 'place', label: 'Sitio', icon: 'pi pi-map-marker' },
-    { value: 'day', label: 'Día', icon: 'pi pi-calendar' },
-  ] as const
+  const dimOptions = computed(
+    () =>
+      [
+        { value: 'category', label: t('expenses.charts.dim.category'), icon: 'pi pi-tag' },
+        { value: 'payer', label: t('expenses.charts.dim.payer'), icon: 'pi pi-user' },
+        { value: 'place', label: t('expenses.charts.dim.place'), icon: 'pi pi-map-marker' },
+        { value: 'day', label: t('expenses.charts.dim.day'), icon: 'pi pi-calendar' },
+      ] as const,
+  )
 
   const typeOptions = computed(() =>
     chartDim.value === 'day'
       ? ([
-          { value: 'bar', label: 'Barras', icon: 'pi pi-chart-bar' },
-          { value: 'line', label: 'Línea', icon: 'pi pi-chart-line' },
-          { value: 'cumulative', label: 'Acumulado', icon: 'pi pi-arrow-up-right' },
+          { value: 'bar', label: t('expenses.charts.type.bar'), icon: 'pi pi-chart-bar' },
+          { value: 'line', label: t('expenses.charts.type.line'), icon: 'pi pi-chart-line' },
+          {
+            value: 'cumulative',
+            label: t('expenses.charts.type.cumulative'),
+            icon: 'pi pi-arrow-up-right',
+          },
         ] as const)
       : ([
-          { value: 'pie', label: 'Tarta', icon: 'pi pi-chart-pie' },
-          { value: 'bar', label: 'Barras', icon: 'pi pi-chart-bar' },
+          { value: 'pie', label: t('expenses.charts.type.pie'), icon: 'pi pi-chart-pie' },
+          { value: 'bar', label: t('expenses.charts.type.bar'), icon: 'pi pi-chart-bar' },
         ] as const),
   )
 
@@ -68,7 +77,7 @@ export function useExpenseCharts(ctx: {
         .map((d, idx) => ({
           ...d,
           color:
-            d.label === 'Sin sitio'
+            d.label === t('expenses.noPlace')
               ? FALLBACK_CATEGORY_COLOR
               : CATEGORY_PALETTE[idx % CATEGORY_PALETTE.length],
         }))

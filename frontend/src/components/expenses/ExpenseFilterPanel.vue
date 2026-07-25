@@ -35,14 +35,14 @@ function payerFor(value: number | 'all' | 'none' | 'common') {
   >
     <InputText
       v-model="filters.searchText"
-      placeholder="Buscar en descripción, notas o categoría…"
+      :placeholder="$t('expenses.filters.searchPlaceholder')"
       class="w-full lg:w-auto lg:flex-1"
     />
     <DateRangePicker
       v-model:start="filters.dateFrom"
       v-model:end="filters.dateTo"
-      startLabel="Desde"
-      endLabel="Hasta"
+      :startLabel="$t('expenses.filters.from')"
+      :endLabel="$t('expenses.filters.to')"
       clearable
       class="w-full sm:w-72"
     />
@@ -58,7 +58,7 @@ function payerFor(value: number | 'all' | 'none' | 'common') {
       :options="excludeOptions"
       optionLabel="label"
       optionValue="value"
-      placeholder="Excluir categorías…"
+      :placeholder="$t('expenses.filters.excludePlaceholder')"
       display="chip"
       class="flex-1 min-w-menu sm:flex-none sm:w-52"
     />
@@ -86,7 +86,7 @@ function payerFor(value: number | 'all' | 'none' | 'common') {
     />
     <Button
       v-if="activeFilterCount"
-      label="Limpiar"
+      :label="$t('common.actions.clear')"
       icon="pi pi-times"
       text
       severity="secondary"

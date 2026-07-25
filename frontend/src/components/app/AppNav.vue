@@ -1,15 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import BrandMark from '../BrandMark.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 
-const navItems = [
-  { to: '/', label: 'Viajes', icon: 'pi pi-compass', match: (p: string) => p === '/' || p.startsWith('/trips') },
-  { to: '/map', label: 'Mapa', icon: 'pi pi-globe', match: (p: string) => p.startsWith('/map') },
-  { to: '/packing', label: 'Maletas', icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/packing') },
-  { to: '/travelers', label: 'Viajeros', icon: 'pi pi-users', match: (p: string) => p.startsWith('/travelers') },
-]
+const navItems = computed(() => [
+  { to: '/', label: t('common.nav.trips'), icon: 'pi pi-compass', match: (p: string) => p === '/' || p.startsWith('/trips') },
+  { to: '/map', label: t('common.nav.map'), icon: 'pi pi-globe', match: (p: string) => p.startsWith('/map') },
+  { to: '/packing', label: t('common.nav.packing'), icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/packing') },
+  { to: '/travelers', label: t('common.nav.travelers'), icon: 'pi pi-users', match: (p: string) => p.startsWith('/travelers') },
+])
 </script>
 
 <template>
@@ -42,7 +45,7 @@ const navItems = [
         to="/settings"
         class="transition-colors"
         :class="route.path.startsWith('/settings') ? 'text-ink' : 'text-ink-faint hover:text-ink-secondary'"
-        title="Ajustes"
+        :title="$t('common.nav.settings')"
       >
         <i class="pi pi-cog text-lg" />
       </router-link>

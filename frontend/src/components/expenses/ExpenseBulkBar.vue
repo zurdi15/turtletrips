@@ -43,14 +43,14 @@ function payerFor(value: number | 'none' | 'common') {
 
 <template>
   <div class="flex flex-wrap items-center gap-2 bg-info-tint border border-info-edge rounded-card p-3 mb-3">
-    <span class="text-sm font-semibold text-info-strong">{{ count }} seleccionados</span>
+    <span class="text-sm font-semibold text-info-strong">{{ $t('expenses.bulk.selected', { n: count }) }}</span>
     <span class="flex-1 sm:hidden" />
     <Select
       v-model="bulkCategory"
       :options="categoryOptions"
       optionLabel="label"
       optionValue="value"
-      placeholder="Cambiar categoría…"
+      :placeholder="$t('expenses.bulk.changeCategory')"
       :disabled="working"
       class="w-full sm:w-52"
       @update:modelValue="onCategory"
@@ -60,7 +60,7 @@ function payerFor(value: number | 'none' | 'common') {
       :options="payerOptions"
       optionLabel="label"
       optionValue="value"
-      placeholder="Cambiar pagador…"
+      :placeholder="$t('expenses.bulk.changePayer')"
       :disabled="working"
       class="w-full sm:w-48"
       @update:modelValue="onPayer"
@@ -81,7 +81,7 @@ function payerFor(value: number | 'none' | 'common') {
     <span class="hidden sm:block flex-1" />
     <Button
       icon="pi pi-trash"
-      label="Eliminar"
+      :label="$t('common.actions.delete')"
       severity="danger"
       outlined
       :loading="working"
@@ -92,7 +92,7 @@ function payerFor(value: number | 'none' | 'common') {
       icon="pi pi-times"
       severity="secondary"
       text
-      v-tooltip.bottom="'Quitar selección'"
+      v-tooltip.bottom="$t('expenses.bulk.clearSelection')"
       @click="$emit('clear')"
     />
   </div>

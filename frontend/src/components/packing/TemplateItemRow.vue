@@ -66,7 +66,7 @@ function save() {
           target="_blank"
           rel="noopener"
           class="ml-1 text-info hover:underline text-xs"
-          v-tooltip.top="'Enlace de compra'"
+          v-tooltip.top="$t('packing.purchaseLink')"
         >
           <i class="pi pi-shopping-cart" />
         </a>

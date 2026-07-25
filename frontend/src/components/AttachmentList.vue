@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import UploadButton from './ui/UploadButton.vue'
 import { useAttachmentsStore } from '../stores/attachments'
@@ -14,6 +15,7 @@ const props = withDefaults(
 const store = useAttachmentsStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
+const { t } = useI18n()
 const uploading = ref(false)
 
 const items = computed(() =>
@@ -27,7 +29,7 @@ async function onFileChosen(file: File) {
   try {
     await store.upload(file, props.bookingId)
   } catch (err) {
-    notify.error('Error al subir', err)
+    notify.error(t('common.attachments.uploadError'), err)
   } finally {
     uploading.value = false
   }
@@ -35,8 +37,8 @@ async function onFileChosen(file: File) {
 
 function remove(id: number, name: string) {
   confirmAction({
-    message: `¿Eliminar el fichero "${name}"?`,
-    header: 'Eliminar adjunto',
+    message: t('common.attachments.deleteConfirm', { name }),
+    header: t('common.attachments.deleteHeader'),
     accept: () => store.remove(id),
   })
 }
@@ -76,7 +78,7 @@ function remove(id: number, name: string) {
         </div>
       </template>
       <UploadButton
-        label="Adjuntar"
+        :label="$t('common.attachments.attach')"
         icon="pi pi-paperclip"
         severity="secondary"
         outlined

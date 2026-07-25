@@ -11,10 +11,12 @@ import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 import { useTravelersStore } from '../stores/travelers'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
+import { useI18n } from 'vue-i18n'
 
 const travelers = useTravelersStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
+const { t } = useI18n()
 
 const newName = ref('')
 const colorTargetId = ref<number | null>(null)
@@ -39,7 +41,7 @@ async function add() {
     await travelers.create(name, CATEGORY_PALETTE[travelers.items.length % CATEGORY_PALETTE.length])
     newName.value = ''
   } catch (err) {
-    notify.error('Error al añadir', err)
+    notify.error(t('travelers.toast.addError'), err)
   }
 }
 
@@ -47,14 +49,14 @@ async function rename(traveler: Traveler, name: string) {
   try {
     await travelers.update(traveler.id, { name })
   } catch (err) {
-    notify.error('Error al renombrar', err)
+    notify.error(t('travelers.toast.renameError'), err)
   }
 }
 
 function remove(traveler: Traveler) {
   confirmAction({
-    message: `¿Eliminar a "${traveler.name}"? Se quitará de todos los viajes y sus gastos quedarán sin pagador.`,
-    header: 'Eliminar viajero',
+    message: t('travelers.confirmDelete.message', { name: traveler.name }),
+    header: t('travelers.confirmDelete.header'),
     accept: () => travelers.remove(traveler.id),
   })
 }
@@ -63,8 +65,8 @@ function remove(traveler: Traveler) {
 <template>
   <div class="max-w-2xl mx-auto">
     <PageHeader
-      title="Viajeros"
-      info="Globales y reutilizables: créalos una vez y asócialos a cualquier viaje para marcar quién pagó cada gasto. No son cuentas de usuario."
+      :title="t('travelers.title')"
+      :info="t('travelers.info')"
       class="mb-6"
     />
 
@@ -81,18 +83,18 @@ function remove(traveler: Traveler) {
           @pick-color="(event) => openColorPicker(event, traveler.id)"
         />
         <li v-if="!travelers.items.length" class="text-sm text-ink-faint px-3 py-4 text-center">
-          Sin viajeros todavía: añade el primero abajo
+          {{ t('travelers.empty') }}
         </li>
       </ul>
       <div class="flex gap-2">
         <InputText
           v-model="newName"
-          placeholder="Nuevo viajero…"
+          :placeholder="t('travelers.newPlaceholder')"
           class="flex-1 min-w-0"
           @keyup.enter="add"
         />
         <Button
-          label="Añadir"
+          :label="t('common.actions.add')"
           icon="pi pi-plus"
           class="shrink-0 max-sm:[&_.p-button-label]:hidden"
           @click="add"

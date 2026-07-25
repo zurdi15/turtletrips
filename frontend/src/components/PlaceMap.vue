@@ -4,7 +4,7 @@ import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/v
 import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
 import type { Booking, BookingType, Place } from '../api/types'
 import { BOOKING_MARKER_COLORS, PLACE_CATEGORY_COLORS, WHITE } from '../theme'
-import { BOOKING_TYPE_LABELS, PLACE_CATEGORY_LABELS } from '../constants'
+import { BOOKING_TYPE_KEYS, PLACE_CATEGORY_KEYS } from '../constants'
 import { useCountryCenter } from '../composables/useCountryCenter'
 import { useMapTiles } from '../composables/useMapTiles'
 import { formatDate } from '../composables/useMoney'
@@ -135,8 +135,8 @@ defineExpose({ refresh })
       <LPopup>
         <div class="font-medium">{{ place.name }}</div>
         <div class="text-xs text-ink-muted">
-          {{ PLACE_CATEGORY_LABELS[place.category] }}
-          <span v-if="place.visited"> · ✔ visitado</span>
+          {{ $t(PLACE_CATEGORY_KEYS[place.category]) }}
+          <span v-if="place.visited"> · ✔ {{ $t('common.map.visited') }}</span>
         </div>
       </LPopup>
     </LCircleMarker>
@@ -149,7 +149,7 @@ defineExpose({ refresh })
       <LPopup>
         <div class="font-medium">{{ booking.title }}</div>
         <div class="text-xs text-ink-muted">
-          {{ BOOKING_TYPE_LABELS[booking.type] }}
+          {{ $t(BOOKING_TYPE_KEYS[booking.type]) }}
           <template v-if="booking.start_dt">
             · {{ formatDate(booking.start_dt) }}
             <template v-if="booking.end_dt"> → {{ formatDate(booking.end_dt) }}</template>

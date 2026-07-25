@@ -33,21 +33,27 @@ export function splitRemaining(total: number, values: (number | null)[]): number
   return result
 }
 
-/** Valida un reparto; devuelve un mensaje en español o null si es correcto. */
+/** Error de validación de un reparto: clave i18n + parámetros del mensaje. */
+export interface SplitError {
+  key: string
+  params?: Record<string, number>
+}
+
+/** Valida un reparto; devuelve el error (clave i18n) o null si es correcto. */
 export function validateSplit(
   mode: SplitMode,
   total: number,
   values: (number | null)[],
-): string | null {
-  if (!values.length) return 'Selecciona al menos un participante'
+): SplitError | null {
+  if (!values.length) return { key: 'expenses.split.errors.noParticipants' }
   if (mode === 'equal') return null
-  if (values.some((v) => v == null)) return 'Indica el valor de cada participante'
+  if (values.some((v) => v == null)) return { key: 'expenses.split.errors.missingValues' }
   const sum = sumValues(values)
   const expected = mode === 'amount' ? Math.round(total * 100) / 100 : 100
   if (sum !== expected) {
     return mode === 'amount'
-      ? `Los importes suman ${sum} y el gasto es ${expected}`
-      : `Los porcentajes suman ${sum} y deben sumar 100`
+      ? { key: 'expenses.split.errors.amountSum', params: { sum, expected } }
+      : { key: 'expenses.split.errors.percentSum', params: { sum } }
   }
   return null
 }

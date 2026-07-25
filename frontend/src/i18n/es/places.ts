@@ -1,0 +1,48 @@
+export default {
+  mustSee: 'Imprescindible',
+  form: {
+    newTitle: 'Nuevo sitio',
+    editTitle: 'Editar sitio',
+    addLabel: 'Añadir sitio',
+    location: 'Ubicación',
+    locationPlaceholder: 'Busca un lugar o dirección…',
+    name: 'Nombre',
+    namePlaceholder: 'Fushimi Inari',
+    nameRequired: 'El nombre es obligatorio',
+    category: 'Categoría',
+    lat: 'Latitud',
+    lon: 'Longitud',
+    link: 'Enlace',
+    notes: 'Notas',
+    visited: 'Visitado',
+  },
+  card: {
+    bookingTooltip: 'Reserva: {title}',
+    expenseTooltip: 'Gasto: {description} · {amount}',
+    link: 'enlace',
+    markPending: 'Marcar pendiente',
+    markVisited: 'Marcar visitado',
+  },
+  filters: {
+    searchPlaceholder: 'Buscar…',
+    allCategories: 'Todas las categorías',
+    pending: 'Pendientes',
+    all: 'Todos',
+    visited: 'Visitados',
+  },
+  view: {
+    list: 'Lista',
+    both: 'Ambos',
+    map: 'Mapa',
+  },
+  visitedCount: '{visited}/{total} visitados',
+  empty: {
+    title: 'Sin sitios guardados',
+    subtitle: 'Añade los sitios que quieres ver en este viaje',
+    noMatches: 'Ningún sitio coincide con los filtros',
+  },
+  confirm: {
+    header: 'Eliminar sitio',
+    message: '¿Eliminar "{name}"?',
+  },
+}

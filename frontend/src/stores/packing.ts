@@ -7,6 +7,7 @@ import type {
   PackingSelection,
   PackingTemplate,
 } from '../api/types'
+import { intlLocale } from '../i18n'
 import { useTripResource } from './tripResource'
 
 export type { PackingInput } from '../api/types'
@@ -67,7 +68,7 @@ export const usePackingStore = defineStore('packing', () => {
       traveler_id: travelerId,
     })
     templates.value.push(template)
-    templates.value.sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    templates.value.sort((a, b) => a.name.localeCompare(b.name, intlLocale()))
     await refreshSelections()
     return template
   }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -17,12 +18,14 @@ const props = defineProps<{ trip: Trip; bookings: Booking[] }>()
 const emit = defineEmits<{ edit: [item: ItineraryItem] }>()
 
 const store = useItineraryStore()
+const { locale } = useI18n()
 
+// options en computed: al leer locale aquí, el calendario se re-localiza en caliente
 const calendarOptions = computed<CalendarOptions>(() => ({
   plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
   initialView: 'dayGridMonth',
   initialDate: props.trip.start_date ?? undefined,
-  locale: esLocale,
+  locale: locale.value === 'es' ? esLocale : 'en',
   firstDay: 1,
   headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
   height: 'auto',

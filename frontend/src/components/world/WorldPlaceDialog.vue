@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import type { WorldPlace, WorldPlaceKind } from '../../api/types'
-import { COUNTRY_OPTIONS } from '../../countries'
+import { countryOptions } from '../../countries'
 import { displayName } from '../../utils/worldGrouping'
 import { useWorldPlacesStore } from '../../stores/worldPlaces'
 import { useFormDialog } from '../../composables/useFormDialog'
@@ -30,6 +31,7 @@ const emit = defineEmits<{ saved: [created: boolean] }>()
 
 const visible = defineModel<boolean>('visible', { required: true })
 
+const { t } = useI18n()
 const store = useWorldPlacesStore()
 
 const formName = ref('')
@@ -39,15 +41,15 @@ const formLat = ref<number | null>(null)
 const formLon = ref<number | null>(null)
 const formCountry = ref<string | null>(null)
 
-const kindOptions = [
-  { value: 'city', label: 'Ciudad' },
-  { value: 'place', label: 'Sitio' },
-  { value: 'country', label: 'País' },
-]
+const kindOptions = computed(() => [
+  { value: 'city', label: t('world.kind.city') },
+  { value: 'place', label: t('world.kind.place') },
+  { value: 'country', label: t('world.kind.country') },
+])
 
 const dialogCountryOptions = computed(() => [
-  { code: null as string | null, label: 'Sin país asignado' },
-  ...COUNTRY_OPTIONS.map((o) => ({ code: o.code as string | null, label: o.label })),
+  { code: null as string | null, label: t('world.noCountry') },
+  ...countryOptions().map((o) => ({ code: o.code as string | null, label: o.label })),
 ])
 
 const { saving, save } = useFormDialog({
@@ -70,7 +72,7 @@ const { saving, save } = useFormDialog({
       formCountry.value = props.prefill?.country_code ?? null
     }
   },
-  validate: () => (formName.value.trim() ? null : 'El nombre es obligatorio'),
+  validate: () => (formName.value.trim() ? null : t('world.form.nameRequired')),
   submit() {
     const payload = {
       name: formName.value.trim(),
@@ -92,20 +94,20 @@ const { saving, save } = useFormDialog({
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="place ? 'Editar lugar' : 'Añadir al mapa'"
+    :header="place ? t('world.form.editTitle') : t('world.form.addTitle')"
     width="md"
     :saving="saving"
-    :saveLabel="place ? 'Guardar' : 'Añadir'"
+    :saveLabel="place ? t('common.actions.save') : t('common.actions.add')"
     @save="save"
   >
-    <FormField label="Nombre" required>
+    <FormField :label="t('world.form.name')" required>
       <InputText v-model="formName" autofocus />
     </FormField>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <FormField label="Tipo">
+      <FormField :label="t('world.form.kind')">
         <Select v-model="formKind" :options="kindOptions" optionLabel="label" optionValue="value" />
       </FormField>
-      <FormField v-if="formKind !== 'country'" label="País">
+      <FormField v-if="formKind !== 'country'" :label="t('world.form.country')">
         <Select
           v-model="formCountry"
           :options="dialogCountryOptions"
@@ -115,17 +117,16 @@ const { saving, save } = useFormDialog({
         />
       </FormField>
     </div>
-    <FormField label="Nota">
+    <FormField :label="t('world.form.note')">
       <Textarea
         v-model="formNote"
         rows="3"
         autoResize
-        placeholder="Lo que quieras recordar de este lugar…"
+        :placeholder="t('world.form.notePlaceholder')"
       />
     </FormField>
     <p v-if="place?.auto" class="text-xs text-ink-faint">
-      <i class="pi pi-info-circle" /> Añadido automáticamente desde el viaje
-      "{{ place.origin }}".
+      <i class="pi pi-info-circle" /> {{ t('world.form.autoInfo', { origin: place.origin }) }}
     </p>
   </FormDialog>
 </template>

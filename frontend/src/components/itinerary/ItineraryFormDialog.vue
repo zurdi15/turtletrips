@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import DatePicker from 'primevue/datepicker'
@@ -21,6 +22,7 @@ const props = defineProps<{ item?: ItineraryItem | null; presetDay?: string | nu
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
+const { t } = useI18n()
 const notify = useNotify()
 const store = useItineraryStore()
 const places = usePlacesStore()
@@ -65,8 +67,8 @@ const placeSuggestions = computed(() => {
     geo: r,
   }))
   const groups: { label: string; items: PlaceOption[] }[] = []
-  if (local.length) groups.push({ label: 'Sitios del viaje', items: local })
-  if (geo.length) groups.push({ label: 'Buscar en el mapa', items: geo })
+  if (local.length) groups.push({ label: t('itinerary.form.placeGroupTrip'), items: local })
+  if (geo.length) groups.push({ label: t('itinerary.form.placeGroupMap'), items: geo })
   return groups
 })
 
@@ -89,7 +91,7 @@ async function resolveLinkedPlace(): Promise<number | null> {
         lat: r.lat,
         lon: r.lon,
       })
-      notify.info(`Sitio "${v.label}" añadido a la pestaña Sitios`)
+      notify.info(t('itinerary.form.placeCreated', { name: v.label }))
       return created.id
     }
     return null
@@ -99,12 +101,12 @@ async function resolveLinkedPlace(): Promise<number | null> {
   const existing = places.items.find((p) => p.name.toLowerCase() === text.toLowerCase())
   if (existing) return existing.id
   const created = await places.create({ name: text, category: 'other' })
-  notify.info(`Sitio "${text}" añadido a la pestaña Sitios`)
+  notify.info(t('itinerary.form.placeCreated', { name: text }))
   return created.id
 }
 
 const bookingOptions = computed(() => [
-  { value: null, label: 'Ninguna' },
+  { value: null, label: t('itinerary.form.bookingNone') },
   ...bookings.items.map((b) => ({ value: b.id, label: b.title })),
 ])
 
@@ -140,8 +142,8 @@ const { saving, save } = useFormDialog({
     placeQuery.value = ''
   },
   validate() {
-    if (!title.value.trim()) return 'El título es obligatorio'
-    if (!day.value) return 'El día es obligatorio'
+    if (!title.value.trim()) return t('itinerary.form.titleRequired')
+    if (!day.value) return t('itinerary.form.dayRequired')
     return null
   },
   async submit() {
@@ -164,19 +166,19 @@ const { saving, save } = useFormDialog({
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="item ? 'Editar actividad' : 'Nueva actividad'"
+    :header="item ? t('itinerary.form.headerEdit') : t('itinerary.form.headerNew')"
     :saving="saving"
-    :saveLabel="item ? 'Guardar' : 'Añadir'"
+    :saveLabel="item ? t('common.actions.save') : t('common.actions.add')"
     @save="save"
   >
-    <FormField label="Sitio">
+    <FormField :label="t('itinerary.form.place')">
       <AutoComplete
         v-model="placeValue"
         :suggestions="placeSuggestions"
         optionLabel="label"
         optionGroupLabel="label"
         optionGroupChildren="items"
-        placeholder="Busca un sitio del viaje o un lugar nuevo…"
+        :placeholder="t('itinerary.form.placePlaceholder')"
         fluid
         autofocus
         @complete="onPlaceComplete"
@@ -193,28 +195,28 @@ const { saving, save } = useFormDialog({
       </AutoComplete>
       <template #hint>
         <p class="text-xs text-ink-faint">
-          Los lugares nuevos se añaden automáticamente a la pestaña Sitios.
+          {{ t('itinerary.form.placeHint') }}
         </p>
       </template>
     </FormField>
-    <FormField label="Título" required>
-      <InputText v-model="title" placeholder="Visitar Fushimi Inari" />
+    <FormField :label="t('itinerary.form.title')" required>
+      <InputText v-model="title" :placeholder="t('itinerary.form.titlePlaceholder')" />
     </FormField>
-    <FormField label="Día(s)" required>
-      <DateRangePicker v-model:start="day" v-model:end="endDay" startLabel="Desde" endLabel="Hasta" />
+    <FormField :label="t('itinerary.form.days')" required>
+      <DateRangePicker v-model:start="day" v-model:end="endDay" :startLabel="t('itinerary.form.from')" :endLabel="t('itinerary.form.to')" />
     </FormField>
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Hora inicio">
+      <FormField :label="t('itinerary.form.startTime')">
         <DatePicker v-model="startTime" timeOnly hourFormat="24" />
       </FormField>
-      <FormField label="Hora fin">
+      <FormField :label="t('itinerary.form.endTime')">
         <DatePicker v-model="endTime" timeOnly hourFormat="24" />
       </FormField>
     </div>
     <p class="text-xs text-ink-faint -mt-2">
-      Deja "Hasta" vacío para actividades de un solo día; rellénalo para estancias (p. ej. una ciudad del 3 al 6).
+      {{ t('itinerary.form.rangeHint') }}
     </p>
-    <FormField label="Reserva enlazada">
+    <FormField :label="t('itinerary.form.linkedBooking')">
       <Select
         v-model="bookingId"
         :options="bookingOptions"
@@ -223,7 +225,7 @@ const { saving, save } = useFormDialog({
         filter
       />
     </FormField>
-    <FormField label="Notas">
+    <FormField :label="t('itinerary.form.notes')">
       <Textarea v-model="notes" rows="2" autoResize />
     </FormField>
   </FormDialog>

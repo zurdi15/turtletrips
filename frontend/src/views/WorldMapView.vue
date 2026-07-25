@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -17,7 +18,8 @@ import { api } from '../api/client'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
 import type { GeocodeResult, WorldPlace, WorldPlaceKind } from '../api/types'
-import { COUNTRY_BY_CODE, COUNTRY_OPTIONS, countryName, flagEmoji } from '../countries'
+import { COUNTRY_BY_CODE, countryName, countryOptions, flagEmoji } from '../countries'
+import { intlLocale } from '../i18n'
 import { useWorldPlacesStore } from '../stores/worldPlaces'
 import { useGeocodeSearch } from '../composables/useGeocode'
 import {
@@ -29,6 +31,7 @@ import {
   worldStats,
 } from '../utils/worldGrouping'
 
+const { t } = useI18n()
 const store = useWorldPlacesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
@@ -39,10 +42,13 @@ const selectedId = ref<number | null>(null)
 
 // vista: mapa o lista (funciona en cualquier tamaño de pantalla)
 const viewMode = ref<'map' | 'list'>('map')
-const viewOptions = [
-  { value: 'map', label: 'Mapa', icon: 'pi pi-map' },
-  { value: 'list', label: 'Lista', icon: 'pi pi-list' },
-] as const
+const viewOptions = computed(
+  () =>
+    [
+      { value: 'map', label: t('world.view.map'), icon: 'pi pi-map' },
+      { value: 'list', label: t('world.view.list'), icon: 'pi pi-list' },
+    ] as const,
+)
 
 // filtros (colapsados bajo el botón "Filtros", como en el home)
 const filters = reactive(emptyWorldFilters())
@@ -59,17 +65,17 @@ function clearFilters() {
   Object.assign(filters, emptyWorldFilters())
 }
 
-const kindFilterOptions = [
-  { value: 'all', label: 'Todo' },
-  { value: 'country', label: 'Países' },
-  { value: 'city', label: 'Ciudades' },
-  { value: 'place', label: 'Sitios' },
-]
-const sourceFilterOptions = [
-  { value: 'all', label: 'Cualquier origen' },
-  { value: 'auto', label: 'De viajes' },
-  { value: 'manual', label: 'Añadidos a mano' },
-]
+const kindFilterOptions = computed(() => [
+  { value: 'all', label: t('world.filters.all') },
+  { value: 'country', label: t('world.filters.countries') },
+  { value: 'city', label: t('world.filters.cities') },
+  { value: 'place', label: t('world.filters.places') },
+])
+const sourceFilterOptions = computed(() => [
+  { value: 'all', label: t('world.filters.anySource') },
+  { value: 'auto', label: t('world.filters.fromTrips') },
+  { value: 'manual', label: t('world.filters.manual') },
+])
 
 // alta
 const searchValue = ref<string | GeocodeResult>('')
@@ -90,10 +96,10 @@ const stats = computed(() => worldStats(store.items))
 const countryFilterOptions = computed(() => {
   const codes = new Set(store.items.map((p) => p.country_code).filter((c): c is string => !!c))
   return [
-    { value: 'all', label: 'Todos los países' },
+    { value: 'all', label: t('world.filters.allCountries') },
     ...[...codes]
       .map((code) => ({ value: code, label: `${flagEmoji(code)} ${countryName(code)}` }))
-      .sort((a, b) => a.label.localeCompare(b.label, 'es')),
+      .sort((a, b) => a.label.localeCompare(b.label, intlLocale())),
   ]
 })
 
@@ -123,7 +129,7 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
 
 const countryAddOptions = computed(() => {
   const existing = new Set(store.countries.map((c) => c.country_code))
-  return COUNTRY_OPTIONS.filter((o) => !existing.has(o.code))
+  return countryOptions().filter((o) => !existing.has(o.code))
 })
 
 async function addCountry(code: string | null) {
@@ -139,11 +145,13 @@ async function addCountry(code: string | null) {
       lat: results[0]?.lat ?? null,
       lon: results[0]?.lon ?? null,
     })
-    notify.success(`${flagEmoji(code)} ${countryName(code)} añadido`)
+    notify.success(
+      t('world.toast.countryAdded', { flag: flagEmoji(code), name: countryName(code) }),
+    )
     // esperar al render para que el mapa ya tenga el marcador nuevo
     nextTick(() => mapPanel.value?.fitAll())
   } catch (err) {
-    notify.error('Error al añadir', err)
+    notify.error(t('world.toast.addError'), err)
   } finally {
     addingCountry.value = false
     addCountryCode.value = null
@@ -165,10 +173,10 @@ function onDialogSaved(created: boolean) {
 function removePlace(place: WorldPlace) {
   confirmAction({
     message: place.auto
-      ? `"${displayName(place)}" viene del viaje "${place.origin}". Se ocultará del mapa y no volverá a aparecer.`
-      : `¿Quitar "${displayName(place)}" del mapa?`,
-    header: 'Quitar del mapa',
-    acceptLabel: 'Quitar',
+      ? t('world.confirmRemove.messageAuto', { name: displayName(place), origin: place.origin })
+      : t('world.confirmRemove.messageManual', { name: displayName(place) }),
+    header: t('world.confirmRemove.header'),
+    acceptLabel: t('world.confirmRemove.accept'),
     accept: () => store.remove(place.id),
   })
 }
@@ -177,8 +185,8 @@ function removePlace(place: WorldPlace) {
 <template>
   <div>
     <PageHeader
-      title="Mapa"
-      info="El diario de vuestros viajes: países, ciudades y sitios visitados, con notas. Se rellena solo con los viajes terminados, los sitios marcados como visitados y los sitios con gastos — y puedes añadir lo que quieras a mano."
+      :title="t('world.title')"
+      :info="t('world.info')"
       class="mb-1"
     />
 
@@ -186,16 +194,16 @@ function removePlace(place: WorldPlace) {
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-sm text-ink-muted">
       <span>
         <i class="mdi mdi-earth mr-1" />
-        <span class="font-semibold text-ink">{{ stats.countries }}</span> países
-        <span class="text-ink-faint">({{ stats.worldPct }}% del mundo)</span>
+        <span class="font-semibold text-ink">{{ stats.countries }}</span> {{ t('world.stats.countries') }}
+        <span class="text-ink-faint">{{ t('world.stats.worldPct', { pct: stats.worldPct }) }}</span>
       </span>
       <span>
         <i class="mdi mdi-city-variant-outline mr-1" />
-        <span class="font-semibold text-ink">{{ stats.cities }}</span> ciudades
+        <span class="font-semibold text-ink">{{ stats.cities }}</span> {{ t('world.stats.cities') }}
       </span>
       <span>
         <i class="mdi mdi-map-marker mr-1" />
-        <span class="font-semibold text-ink">{{ stats.places }}</span> sitios
+        <span class="font-semibold text-ink">{{ stats.places }}</span> {{ t('world.stats.places') }}
       </span>
     </div>
 
@@ -205,7 +213,7 @@ function removePlace(place: WorldPlace) {
         v-model="searchValue"
         :suggestions="geoResults"
         optionLabel="display_name"
-        placeholder="Buscar ciudad o sitio para añadir…"
+        :placeholder="t('world.search.placePlaceholder')"
         class="w-full sm:w-80 [&_input]:w-full"
         @complete="(e) => geoSearch(e.query)"
         @item-select="onGeocodeSelect"
@@ -217,7 +225,7 @@ function removePlace(place: WorldPlace) {
         optionValue="code"
         filter
         :loading="addingCountry"
-        placeholder="Marcar país visitado…"
+        :placeholder="t('world.search.countryPlaceholder')"
         class="w-full sm:w-56"
         @update:modelValue="addCountry"
       />
@@ -238,7 +246,7 @@ function removePlace(place: WorldPlace) {
       >
         <InputText
           v-model="filters.searchText"
-          placeholder="Filtrar por nombre, nota o viaje…"
+          :placeholder="t('world.filters.searchPlaceholder')"
           class="w-full sm:w-auto sm:flex-1"
         />
         <Select
@@ -265,7 +273,7 @@ function removePlace(place: WorldPlace) {
         />
         <Button
           v-if="activeFilterCount"
-          label="Limpiar"
+          :label="t('common.actions.clear')"
           icon="pi pi-times"
           text
           severity="secondary"

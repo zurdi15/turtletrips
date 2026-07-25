@@ -37,7 +37,7 @@ describe('byDateDesc', () => {
 })
 
 describe('groupTrips por año', () => {
-  it('agrupa por año descendente con "Sin fecha" al final', () => {
+  it('agrupa por año descendente con el grupo sin fecha al final', () => {
     const groups = groupTrips(
       [
         trip({ id: 1, start_date: '2025-05-01' }),
@@ -47,7 +47,9 @@ describe('groupTrips por año', () => {
       ],
       'year',
     )
-    expect(groups.map((g) => g.key)).toEqual(['2026', '2025', 'Sin fecha'])
+    expect(groups.map((g) => g.key)).toEqual(['2026', '2025', 'no-date'])
+    expect(groups[0].title).toBe('2026')
+    expect(groups[2].titleKey).toBe('trips.groups.noDate')
     expect(groups[0].trips.map((t) => t.id)).toEqual([4, 2])
   })
 })
@@ -63,7 +65,7 @@ describe('groupTrips por estado', () => {
       'status',
     )
     expect(groups.map((g) => g.key)).toEqual(['ongoing', 'planning', 'done'])
-    expect(groups[0].title).toBe('En curso')
+    expect(groups[0].titleKey).toBe('common.tripStatus.ongoing')
   })
 })
 
@@ -89,8 +91,8 @@ describe('pickHeroTrip', () => {
 })
 
 describe('tripDateRange', () => {
-  it('sin fechas', () => {
-    expect(tripDateRange({ start_date: null, end_date: null })).toBe('Sin fechas')
+  it('sin fechas devuelve null (el componente traduce el fallback)', () => {
+    expect(tripDateRange({ start_date: null, end_date: null })).toBeNull()
   })
   it('solo inicio', () => {
     expect(tripDateRange({ start_date: '2026-08-01', end_date: null })).not.toContain('→')

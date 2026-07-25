@@ -50,6 +50,7 @@ Turtle Trips is a **self-hosted, single-user** app to plan your trips: manage yo
 ### And more
 
 - 🗺️ **World map**: a journal of visited countries, cities and places that **fills itself in** from finished trips and lets you add everything from before the app by hand.
+- 🌐 **Multi-language UI** ^^(English and Spanish), switchable from Settings.
 - 📱 **Installable PWA** with app-shell precaching and basic offline support.
 - 💾 **Backups** as a ZIP (database + files) from the app itself, with validated hot restore.
 

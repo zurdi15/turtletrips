@@ -22,27 +22,27 @@ const props = withDefaults(
 
 // enlaces cruzados sitio/reserva/gasto: cada tipo lleva su pestaña, su query
 // de highlight, su icono y su color de dominio
-const META: Record<EntityType, { route: string; query: string; icon: string; color: string; tooltip: string }> = {
+const META: Record<EntityType, { route: string; query: string; icon: string; color: string; tooltipKey: string }> = {
   place: {
     route: 'trip-places',
     query: 'place',
     icon: 'pi pi-map-marker',
     color: 'text-brand',
-    tooltip: 'Ver sitio',
+    tooltipKey: 'common.entityLink.viewPlace',
   },
   booking: {
     route: 'trip-bookings',
     query: 'booking',
     icon: 'pi pi-ticket',
     color: 'text-lodging',
-    tooltip: 'Ver reserva',
+    tooltipKey: 'common.entityLink.viewBooking',
   },
   expense: {
     route: 'trip-expenses',
     query: 'expense',
     icon: 'pi pi-wallet',
     color: 'text-warn',
-    tooltip: 'Ver gasto',
+    tooltipKey: 'common.entityLink.viewExpense',
   },
 }
 
@@ -59,7 +59,7 @@ const to = computed(() => ({
     :to="to"
     class="no-underline"
     :class="[inheritColor ? 'text-inherit' : meta.color, dimmed ? 'opacity-50 hover:opacity-100' : '']"
-    v-tooltip.top="tooltip ?? meta.tooltip"
+    v-tooltip.top="tooltip ?? $t(meta.tooltipKey)"
     @click.stop
   >
     <i :class="[meta.icon, size === '2xs' ? 'text-2xs' : 'text-xs']" />

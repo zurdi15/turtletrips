@@ -38,7 +38,7 @@ function confirmEdit() {
     <button
       class="w-5 h-5 rounded-full shrink-0 ring-1 ring-line hover:scale-110 transition-transform"
       :style="{ background: color ?? colorFallback }"
-      v-tooltip.top="'Cambiar color'"
+      v-tooltip.top="$t('common.actions.changeColor')"
       @click="$emit('pick-color', $event)"
     />
     <template v-if="editing">

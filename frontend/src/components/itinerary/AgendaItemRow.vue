@@ -33,7 +33,7 @@ defineEmits<{ edit: []; remove: [] }>()
         v-if="item.end_day && item.end_day > item.day"
         class="ml-2 text-xs px-1.5 py-0.5 rounded bg-nature-tint text-nature-strong"
       >
-        {{ rangeNights(item) + 1 }} días · hasta el {{ fmtDayShort(item.end_day) }}
+        {{ $t('itinerary.agenda.rangeBadge', { n: rangeNights(item) + 1, date: fmtDayShort(item.end_day) }) }}
       </span>
       <!-- enlaces compactos: solo icono, el detalle vive en el tooltip -->
       <EntityLink
@@ -41,7 +41,7 @@ defineEmits<{ edit: []; remove: [] }>()
         type="place"
         :tripId="tripId"
         :targetId="item.place_id"
-        :tooltip="`Sitio: ${placeName}`"
+        :tooltip="$t('itinerary.agenda.placeTooltip', { name: placeName })"
         class="ml-2"
       />
       <EntityLink
@@ -49,7 +49,7 @@ defineEmits<{ edit: []; remove: [] }>()
         type="booking"
         :tripId="tripId"
         :targetId="item.booking_id"
-        :tooltip="`Reserva: ${bookingTitle}`"
+        :tooltip="$t('itinerary.agenda.bookingTooltip', { name: bookingTitle })"
         class="ml-2"
       />
       <EntityLink

@@ -71,7 +71,7 @@ defineProps<{ trip: Trip; bannerImage: string | null }>()
           outlined
           size="small"
           class="tt-banner-btn"
-          v-tooltip.bottom="'Álbum de fotos'"
+          v-tooltip.bottom="$t('trips.header.album')"
         />
       </div>
     </div>

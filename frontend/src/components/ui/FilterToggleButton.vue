@@ -7,7 +7,7 @@ const open = defineModel<boolean>({ required: true })
 
 <template>
   <Button
-    label="Filtros"
+    :label="$t('common.actions.filters')"
     :icon="open ? 'pi pi-chevron-up' : 'pi pi-sliders-h'"
     severity="secondary"
     :outlined="!open && !count"

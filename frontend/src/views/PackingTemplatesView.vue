@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -20,6 +21,7 @@ const store = usePackingTemplatesStore()
 const categories = useCategoriesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
+const { t } = useI18n()
 
 const renaming = ref(false)
 const renameValue = ref('')
@@ -46,7 +48,7 @@ async function createTemplate(name: string) {
     const template = await store.create(name)
     await store.select(template.id)
   } catch (err) {
-    notify.error('Error al crear', err)
+    notify.error(t('packing.toast.createError'), err)
   }
 }
 
@@ -56,15 +58,15 @@ async function confirmRename() {
     await store.rename(store.detail.id, renameValue.value.trim())
     renaming.value = false
   } catch (err) {
-    notify.error('Error al renombrar', err)
+    notify.error(t('packing.toast.renameError'), err)
   }
 }
 
 function removeTemplate() {
   if (!store.detail) return
   confirmAction({
-    message: `¿Eliminar la plantilla "${store.detail.name}"? Las maletas ya aplicadas en viajes no se tocan.`,
-    header: 'Eliminar plantilla',
+    message: t('packing.confirmRemoveTemplate.message', { name: store.detail.name }),
+    header: t('packing.confirmRemoveTemplate.header'),
     accept: () => store.remove(store.detail!.id),
   })
 }
@@ -74,7 +76,7 @@ async function addItem(payload: { name: string; category: string; url: string | 
   try {
     await store.addItem(payload)
   } catch (err) {
-    notify.error('Error al añadir', err)
+    notify.error(t('packing.toast.addError'), err)
     throw err // PackingAddBar conserva el texto si falla
   }
 }
@@ -87,8 +89,8 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
 <template>
   <div>
     <PageHeader
-      title="Maletas"
-      info="Plantillas de maleta reutilizables. Al aplicarlas en un viaje se copian: puedes modificar la maleta del viaje sin tocar la plantilla, y desde el viaje también puedes guardar los cambios de vuelta a la plantilla."
+      :title="$t('packing.templatesView.title')"
+      :info="$t('packing.templatesView.info')"
       class="mb-5"
     />
 
@@ -107,8 +109,8 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
         <EmptyState
           v-if="!store.detail"
           icon="pi pi-briefcase"
-          title="Elige una plantilla"
-          subtitle="Selecciona una maleta de la lista o crea una nueva para editar su contenido"
+          :title="$t('packing.templatesView.empty.title')"
+          :subtitle="$t('packing.templatesView.empty.subtitle')"
         />
         <div v-else class="bg-surface rounded-card border border-line p-5">
           <div class="flex items-center gap-2 mb-4">
@@ -130,7 +132,7 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
                 text
                 size="small"
                 severity="secondary"
-                v-tooltip.top="'Renombrar'"
+                v-tooltip.top="$t('packing.templatesView.rename')"
                 @click="renaming = true; renameValue = store.detail.name"
               />
               <Button
@@ -138,21 +140,21 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
                 text
                 size="small"
                 severity="danger"
-                v-tooltip.top="'Eliminar plantilla'"
+                v-tooltip.top="$t('packing.confirmRemoveTemplate.header')"
                 @click="removeTemplate"
               />
             </template>
           </div>
 
           <PackingAddBar
-            placeholder="Añadir elemento…"
+            :placeholder="$t('packing.templatesView.addItemPlaceholder')"
             :categoryOptions="categoryOptions"
             :onAdd="addItem"
             class="mb-4"
           />
 
           <p v-if="!store.detail.items.length" class="text-sm text-ink-faint py-4 text-center">
-            Plantilla vacía: añade elementos aquí o guárdala desde la maleta de un viaje.
+            {{ $t('packing.templatesView.emptyTemplate') }}
           </p>
 
           <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">

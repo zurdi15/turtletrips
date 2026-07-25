@@ -27,9 +27,9 @@ const { saving, save } = useFormDialog({
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="trip ? 'Editar viaje' : 'Nuevo viaje'"
+    :header="trip ? $t('trips.dialog.editTitle') : $t('trips.actions.newTrip')"
     :saving="saving"
-    :saveLabel="trip ? 'Guardar' : 'Crear viaje'"
+    :saveLabel="trip ? $t('common.actions.save') : $t('trips.actions.createTrip')"
     @save="save"
   >
     <TripForm v-if="visible" ref="formRef" :trip="trip" autofocus />

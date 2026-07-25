@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import ClusterBtn from '../../components/ui/ClusterBtn.vue'
 import draggable from 'vuedraggable'
@@ -35,16 +36,20 @@ import {
 } from '../../utils/itinerary'
 
 const props = defineProps<{ trip: Trip }>()
+const { t } = useI18n()
 const store = useItineraryStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
 const expenses = useExpensesStore()
 
 const view = ref<'agenda' | 'calendar'>('agenda')
-const viewOptions = [
-  { value: 'agenda', label: 'Agenda', icon: 'pi pi-list' },
-  { value: 'calendar', label: 'Calendario', icon: 'pi pi-calendar' },
-] as const
+const viewOptions = computed(
+  () =>
+    [
+      { value: 'agenda', label: t('itinerary.view.agenda'), icon: 'pi pi-list' },
+      { value: 'calendar', label: t('itinerary.view.calendar'), icon: 'pi pi-calendar' },
+    ] as const,
+)
 
 const showSubscribe = ref(false)
 const presetDay = ref<string | null>(null)
@@ -103,7 +108,7 @@ function persistOrder() {
 }
 
 function dayLabel(iso: string): { title: string; sub: string } {
-  return agendaDayLabel(iso, props.trip.start_date)
+  return agendaDayLabel(iso, props.trip.start_date, t)
 }
 
 function placeName(id: number | null): string | null {
@@ -117,7 +122,7 @@ function bookingTitle(id: number | null): string | null {
 function transportRows(day: string): AgendaRow[] {
   return (transportsByDay.value.get(day) ?? []).map((e) => ({
     key: `t-${e.b.id}-${e.arrival ? 'a' : 's'}`,
-    head: transportHead(e),
+    head: transportHead(e, t),
     label: transportLabel(e),
     bookingId: e.b.id,
     placeId: e.b.place_id,
@@ -128,7 +133,7 @@ function transportRows(day: string): AgendaRow[] {
 function otherBookingRows(day: string): AgendaRow[] {
   return (otherBookingsByDay.value.get(day) ?? []).map((b) => ({
     key: `o-${b.id}`,
-    head: bookingHead(b),
+    head: bookingHead(b, t),
     label: b.title,
     bookingId: b.id,
     placeId: b.place_id,
@@ -140,7 +145,7 @@ function otherBookingRows(day: string): AgendaRow[] {
 function lodgingRows(day: string): AgendaRow[] {
   return (lodgingByDay.value.get(day) ?? []).map((b) => ({
     key: `l-${b.id}`,
-    head: lodgingHead(b, day),
+    head: lodgingHead(b, day, t),
     label: b.title,
     bookingId: b.id,
     placeId: b.place_id,
@@ -150,8 +155,8 @@ function lodgingRows(day: string): AgendaRow[] {
 
 const crud = useCrudView<ItineraryItem>({
   confirm: (item) => ({
-    message: `¿Eliminar "${item.title}" del itinerario?`,
-    header: 'Eliminar actividad',
+    message: t('itinerary.confirm.message', { title: item.title }),
+    header: t('itinerary.confirm.header'),
   }),
   remove: (item) => store.remove(item.id),
 })
@@ -167,25 +172,25 @@ function openNew(day?: string) {
 <template>
   <div>
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <Button label="Nueva actividad" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew()" />
+      <Button :label="t('itinerary.actions.newActivity')" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew()" />
       <span class="hidden sm:block flex-1" />
       <ClusterBtn v-model="view" :options="viewOptions" class="flex-1 sm:flex-none" />
       <a :href="icsUrl" download>
         <Button
-          label="Exportar"
+          :label="t('itinerary.actions.export')"
           icon="pi pi-calendar-plus"
           severity="secondary"
           outlined
-          v-tooltip.bottom="'Descargar calendario (.ics)'"
+          v-tooltip.bottom="t('itinerary.actions.exportTooltip')"
           class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
         />
       </a>
       <Button
-        label="Suscribirse"
+        :label="t('itinerary.actions.subscribe')"
         icon="mdi mdi-calendar-sync"
         severity="secondary"
         outlined
-        v-tooltip.bottom="'URL de suscripción: tu calendario se actualiza solo'"
+        v-tooltip.bottom="t('itinerary.actions.subscribeTooltip')"
         class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
         @click="showSubscribe = true"
       />
@@ -200,10 +205,10 @@ function openNew(day?: string) {
     <EmptyState
       v-else-if="!store.loading && !store.items.length && !days.length"
       icon="pi pi-calendar"
-      title="Sin itinerario"
-      subtitle="Define las fechas del viaje o añade una actividad para empezar"
+      :title="t('itinerary.empty.title')"
+      :subtitle="t('itinerary.empty.subtitle')"
     >
-      <Button label="Nueva actividad" icon="pi pi-plus" @click="openNew()" />
+      <Button :label="t('itinerary.actions.newActivity')" icon="pi pi-plus" @click="openNew()" />
     </EmptyState>
 
     <div v-else-if="view === 'agenda'" class="tt-stagger flex flex-col gap-4">
@@ -222,7 +227,7 @@ function openNew(day?: string) {
             text
             size="small"
             severity="secondary"
-            v-tooltip.left="'Añadir a este día'"
+            v-tooltip.left="t('itinerary.agenda.addToDay')"
             @click="openNew(day)"
           />
         </div>
@@ -230,7 +235,7 @@ function openNew(day?: string) {
         <AgendaBookingSection
           v-if="transportRows(day).length"
           tone="info"
-          title="Transporte"
+          :title="t('itinerary.agenda.transport')"
           icon="mdi mdi-plane-train"
           :tripId="trip.id"
           :rows="transportRows(day)"
@@ -240,7 +245,7 @@ function openNew(day?: string) {
         <AgendaBookingSection
           v-if="otherBookingRows(day).length"
           tone="warn"
-          title="Reservas"
+          :title="t('itinerary.agenda.bookings')"
           icon="mdi mdi-ticket-outline"
           :tripId="trip.id"
           :rows="otherBookingRows(day)"
@@ -273,14 +278,14 @@ function openNew(day?: string) {
           @click="openEdit(cont)"
         >
           <i class="pi pi-arrow-down-right text-xs w-4 text-center" />
-          <span class="w-24 shrink-0 text-xs">sigue</span>
+          <span class="w-24 shrink-0 text-xs">{{ t('itinerary.agenda.continues') }}</span>
           <span class="italic">{{ cont.title }}</span>
         </div>
         <!-- dónde se duerme esa noche: sección propia al pie del día -->
         <AgendaBookingSection
           v-if="lodgingRows(day).length"
           tone="lodging"
-          title="Alojamiento"
+          :title="t('itinerary.agenda.lodging')"
           icon="mdi mdi-bed"
           :tripId="trip.id"
           :rows="lodgingRows(day)"
@@ -296,7 +301,7 @@ function openNew(day?: string) {
           "
           class="px-4 pb-3 pt-1 text-xs text-ink-disabled"
         >
-          Sin actividades
+          {{ t('itinerary.agenda.noActivities') }}
         </p>
       </div>
     </div>

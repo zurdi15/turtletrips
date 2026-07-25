@@ -1,12 +1,11 @@
 services:
-  tt:
-    build: .
-    container_name: tt
+  turtletrips:
+    container_name: turtletrips
+    image: ghcr.io/turtletrips/turtletrips:latest
     ports:
       - 8000:8000
     volumes:
-      # base de datos + ficheros subidos juntos: un único directorio que respaldar
-      - /path/to/data:/data
+      - ./data:/data
     environment:
       - TT_DEFAULT_CURRENCY=EUR
       # - TT_NOMINATIM_URL=https://nominatim.openstreetmap.org

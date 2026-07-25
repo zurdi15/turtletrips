@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import type { Booking, Expense, Place } from '../../api/types'
-import { PLACE_CATEGORY_ICONS, PLACE_CATEGORY_LABELS } from '../../constants'
+import { PLACE_CATEGORY_ICONS, PLACE_CATEGORY_KEYS } from '../../constants'
 import { PLACE_CATEGORY_COLORS } from '../../theme'
 import { formatMoney } from '../../composables/useMoney'
+
+const { t } = useI18n()
 
 defineProps<{
   place: Place
@@ -46,10 +49,10 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
           <i
             v-if="place.priority > 0"
             class="pi pi-star-fill text-amber-400 text-xs"
-            v-tooltip.top="'Imprescindible'"
+            v-tooltip.top="t('places.mustSee')"
           />
           <Tag
-            :value="PLACE_CATEGORY_LABELS[place.category]"
+            :value="t(PLACE_CATEGORY_KEYS[place.category])"
             :style="{
               background: `${PLACE_CATEGORY_COLORS[place.category]}20`,
               color: PLACE_CATEGORY_COLORS[place.category],
@@ -65,7 +68,7 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
               type="booking"
               :tripId="tripId"
               :targetId="b.id"
-              :tooltip="`Reserva: ${b.title}`"
+              :tooltip="t('places.card.bookingTooltip', { title: b.title })"
             />
             <EntityLink
               v-for="e in expenses"
@@ -73,7 +76,12 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
               type="expense"
               :tripId="tripId"
               :targetId="e.id"
-              :tooltip="`Gasto: ${e.description} · ${formatMoney(e.amount_base, baseCurrency)}`"
+              :tooltip="
+                t('places.card.expenseTooltip', {
+                  description: e.description,
+                  amount: formatMoney(e.amount_base, baseCurrency),
+                })
+              "
             />
           </span>
         </div>
@@ -86,7 +94,7 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
           class="text-xs text-info hover:underline"
           @click.stop
         >
-          <i class="pi pi-external-link text-3xs" /> enlace
+          <i class="pi pi-external-link text-3xs" /> {{ t('places.card.link') }}
         </a>
       </div>
       <!-- .stop: las acciones no deben seleccionar la tarjeta -->
@@ -98,7 +106,9 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
               :severity="place.visited ? 'success' : 'secondary'"
               text
               size="small"
-              v-tooltip.top="place.visited ? 'Marcar pendiente' : 'Marcar visitado'"
+              v-tooltip.top="
+                place.visited ? t('places.card.markPending') : t('places.card.markVisited')
+              "
               @click="$emit('toggle-visited')"
             />
           </template>

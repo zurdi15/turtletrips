@@ -1,10 +1,10 @@
 import type { WorldPlace, WorldPlaceKind } from '../api/types'
 import { COUNTRIES, countryName, flagEmoji } from '../countries'
 
-export const KIND_LABELS: Record<WorldPlaceKind, string> = {
-  country: 'País',
-  city: 'Ciudad',
-  place: 'Sitio',
+export const KIND_KEYS: Record<WorldPlaceKind, string> = {
+  country: 'world.kind.country',
+  city: 'world.kind.city',
+  place: 'world.kind.place',
 }
 
 export { KIND_COLORS } from '../theme'
@@ -47,7 +47,8 @@ export function filterWorldPlaces(items: WorldPlace[], f: WorldFilterState): Wor
 
 export interface CountryGroup {
   code: string | null
-  title: string
+  /** null = sin país asignado; el componente lo traduce (world.noCountry) */
+  title: string | null
   flag: string
   entry: WorldPlace | null
   children: WorldPlace[]
@@ -62,7 +63,7 @@ export function groupByCountry(filtered: WorldPlace[]): CountryGroup[] {
     if (!group) {
       group = {
         code,
-        title: code ? countryName(code) : 'Sin país asignado',
+        title: code ? countryName(code) : null,
         flag: code ? flagEmoji(code) : '🌐',
         entry: null,
         children: [],
@@ -86,7 +87,7 @@ export function groupByCountry(filtered: WorldPlace[]): CountryGroup[] {
   return [...byCode.values()].sort((a, b) => {
     if (a.code === null) return 1
     if (b.code === null) return -1
-    return a.title.localeCompare(b.title, 'es')
+    return (a.title ?? '').localeCompare(b.title ?? '', 'es')
   })
 }
 
@@ -107,9 +108,11 @@ export function worldStats(items: WorldPlace[], totalCountries = COUNTRIES.lengt
   }
 }
 
-/** Deduce el país a partir del display_name de Nominatim ("…, España"). */
+/** Deduce el país a partir del display_name de Nominatim ("…, España" o "…, Spain"). */
 export function inferCountryCode(displayNameResult: string): string | null {
   const last = displayNameResult.split(',').pop()?.trim().toLowerCase()
   if (!last) return null
-  return COUNTRIES.find((c) => c.es.toLowerCase() === last)?.code ?? null
+  return (
+    COUNTRIES.find((c) => c.es.toLowerCase() === last || c.en.toLowerCase() === last)?.code ?? null
+  )
 }

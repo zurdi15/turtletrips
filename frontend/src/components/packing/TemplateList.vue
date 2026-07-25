@@ -36,13 +36,13 @@ function create() {
         </button>
       </li>
       <li v-if="!templates.length && !loading" class="text-sm text-ink-faint px-3 py-2">
-        Sin plantillas todavía
+        {{ $t('packing.templates.empty') }}
       </li>
     </ul>
     <div class="flex gap-2">
       <InputText
         v-model="newName"
-        placeholder="Nueva plantilla…"
+        :placeholder="$t('packing.templates.newPlaceholder')"
         class="flex-1"
         size="small"
         @keyup.enter="create"

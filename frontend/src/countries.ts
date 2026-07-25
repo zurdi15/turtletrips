@@ -1,3 +1,5 @@
+import { currentLocale, intlLocale } from './i18n'
+
 export interface Country {
   code: string // ISO 3166-1 alpha-2
   es: string // nombre en español (UI)
@@ -210,15 +212,22 @@ export const COUNTRIES: Country[] = [
 
 export const COUNTRY_BY_CODE = new Map(COUNTRIES.map((c) => [c.code, c]))
 
+/** Nombre en el idioma activo (leído dentro de un computed es reactivo) */
 export function countryName(code: string): string {
-  return COUNTRY_BY_CODE.get(code)?.es ?? code
+  const country = COUNTRY_BY_CODE.get(code)
+  if (!country) return code
+  return currentLocale() === 'es' ? country.es : country.en
 }
 
 export function countryLabel(code: string): string {
   return `${flagEmoji(code)} ${countryName(code)}`
 }
 
-export const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({
-  code: c.code,
-  label: `${flagEmoji(c.code)} ${c.es}`,
-})).sort((a, b) => a.label.localeCompare(b.label, 'es'))
+/** Opciones ordenadas según el idioma activo; envolver en computed en los consumidores */
+export function countryOptions() {
+  const locale = intlLocale()
+  return COUNTRIES.map((c) => ({
+    code: c.code,
+    label: countryLabel(c.code),
+  })).sort((a, b) => a.label.localeCompare(b.label, locale))
+}

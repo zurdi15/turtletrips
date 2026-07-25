@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch, TransitionGroup } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -12,6 +13,7 @@ import { formatDate, formatMoney } from '../../composables/useMoney'
 import { useNotify } from '../../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
+const { t } = useI18n()
 const store = useExpensesStore()
 const trips = useTripsStore()
 const notify = useNotify()
@@ -32,11 +34,13 @@ async function settle(transfer: SettlementTransfer) {
       to_id: transfer.to_id,
       amount_base: transfer.amount_base,
     })
-    notify.success(`Pago registrado: ${transfer.from_name} → ${transfer.to_name}`)
+    notify.success(
+      t('expenses.balances.toastSettled', { from: transfer.from_name, to: transfer.to_name }),
+    )
     // refresca la pill de "deudas saldadas" del viaje
     await trips.loadTrip(props.trip.id)
   } catch (err) {
-    notify.error('Error al liquidar', err)
+    notify.error(t('expenses.balances.settleError'), err)
   } finally {
     settling.value = false
   }
@@ -48,7 +52,7 @@ async function undo(settlementId: number) {
     await store.unsettle(settlementId)
     await trips.loadTrip(props.trip.id)
   } catch (err) {
-    notify.error('Error al deshacer', err)
+    notify.error(t('expenses.balances.undoError'), err)
   } finally {
     settling.value = false
   }
@@ -58,19 +62,27 @@ async function undo(settlementId: number) {
 <template>
   <div v-if="data" class="flex flex-col gap-4">
     <Message v-if="data.unassigned_count > 0" severity="warn" size="small">
-      {{ data.unassigned_count }}
-      {{ data.unassigned_count === 1 ? 'gasto sin pagador' : 'gastos sin pagador' }}
-      ({{ money(data.unassigned_total_base) }}) no se incluyen en los saldos.
+      {{
+        $t(
+          'expenses.balances.unassignedWarning',
+          { n: data.unassigned_count, amount: money(data.unassigned_total_base) },
+          data.unassigned_count,
+        )
+      }}
     </Message>
     <p v-if="data.common_count > 0" class="text-xs text-ink-faint flex items-center gap-1.5">
       <i class="pi pi-wallet" />
-      {{ data.common_count }}
-      {{ data.common_count === 1 ? 'gasto pagado' : 'gastos pagados' }} del fondo común
-      ({{ money(data.common_total_base) }}): cuentan en los totales pero no generan deudas.
+      {{
+        $t(
+          'expenses.balances.commonInfo',
+          { n: data.common_count, amount: money(data.common_total_base) },
+          data.common_count,
+        )
+      }}
     </p>
 
     <p v-if="!data.balances.length" class="text-center text-sm text-ink-faint py-10">
-      Añade viajeros al viaje y asigna pagadores a los gastos para ver los saldos.
+      {{ $t('expenses.balances.empty') }}
     </p>
 
     <template v-else>
@@ -80,24 +92,24 @@ async function undo(settlementId: number) {
         size="small"
         class="bg-surface rounded-card overflow-hidden border border-line"
       >
-        <Column header="Viajero">
+        <Column :header="$t('expenses.balances.columns.traveler')">
           <template #body="{ data: b }">
             <MemberChip
               :member="{ id: b.traveler_id, name: b.name, color: b.color }"
             />
           </template>
         </Column>
-        <Column header="Ha pagado">
+        <Column :header="$t('expenses.balances.columns.paid')">
           <template #body="{ data: b }">
             <span class="tabular-nums">{{ money(b.paid_base) }}</span>
           </template>
         </Column>
-        <Column header="Le corresponde">
+        <Column :header="$t('expenses.balances.columns.owed')">
           <template #body="{ data: b }">
             <span class="tabular-nums">{{ money(b.owed_base) }}</span>
           </template>
         </Column>
-        <Column header="Saldo">
+        <Column :header="$t('expenses.balances.columns.net')">
           <template #body="{ data: b }">
             <span
               class="font-semibold tabular-nums"
@@ -116,13 +128,13 @@ async function undo(settlementId: number) {
         class="tt-pop-in rounded-card border border-emerald-200 bg-brand-tint p-4 flex items-center gap-2 text-brand-strong font-medium"
       >
         <i class="pi pi-check-circle" />
-        Deudas saldadas
+        {{ $t('expenses.balances.settled') }}
       </div>
 
       <div v-else class="bg-surface rounded-card border border-line p-4">
-        <h3 class="text-sm font-semibold text-ink mb-3">Liquidación sugerida</h3>
+        <h3 class="text-sm font-semibold text-ink mb-3">{{ $t('expenses.balances.suggestedTitle') }}</h3>
         <p v-if="!data.settlements.length" class="text-sm text-ink-faint flex items-center gap-1.5">
-          <i class="pi pi-check-circle text-emerald-500" /> Todo cuadra: nadie debe nada.
+          <i class="pi pi-check-circle text-emerald-500" /> {{ $t('expenses.balances.allSquare') }}
         </p>
         <TransitionGroup v-else tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li
@@ -135,12 +147,12 @@ async function undo(settlementId: number) {
             <span class="font-medium">{{ t.to_name }}</span>
             <span class="ml-auto font-semibold tabular-nums">{{ money(t.amount_base) }}</span>
             <Button
-              label="Liquidar"
+              :label="$t('expenses.balances.settle')"
               icon="pi pi-check"
               size="small"
               outlined
               :loading="settling"
-              v-tooltip.left="'Marcar este pago como hecho'"
+              v-tooltip.left="$t('expenses.balances.settleTooltip')"
               @click="settle(t)"
             />
           </li>
@@ -148,7 +160,7 @@ async function undo(settlementId: number) {
       </div>
 
       <div v-if="data.paid_settlements.length" class="bg-surface rounded-card border border-line p-4">
-        <h3 class="text-sm font-semibold text-ink mb-3">Pagos registrados</h3>
+        <h3 class="text-sm font-semibold text-ink mb-3">{{ $t('expenses.balances.paymentsTitle') }}</h3>
         <TransitionGroup tag="ul" name="tt-list" class="relative flex flex-col gap-2">
           <li
             v-for="s in data.paid_settlements"
@@ -167,7 +179,7 @@ async function undo(settlementId: number) {
               text
               severity="secondary"
               :loading="settling"
-              v-tooltip.left="'Deshacer este pago'"
+              v-tooltip.left="$t('expenses.balances.undoTooltip')"
               @click="undo(s.id)"
             />
           </li>

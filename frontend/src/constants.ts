@@ -1,10 +1,11 @@
 import type { BookingType, PlaceCategory, TripStatus } from './api/types'
 
-export const TRIP_STATUS_LABELS: Record<TripStatus, string> = {
-  planning: 'Planificando',
-  upcoming: 'Próximo',
-  ongoing: 'En curso',
-  done: 'Terminado',
+// Claves i18n (common.*) de los enums de la API; traducir con t(...KEYS[valor])
+export const TRIP_STATUS_KEYS: Record<TripStatus, string> = {
+  planning: 'common.tripStatus.planning',
+  upcoming: 'common.tripStatus.upcoming',
+  ongoing: 'common.tripStatus.ongoing',
+  done: 'common.tripStatus.done',
 }
 
 export const TRIP_STATUS_SEVERITY: Record<TripStatus, string> = {
@@ -14,17 +15,17 @@ export const TRIP_STATUS_SEVERITY: Record<TripStatus, string> = {
   done: 'secondary',
 }
 
-export const PLACE_CATEGORY_LABELS: Record<PlaceCategory, string> = {
-  city: 'Ciudad',
-  town: 'Pueblo',
-  sight: 'Monumento',
-  food: 'Comida',
-  museum: 'Museo',
-  nature: 'Naturaleza',
-  viewpoint: 'Mirador',
-  shopping: 'Compras',
-  lodging: 'Alojamiento',
-  other: 'Otro',
+export const PLACE_CATEGORY_KEYS: Record<PlaceCategory, string> = {
+  city: 'common.placeCategory.city',
+  town: 'common.placeCategory.town',
+  sight: 'common.placeCategory.sight',
+  food: 'common.placeCategory.food',
+  museum: 'common.placeCategory.museum',
+  nature: 'common.placeCategory.nature',
+  viewpoint: 'common.placeCategory.viewpoint',
+  shopping: 'common.placeCategory.shopping',
+  lodging: 'common.placeCategory.lodging',
+  other: 'common.placeCategory.other',
 }
 
 export const PLACE_CATEGORY_ICONS: Record<PlaceCategory, string> = {
@@ -40,15 +41,15 @@ export const PLACE_CATEGORY_ICONS: Record<PlaceCategory, string> = {
   other: 'pi pi-map-marker',
 }
 
-export const BOOKING_TYPE_LABELS: Record<BookingType, string> = {
-  hotel: 'Hotel',
-  flight: 'Vuelo',
-  train: 'Tren',
-  bus: 'Bus',
-  ferry: 'Ferry',
-  car_rental: 'Coche de alquiler',
-  activity: 'Actividad',
-  other: 'Otro',
+export const BOOKING_TYPE_KEYS: Record<BookingType, string> = {
+  hotel: 'common.bookingType.hotel',
+  flight: 'common.bookingType.flight',
+  train: 'common.bookingType.train',
+  bus: 'common.bookingType.bus',
+  ferry: 'common.bookingType.ferry',
+  car_rental: 'common.bookingType.car_rental',
+  activity: 'common.bookingType.activity',
+  other: 'common.bookingType.other',
 }
 
 // reservas que son desplazamientos (cabecera azul en la agenda, día de salida)
@@ -77,6 +78,10 @@ export const CURRENCIES = [
   'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'ZAR',
 ]
 
-export function toSelectOptions<T extends string>(labels: Record<T, string>) {
-  return (Object.entries(labels) as [T, string][]).map(([value, label]) => ({ value, label }))
+/** Opciones para selects a partir de un mapa de claves i18n (t traduce el label) */
+export function toSelectOptions<T extends string>(
+  keys: Record<T, string>,
+  t: (key: string) => string,
+) {
+  return (Object.entries(keys) as [T, string][]).map(([value, key]) => ({ value, label: t(key) }))
 }

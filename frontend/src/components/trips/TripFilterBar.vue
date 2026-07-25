@@ -22,7 +22,7 @@ const country = defineModel<string>('country', { required: true })
   <div class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3">
     <InputText
       v-model="search"
-      placeholder="Buscar viaje o país…"
+      :placeholder="$t('trips.filters.searchPlaceholder')"
       class="w-full sm:w-auto sm:flex-1"
     />
     <Select
@@ -42,7 +42,7 @@ const country = defineModel<string>('country', { required: true })
     />
     <Button
       v-if="activeCount"
-      label="Limpiar"
+      :label="$t('common.actions.clear')"
       icon="pi pi-times"
       text
       severity="secondary"

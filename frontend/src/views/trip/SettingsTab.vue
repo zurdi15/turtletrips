@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import TripForm from '../../components/trips/TripForm.vue'
@@ -10,6 +11,7 @@ import { useNotify } from '../../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
 
+const { t } = useI18n()
 const router = useRouter()
 const store = useTripsStore()
 const notify = useNotify()
@@ -27,9 +29,9 @@ async function save() {
   saving.value = true
   try {
     await formRef.value!.submit()
-    notify.success('Viaje actualizado')
+    notify.success(t('trips.toast.updated'))
   } catch (err) {
-    notify.error('Error al guardar', err)
+    notify.error(t('trips.toast.saveError'), err)
   } finally {
     saving.value = false
   }
@@ -37,11 +39,11 @@ async function save() {
 
 function removeTrip() {
   confirmAction({
-    message: `¿Eliminar "${props.trip.name}" con todos sus datos y ficheros?`,
-    header: 'Eliminar viaje',
+    message: t('trips.settings.confirmDelete', { name: props.trip.name }),
+    header: t('trips.settings.deleteTrip'),
     accept: async () => {
       await store.deleteTrip(props.trip.id)
-      notify.success('Viaje eliminado')
+      notify.success(t('trips.toast.deleted'))
       router.push('/')
     },
   })
@@ -51,22 +53,23 @@ function removeTrip() {
 <template>
   <div class="max-w-3xl mx-auto flex flex-col gap-6">
     <section class="bg-surface rounded-card border border-line p-4 sm:p-6">
-      <h3 class="text-sm font-semibold text-ink-secondary mb-4">Datos del viaje</h3>
+      <h3 class="text-sm font-semibold text-ink-secondary mb-4">
+        {{ t('trips.settings.dataTitle') }}
+      </h3>
       <TripForm ref="formRef" :key="trip.id" :trip="trip" />
       <div class="flex justify-end mt-5">
-        <Button label="Guardar cambios" icon="pi pi-check" :loading="saving" @click="save" />
+        <Button :label="t('trips.settings.saveChanges')" icon="pi pi-check" :loading="saving" @click="save" />
       </div>
     </section>
 
     <!-- rojos stock: los tonos danger son invariantes al modo -->
     <section class="rounded-card border border-red-500/40 p-4 sm:p-6">
-      <h3 class="text-sm font-semibold text-red-600 mb-1">Zona de peligro</h3>
+      <h3 class="text-sm font-semibold text-red-600 mb-1">{{ t('trips.settings.dangerZone') }}</h3>
       <p class="text-sm text-ink-muted mb-4">
-        Eliminar el viaje borra también sus sitios, itinerario, reservas, gastos, maletas y
-        ficheros. No se puede deshacer.
+        {{ t('trips.settings.dangerHint') }}
       </p>
       <Button
-        label="Eliminar viaje"
+        :label="t('trips.settings.deleteTrip')"
         icon="pi pi-trash"
         severity="danger"
         outlined

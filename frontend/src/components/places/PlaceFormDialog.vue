@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
@@ -9,7 +10,7 @@ import Checkbox from 'primevue/checkbox'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import type { GeocodeResult, Place, PlaceCategory } from '../../api/types'
-import { PLACE_CATEGORY_LABELS, toSelectOptions } from '../../constants'
+import { PLACE_CATEGORY_KEYS, toSelectOptions } from '../../constants'
 import { usePlacesStore } from '../../stores/places'
 import { useFormDialog } from '../../composables/useFormDialog'
 import { useGeocodeSearch } from '../../composables/useGeocode'
@@ -18,6 +19,7 @@ const props = defineProps<{ place?: Place | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const emit = defineEmits<{ saved: [] }>()
 
+const { t } = useI18n()
 const store = usePlacesStore()
 const { results, search } = useGeocodeSearch()
 
@@ -32,7 +34,7 @@ const notes = ref('')
 const mustSee = ref(false)
 const visited = ref(false)
 
-const categoryOptions = toSelectOptions(PLACE_CATEGORY_LABELS)
+const categoryOptions = computed(() => toSelectOptions(PLACE_CATEGORY_KEYS, t))
 
 const { saving, save } = useFormDialog({
   visible,
@@ -49,7 +51,7 @@ const { saving, save } = useFormDialog({
     mustSee.value = (p?.priority ?? 0) > 0
     visited.value = p?.visited ?? false
   },
-  validate: () => (name.value.trim() ? null : 'El nombre es obligatorio'),
+  validate: () => (name.value.trim() ? null : t('places.form.nameRequired')),
   submit() {
     const payload = {
       name: name.value.trim(),
@@ -80,17 +82,17 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="place ? 'Editar sitio' : 'Nuevo sitio'"
+    :header="place ? t('places.form.editTitle') : t('places.form.newTitle')"
     :saving="saving"
-    :saveLabel="place ? 'Guardar' : 'Añadir sitio'"
+    :saveLabel="place ? t('common.actions.save') : t('places.form.addLabel')"
     @save="save"
   >
-    <FormField label="Ubicación">
+    <FormField :label="t('places.form.location')">
       <AutoComplete
         v-model="geocodeQuery"
         :suggestions="results"
         optionLabel="display_name"
-        placeholder="Busca un lugar o dirección…"
+        :placeholder="t('places.form.locationPlaceholder')"
         fluid
         autofocus
         @complete="(e) => search(e.query)"
@@ -104,10 +106,10 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
     </FormField>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Nombre" required>
-        <InputText v-model="name" placeholder="Fushimi Inari" />
+      <FormField :label="t('places.form.name')" required>
+        <InputText v-model="name" :placeholder="t('places.form.namePlaceholder')" />
       </FormField>
-      <FormField label="Categoría">
+      <FormField :label="t('places.form.category')">
         <Select
           v-model="category"
           :options="categoryOptions"
@@ -118,27 +120,27 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
     </div>
 
     <div class="grid grid-cols-2 gap-3">
-      <FormField label="Latitud">
+      <FormField :label="t('places.form.lat')">
         <InputNumber v-model="lat" :minFractionDigits="0" :maxFractionDigits="6" locale="en-US" />
       </FormField>
-      <FormField label="Longitud">
+      <FormField :label="t('places.form.lon')">
         <InputNumber v-model="lon" :minFractionDigits="0" :maxFractionDigits="6" locale="en-US" />
       </FormField>
     </div>
 
-    <FormField label="Enlace">
+    <FormField :label="t('places.form.link')">
       <InputText v-model="url" placeholder="https://…" />
     </FormField>
-    <FormField label="Notas">
+    <FormField :label="t('places.form.notes')">
       <Textarea v-model="notes" rows="2" autoResize />
     </FormField>
     <div class="flex items-center gap-6">
       <label class="flex items-center gap-2 text-sm">
-        <Checkbox v-model="mustSee" binary /> Imprescindible
+        <Checkbox v-model="mustSee" binary /> {{ t('places.mustSee') }}
         <i class="pi pi-star-fill text-amber-400 text-xs" />
       </label>
       <label class="flex items-center gap-2 text-sm">
-        <Checkbox v-model="visited" binary /> Visitado
+        <Checkbox v-model="visited" binary /> {{ t('places.form.visited') }}
       </label>
     </div>
   </FormDialog>

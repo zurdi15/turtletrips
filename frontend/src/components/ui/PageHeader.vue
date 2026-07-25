@@ -14,7 +14,7 @@ defineProps<{
       v-if="info"
       class="text-ink-faint hover:text-ink-secondary transition-colors"
       v-tooltip.bottom="info"
-      :aria-label="`Información sobre ${title.toLowerCase()}`"
+      :aria-label="$t('common.pageHeader.infoAria', { title: title.toLowerCase() })"
     >
       <i class="pi pi-info-circle" />
     </button>

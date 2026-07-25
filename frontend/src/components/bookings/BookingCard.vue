@@ -47,7 +47,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
             :value="booking.confirmation_code"
             severity="secondary"
             class="cursor-pointer font-mono"
-            v-tooltip.top="'Copiar código de reserva'"
+            v-tooltip.top="$t('bookings.card.copyBookingCode')"
             @click="$emit('copy-code', booking.confirmation_code!)"
           />
           <Tag
@@ -55,7 +55,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
             :value="booking.flight_number"
             severity="info"
             class="cursor-pointer font-mono"
-            v-tooltip.top="'Copiar código de vuelo'"
+            v-tooltip.top="$t('bookings.card.copyFlightCode')"
             @click="$emit('copy-code', booking.flight_number!)"
           />
         </div>
@@ -98,7 +98,7 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
             type="place"
             :tripId="trip.id"
             :targetId="booking.place_id"
-            :tooltip="`Sitio: ${placeName}`"
+            :tooltip="$t('bookings.card.placeTooltip', { name: placeName })"
           />
           <EntityLink v-if="expenseId" type="expense" :tripId="trip.id" :targetId="expenseId" />
         </div>
@@ -121,16 +121,16 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
           color="warn"
           icon="pi pi-wallet"
           class="mt-0.5"
-          v-tooltip.left="'Pagado del fondo común'"
+          v-tooltip.left="$t('bookings.card.paidFromCommon')"
         >
-          Común
+          {{ $t('bookings.card.commonFund') }}
         </Pill>
         <MemberChip v-else-if="payer" :member="payer" class="mt-0.5" />
         <!-- normalmente el gasto nace solo con la reserva; este botón es
              la vía de regeneración (gasto borrado o tasa no disponible) -->
         <Button
           v-if="booking.cost_amount != null && !expenseId"
-          label="Crear gasto"
+          :label="$t('bookings.card.createExpense')"
           size="small"
           text
           icon="pi pi-wallet"

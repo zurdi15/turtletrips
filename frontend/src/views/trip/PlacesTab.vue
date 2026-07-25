@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -11,7 +12,7 @@ import PlaceCard from '../../components/places/PlaceCard.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import type { Booking, Expense, Place, Trip } from '../../api/types'
-import { PLACE_CATEGORY_LABELS, toSelectOptions } from '../../constants'
+import { PLACE_CATEGORY_KEYS, toSelectOptions } from '../../constants'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
@@ -19,6 +20,7 @@ import { useCrudView } from '../../composables/useCrudView'
 import { useTripTabData } from '../../composables/useTripTabData'
 
 const props = defineProps<{ trip: Trip }>()
+const { t } = useI18n()
 const store = usePlacesStore()
 const bookings = useBookingsStore()
 const expenses = useExpensesStore()
@@ -32,11 +34,14 @@ const filterVisited = ref<'all' | 'pending' | 'visited'>('all')
 // En móvil arranca en lista (no cabe todo); en escritorio en ambos.
 const panel = ref<'list' | 'both' | 'map'>('both')
 const mapRef = ref<InstanceType<typeof PlaceMap> | null>(null)
-const panelOptions = [
-  { value: 'list', label: 'Lista', icon: 'pi pi-list' },
-  { value: 'both', label: 'Ambos', icon: 'pi pi-objects-column' },
-  { value: 'map', label: 'Mapa', icon: 'pi pi-map' },
-] as const
+const panelOptions = computed(
+  () =>
+    [
+      { value: 'list', label: t('places.view.list'), icon: 'pi pi-list' },
+      { value: 'both', label: t('places.view.both'), icon: 'pi pi-objects-column' },
+      { value: 'map', label: t('places.view.map'), icon: 'pi pi-map' },
+    ] as const,
+)
 
 watch(panel, async (value) => {
   if (value === 'list') return
@@ -60,16 +65,19 @@ useTripTabData(() => props.trip, {
   },
 })
 
-const categoryOptions = [
-  { value: 'all', label: 'Todas las categorías' },
-  ...toSelectOptions(PLACE_CATEGORY_LABELS),
-]
+const categoryOptions = computed(() => [
+  { value: 'all', label: t('places.filters.allCategories') },
+  ...toSelectOptions(PLACE_CATEGORY_KEYS, t),
+])
 // "Todos" en el centro, igual que "Ambos" en el selector de panel
-const visitedOptions = [
-  { value: 'pending', label: 'Pendientes', icon: 'pi pi-clock' },
-  { value: 'all', label: 'Todos', icon: 'pi pi-asterisk' },
-  { value: 'visited', label: 'Visitados', icon: 'pi pi-check-circle' },
-] as const
+const visitedOptions = computed(
+  () =>
+    [
+      { value: 'pending', label: t('places.filters.pending'), icon: 'pi pi-clock' },
+      { value: 'all', label: t('places.filters.all'), icon: 'pi pi-asterisk' },
+      { value: 'visited', label: t('places.filters.visited'), icon: 'pi pi-check-circle' },
+    ] as const,
+)
 
 // reservas enlazadas a cada sitio (chip → pestaña Reservas)
 const bookingsByPlace = computed(() => {
@@ -107,7 +115,10 @@ const {
   openEdit,
   removeItem: removePlace,
 } = useCrudView<Place>({
-  confirm: (place) => ({ message: `¿Eliminar "${place.name}"?`, header: 'Eliminar sitio' }),
+  confirm: (place) => ({
+    message: t('places.confirm.message', { name: place.name }),
+    header: t('places.confirm.header'),
+  }),
   remove: (place) => store.remove(place.id),
 })
 </script>
@@ -119,14 +130,14 @@ const {
          + selector de vista (derecha) -->
     <div class="flex flex-wrap items-center gap-2 mb-4">
       <Button
-        label="Nuevo sitio"
+        :label="t('places.form.newTitle')"
         icon="pi pi-plus"
         class="w-full sm:w-auto sm:order-1"
         @click="openNew"
       />
       <InputText
         v-model="searchText"
-        placeholder="Buscar…"
+        :placeholder="t('places.filters.searchPlaceholder')"
         class="flex-1 sm:flex-none sm:w-44 sm:order-2"
       />
       <!-- el selector de categoría absorbe el espacio sobrante: la fila queda completa -->
@@ -148,7 +159,12 @@ const {
         class="max-sm:basis-full max-sm:w-full sm:order-8"
       />
       <span class="hidden sm:block shrink-0 text-sm text-ink-faint sm:order-6">
-        {{ store.items.filter((p) => p.visited).length }}/{{ store.items.length }} visitados
+        {{
+          t('places.visitedCount', {
+            visited: store.items.filter((p) => p.visited).length,
+            total: store.items.length,
+          })
+        }}
       </span>
       <span class="hidden sm:block flex-1 sm:order-7" />
       <!-- salto de fila entre acciones y vista; el -mt-2 compensa el doble row-gap -->
@@ -182,11 +198,11 @@ const {
         <EmptyState
           v-else-if="!store.items.length"
           icon="pi pi-map-marker"
-          title="Sin sitios guardados"
-          subtitle="Añade los sitios que quieres ver en este viaje"
+          :title="t('places.empty.title')"
+          :subtitle="t('places.empty.subtitle')"
         />
         <p v-else-if="!filtered.length" class="text-center text-sm text-ink-faint py-8">
-          Ningún sitio coincide con los filtros
+          {{ t('places.empty.noMatches') }}
         </p>
       </div>
 

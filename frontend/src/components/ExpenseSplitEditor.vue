@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputNumber from 'primevue/inputnumber'
@@ -7,6 +8,7 @@ import ClusterBtn from './ui/ClusterBtn.vue'
 import type { SplitMode, Traveler } from '../api/types'
 import { equalSplit, splitRemaining, sumValues } from '../composables/useSplit'
 import { formatMoney } from '../composables/useMoney'
+import { intlLocale } from '../i18n'
 
 export interface SplitState {
   split_mode: SplitMode
@@ -21,6 +23,8 @@ const props = defineProps<{
 
 const model = defineModel<SplitState>({ required: true })
 
+const { t } = useI18n()
+const numberLocale = computed(() => intlLocale())
 const expanded = ref(false)
 
 // al abrir el diálogo con un reparto personalizado, mostrarlo desplegado
@@ -31,11 +35,14 @@ watch(
   },
 )
 
-const modeOptions = [
-  { value: 'equal', label: 'Partes iguales', icon: 'pi pi-equals' },
-  { value: 'amount', label: 'Importes', icon: 'pi pi-money-bill' },
-  { value: 'percent', label: 'Porcentajes', icon: 'pi pi-percentage' },
-] as const
+const modeOptions = computed(
+  () =>
+    [
+      { value: 'equal', label: t('expenses.split.mode.equal'), icon: 'pi pi-equals' },
+      { value: 'amount', label: t('expenses.split.mode.amount'), icon: 'pi pi-money-bill' },
+      { value: 'percent', label: t('expenses.split.mode.percent'), icon: 'pi pi-percentage' },
+    ] as const,
+)
 
 const mode = computed({
   get: () => model.value.split_mode,
@@ -95,9 +102,9 @@ function setValue(travelerId: number, value: number | null) {
 
 const summary = computed(() => {
   const shares = model.value.shares
-  if (!shares.length) return 'entre todos a partes iguales'
-  if (mode.value === 'equal') return `entre ${shares.length} a partes iguales`
-  return `personalizado (${shares.length} participantes)`
+  if (!shares.length) return t('expenses.split.summaryAllEqual')
+  if (mode.value === 'equal') return t('expenses.split.summaryEqual', { n: shares.length })
+  return t('expenses.split.summaryCustom', { n: shares.length })
 })
 
 const expectedTotal = computed(() =>
@@ -127,21 +134,21 @@ function fmt(v: number): string {
   <div class="rounded-lg bg-surface-soft border border-line p-3">
     <div class="flex items-center gap-2">
       <span class="text-sm text-ink-secondary">
-        <i class="pi pi-users text-xs mr-1" />Reparto: {{ summary }}
+        <i class="pi pi-users text-xs mr-1" />{{ $t('expenses.split.title') }} {{ summary }}
       </span>
       <span class="flex-1" />
       <Button
         v-if="!expanded"
-        label="Personalizar"
+        :label="$t('expenses.split.customize')"
         size="small"
         text
         :disabled="!travelers.length"
         @click="customize"
       />
-      <Button v-else label="Restablecer" size="small" text severity="secondary" @click="reset" />
+      <Button v-else :label="$t('expenses.split.reset')" size="small" text severity="secondary" @click="reset" />
     </div>
     <p v-if="!travelers.length" class="text-xs text-ink-faint mt-1">
-      Añade viajeros al viaje para repartir el gasto.
+      {{ $t('expenses.split.addTravelers') }}
     </p>
 
     <div v-if="expanded" class="mt-3 flex flex-col gap-3">
@@ -162,7 +169,7 @@ function fmt(v: number): string {
             :modelValue="valueOf(t.id)"
             :minFractionDigits="0"
             :maxFractionDigits="2"
-            locale="es-ES"
+            :locale="numberLocale"
             :min="0"
             :suffix="mode === 'percent' ? ' %' : undefined"
             inputClass="w-24 text-right"
@@ -172,13 +179,13 @@ function fmt(v: number): string {
       </div>
       <div v-if="isCustomValues" class="flex items-center gap-2 text-xs">
         <span :class="pending === 0 ? 'text-brand' : 'text-warn'">
-          Suman {{ fmt(currentSum) }} de {{ fmt(expectedTotal) }}
-          <template v-if="pending !== 0"> — faltan {{ fmt(pending) }}</template>
+          {{ $t('expenses.split.sum', { sum: fmt(currentSum), total: fmt(expectedTotal) }) }}
+          <template v-if="pending !== 0"> {{ $t('expenses.split.missing', { amount: fmt(pending) }) }}</template>
         </span>
         <span class="flex-1" />
         <Button
           v-if="pending !== 0"
-          label="Repartir el resto"
+          :label="$t('expenses.split.fillRemaining')"
           size="small"
           text
           @click="fillRemaining"

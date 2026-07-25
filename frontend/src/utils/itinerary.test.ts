@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Booking, ItineraryItem } from '../api/types'
+
+// el módulo i18n real toca localStorage/navigator al importarse; aquí solo se
+// usa intlLocale, así el test sigue siendo puro (sin DOM) y determinista
+vi.mock('../i18n', () => ({ intlLocale: () => 'es-ES' }))
 import {
   agendaDayLabel,
   agendaDays,
@@ -14,7 +18,25 @@ import {
   rangeNights,
   transportHead,
   transportLabel,
+  type TranslateFn,
 } from './itinerary'
+
+// stub de t: espejo mínimo en español de las claves que usan las etiquetas
+const MESSAGES: Record<string, string> = {
+  'itinerary.agenda.arrival': 'Llegada',
+  'itinerary.agenda.checkin': 'Check-in',
+  'itinerary.agenda.checkout': 'Check-out',
+  'itinerary.agenda.night': 'noche',
+  'itinerary.agenda.dayN': 'Día {n}',
+  'common.bookingType.flight': 'Vuelo',
+  'common.bookingType.train': 'Tren',
+  'common.bookingType.activity': 'Actividad',
+}
+const t: TranslateFn = (key, named) => {
+  let msg = MESSAGES[key] ?? key
+  for (const [k, v] of Object.entries(named ?? {})) msg = msg.replace(`{${k}}`, String(v))
+  return msg
+}
 
 let nextId = 1
 function booking(partial: Partial<Booking>): Booking {
@@ -143,13 +165,13 @@ describe('etiquetas', () => {
   })
 
   it('transportHead: tipo + hora (Llegada usa la hora de fin)', () => {
-    expect(transportHead({ b: flight, arrival: false })).toBe('Vuelo: 23:50')
-    expect(transportHead({ b: flight, arrival: true })).toBe('Llegada: 07:30')
+    expect(transportHead({ b: flight, arrival: false }, t)).toBe('Vuelo: 23:50')
+    expect(transportHead({ b: flight, arrival: true }, t)).toBe('Llegada: 07:30')
   })
 
   it('transportHead omite la medianoche (sin hora real)', () => {
     const sinHora = booking({ type: 'train', start_dt: '2026-08-01T00:00:00' })
-    expect(transportHead({ b: sinHora, arrival: false })).toBe('Tren')
+    expect(transportHead({ b: sinHora, arrival: false }, t)).toBe('Tren')
   })
 
   it('transportLabel: ruta si hay origen/destino, título si no', () => {
@@ -165,16 +187,16 @@ describe('etiquetas', () => {
       start_dt: '2026-08-01T15:00:00',
       end_dt: '2026-08-03T11:00:00',
     })
-    expect(lodgingHead(hotel, '2026-08-01')).toBe('Check-in: 15:00')
-    expect(lodgingHead(hotel, '2026-08-02')).toBe('noche')
-    expect(lodgingHead(hotel, '2026-08-03')).toBe('Check-out: 11:00')
+    expect(lodgingHead(hotel, '2026-08-01', t)).toBe('Check-in: 15:00')
+    expect(lodgingHead(hotel, '2026-08-02', t)).toBe('noche')
+    expect(lodgingHead(hotel, '2026-08-03', t)).toBe('Check-out: 11:00')
   })
 
   it('bookingHead: tipo con hora si existe', () => {
-    expect(bookingHead(booking({ type: 'activity', start_dt: '2026-08-02T16:00:00' }))).toBe(
+    expect(bookingHead(booking({ type: 'activity', start_dt: '2026-08-02T16:00:00' }), t)).toBe(
       'Actividad: 16:00',
     )
-    expect(bookingHead(booking({ type: 'activity' }))).toBe('Actividad')
+    expect(bookingHead(booking({ type: 'activity' }), t)).toBe('Actividad')
   })
 })
 
@@ -213,8 +235,8 @@ describe('rangeNights y dayLabel', () => {
   })
 
   it('dayLabel: "Día N" dentro del viaje, fecha larga fuera', () => {
-    expect(agendaDayLabel('2026-08-02', '2026-08-01').title).toBe('Día 2')
-    const before = agendaDayLabel('2026-07-30', '2026-08-01')
+    expect(agendaDayLabel('2026-08-02', '2026-08-01', t).title).toBe('Día 2')
+    const before = agendaDayLabel('2026-07-30', '2026-08-01', t)
     expect(before.title).not.toContain('Día')
     expect(before.sub).toBe('')
   })

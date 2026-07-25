@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -26,6 +27,7 @@ const store = usePackingStore()
 const categories = useCategoriesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
+const { t } = useI18n()
 
 // maleta activa: null = común, número = viajero
 const activeTraveler = ref<number | null>(null)
@@ -58,7 +60,7 @@ function bagProgress(travelerId: number | null): { done: number; total: number }
 
 const bags = computed<BagOption[]>(() =>
   [
-    { travelerId: null as number | null, label: 'Común', color: null as string | null },
+    { travelerId: null as number | null, label: t('packing.commonBag'), color: null as string | null },
     ...props.trip.travelers.map((t) => ({ travelerId: t.id, label: t.name, color: t.color })),
   ].map((b) => ({ ...b, ...bagProgress(b.travelerId) })),
 )
@@ -71,7 +73,7 @@ const activeProgress = computed(() => {
 })
 
 const activeBagLabel = computed(
-  () => bags.value.find((b) => b.travelerId === activeTraveler.value)?.label ?? 'Común',
+  () => bags.value.find((b) => b.travelerId === activeTraveler.value)?.label ?? t('packing.commonBag'),
 )
 
 const categoryOptions = computed(() =>
@@ -103,7 +105,7 @@ async function addItem(payload: { name: string; category: string; url: string | 
   try {
     await store.create({ ...payload, traveler_id: activeTraveler.value })
   } catch (err) {
-    notify.error('Error al añadir', err)
+    notify.error(t('packing.toast.addError'), err)
     throw err // PackingAddBar conserva el texto si falla
   }
 }
@@ -115,8 +117,8 @@ function openEdit(item: PackingItem) {
 
 function removeItem(item: PackingItem) {
   confirmAction({
-    message: `¿Eliminar "${item.name}" de la maleta?`,
-    header: 'Eliminar elemento',
+    message: t('packing.confirmRemoveItem.message', { name: item.name }),
+    header: t('packing.confirmRemoveItem.header'),
     accept: () => store.remove(item.id),
   })
 }
@@ -125,8 +127,8 @@ async function applyTemplate() {
   if (selectedTemplate.value == null) return
   await store.applyTemplate(selectedTemplate.value, activeTraveler.value)
   notify.success(
-    `Plantilla aplicada a la maleta de ${activeBagLabel.value}`,
-    'Los cambios que hagas aquí no afectan a la plantilla',
+    t('packing.toast.templateApplied', { bag: activeBagLabel.value }),
+    t('packing.toast.templateAppliedDetail'),
   )
 }
 
@@ -134,14 +136,18 @@ function syncTemplate() {
   if (selectedTemplate.value == null) return
   const template = store.templates.find((t) => t.id === selectedTemplate.value)
   confirmAction({
-    message: `¿Sobrescribir la plantilla "${template?.name}" con los ${activeItems.value.length} elementos de la maleta de ${activeBagLabel.value}?`,
-    header: 'Guardar cambios en la plantilla',
+    message: t('packing.syncDialog.message', {
+      name: template?.name,
+      count: activeItems.value.length,
+      bag: activeBagLabel.value,
+    }),
+    header: t('packing.syncDialog.header'),
     icon: 'pi pi-sync',
-    acceptLabel: 'Sobrescribir plantilla',
+    acceptLabel: t('packing.syncDialog.accept'),
     acceptSeverity: undefined,
     accept: async () => {
       await store.syncTemplateFromTrip(selectedTemplate.value!, activeTraveler.value)
-      notify.success('Plantilla actualizada')
+      notify.success(t('packing.toast.templateUpdated'))
     },
   })
 }
@@ -151,12 +157,12 @@ async function saveTemplate() {
   if (!name) return
   try {
     await store.saveAsTemplate(name, activeTraveler.value)
-    notify.success(`Plantilla "${name}" guardada`)
+    notify.success(t('packing.toast.templateSaved', { name }))
     showSaveTemplate.value = false
     templateName.value = ''
     syncSelectedTemplate()
   } catch (err) {
-    notify.error('Error al guardar', err)
+    notify.error(t('packing.toast.saveError'), err)
   }
 }
 </script>
@@ -166,7 +172,7 @@ async function saveTemplate() {
     <!-- selector de maleta: común + una por viajero -->
     <BagSelector v-model:active="activeTraveler" :bags="bags" class="mb-4">
       <p v-if="!trip.travelers.length" class="text-xs text-ink-faint sm:ml-2 max-sm:col-span-full self-center">
-        Añade viajeros al viaje para que cada uno tenga su maleta
+        {{ $t('packing.noTravelersHint') }}
       </p>
     </BagSelector>
 
@@ -174,10 +180,10 @@ async function saveTemplate() {
     <div class="bg-surface rounded-card border border-line p-4 mb-4">
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-sm font-semibold text-ink-secondary mr-1">
-          Maleta de {{ activeBagLabel }}
+          {{ $t('packing.bagOf', { bag: activeBagLabel }) }}
         </span>
         <span v-if="activeTemplateName" class="text-xs px-2 py-0.5 rounded-full bg-info-tint text-info-strong">
-          <i class="pi pi-briefcase text-3xs" /> plantilla: {{ activeTemplateName }}
+          <i class="pi pi-briefcase text-3xs" /> {{ $t('packing.templateBadge', { name: activeTemplateName }) }}
         </span>
         <span class="flex-1" />
         <Select
@@ -185,17 +191,17 @@ async function saveTemplate() {
           :options="templateOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Elegir plantilla…"
+          :placeholder="$t('packing.chooseTemplate')"
           class="w-full sm:w-52"
           size="small"
         />
         <Button
           v-if="selectedTemplate != null"
-          label="Aplicar"
+          :label="$t('packing.apply')"
           icon="pi pi-download"
           severity="secondary"
           size="small"
-          v-tooltip.bottom="'Copia los elementos a esta maleta; la plantilla no se toca'"
+          v-tooltip.bottom="$t('packing.applyTooltip')"
           @click="applyTemplate"
         />
         <Button
@@ -204,31 +210,31 @@ async function saveTemplate() {
           severity="secondary"
           outlined
           size="small"
-          v-tooltip.bottom="'Guardar esta maleta (con tus cambios) en la plantilla'"
+          v-tooltip.bottom="$t('packing.syncTooltip')"
           @click="syncTemplate"
         />
         <Button
           v-if="activeItems.length"
-          label="Nueva plantilla"
+          :label="$t('packing.newTemplate')"
           icon="pi pi-save"
           severity="secondary"
           outlined
           size="small"
-          v-tooltip.bottom="'Guardar esta maleta como plantilla nueva'"
+          v-tooltip.bottom="$t('packing.newTemplateTooltip')"
           @click="showSaveTemplate = true"
         />
       </div>
       <div v-if="activeProgress.total" class="mt-3">
         <ProgressMeter :value="activeProgress.pct" />
         <p class="text-xs text-ink-faint mt-1">
-          {{ activeProgress.done }}/{{ activeProgress.total }} preparado · {{ activeProgress.pct }}%
+          {{ $t('packing.progress', { done: activeProgress.done, total: activeProgress.total, pct: activeProgress.pct }) }}
         </p>
       </div>
     </div>
 
     <!-- añadir elemento a la maleta activa -->
     <PackingAddBar
-      :placeholder="`Añadir a la maleta de ${activeBagLabel}…`"
+      :placeholder="$t('packing.addToBagPlaceholder', { bag: activeBagLabel })"
       :categoryOptions="categoryOptions"
       :onAdd="addItem"
       class="mb-5"
@@ -239,8 +245,8 @@ async function saveTemplate() {
     <EmptyState
       v-else-if="!store.loading && !activeItems.length"
       icon="pi pi-briefcase"
-      :title="`La maleta de ${activeBagLabel} está vacía`"
-      subtitle="Añade elementos o aplica una plantilla"
+      :title="$t('packing.empty.title', { bag: activeBagLabel })"
+      :subtitle="$t('packing.empty.subtitle')"
     />
 
     <div v-else class="tt-stagger grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
@@ -268,7 +274,7 @@ async function saveTemplate() {
               target="_blank"
               rel="noopener"
               class="ml-1 text-info hover:underline text-xs"
-              v-tooltip.top="'Enlace de compra'"
+              v-tooltip.top="$t('packing.purchaseLink')"
               @click.stop
             >
               <i class="pi pi-shopping-cart" />
@@ -290,23 +296,23 @@ async function saveTemplate() {
     <!-- diálogo guardar plantilla nueva -->
     <FormDialog
       v-model:visible="showSaveTemplate"
-      header="Guardar como plantilla nueva"
+      :header="$t('packing.saveTemplateDialog.title')"
       width="md"
       @save="saveTemplate"
     >
-      <p class="text-sm text-ink-muted">
-        Se guardan los {{ activeItems.length }} elementos de la maleta de
-        <strong>{{ activeBagLabel }}</strong> (sin marcar) como plantilla reutilizable.
-      </p>
+      <i18n-t keypath="packing.saveTemplateDialog.body" tag="p" scope="global" class="text-sm text-ink-muted">
+        <template #count>{{ activeItems.length }}</template>
+        <template #bag><strong>{{ activeBagLabel }}</strong></template>
+      </i18n-t>
       <InputText
         v-model="templateName"
-        placeholder="Nombre de la plantilla (p. ej. Playa, Montaña…)"
+        :placeholder="$t('packing.saveTemplateDialog.namePlaceholder')"
         class="w-full"
         @keyup.enter="saveTemplate"
       />
       <template #footer>
-        <Button label="Cancelar" severity="secondary" text @click="showSaveTemplate = false" />
-        <Button label="Guardar plantilla" icon="pi pi-save" @click="saveTemplate" />
+        <Button :label="$t('common.actions.cancel')" severity="secondary" text @click="showSaveTemplate = false" />
+        <Button :label="$t('packing.saveTemplateDialog.save')" icon="pi pi-save" @click="saveTemplate" />
       </template>
     </FormDialog>
   </div>

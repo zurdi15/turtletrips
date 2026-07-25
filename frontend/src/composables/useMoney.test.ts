@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { formatMoney, parseIsoDate, toIsoDate } from './useMoney'
+import { i18n } from '../i18n'
+
+// en Node el idioma detectado es en; estos asserts son de formato es-ES
+beforeAll(() => {
+  i18n.global.locale.value = 'es'
+})
 
 describe('toIsoDate', () => {
   it('formatea en local sin sorpresas de zona horaria', () => {

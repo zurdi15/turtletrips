@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -16,6 +17,7 @@ import { useTripTabData } from '../../composables/useTripTabData'
 import { fileIcon, formatSize } from '../../utils/files'
 
 const props = defineProps<{ trip: Trip }>()
+const { t } = useI18n()
 const store = useAttachmentsStore()
 const bookings = useBookingsStore()
 const confirmAction = useConfirmDelete()
@@ -31,8 +33,8 @@ const bookingTitle = computed(() => new Map(bookings.items.map((b) => [b.id, b.t
 
 function remove(id: number, name: string) {
   confirmAction({
-    message: `¿Eliminar el fichero "${name}"?`,
-    header: 'Eliminar adjunto',
+    message: t('bookings.files.confirmDelete.message', { name }),
+    header: t('bookings.files.confirmDelete.header'),
     accept: () => store.remove(id),
   })
 }
@@ -42,8 +44,7 @@ function remove(id: number, name: string) {
   <div>
     <div class="mb-4">
       <p class="text-sm text-ink-muted mb-3">
-        Ficheros del viaje (billetes, seguros, documentación…). Los adjuntos de reservas también
-        aparecen aquí.
+        {{ $t('bookings.files.intro') }}
       </p>
       <AttachmentList :show-list="false" />
     </div>
@@ -53,8 +54,8 @@ function remove(id: number, name: string) {
     <EmptyState
       v-else-if="!store.items.length"
       icon="pi pi-paperclip"
-      title="Sin ficheros"
-      subtitle="Sube PDFs de reservas, billetes o cualquier documento del viaje"
+      :title="$t('bookings.files.empty.title')"
+      :subtitle="$t('bookings.files.empty.subtitle')"
     />
 
     <DataTable
@@ -65,7 +66,7 @@ function remove(id: number, name: string) {
       :tableStyle="{ minWidth: '560px' }"
       class="bg-surface rounded-card overflow-hidden border border-line"
     >
-      <Column header="Fichero">
+      <Column :header="$t('bookings.files.columns.file')">
         <template #body="{ data }">
           <div class="flex items-center gap-2">
             <i :class="fileIcon(data.content_type)" />
@@ -80,22 +81,22 @@ function remove(id: number, name: string) {
           </div>
         </template>
       </Column>
-      <Column header="Reserva" style="width: 16rem">
+      <Column :header="$t('bookings.files.columns.booking')" style="width: 16rem">
         <template #body="{ data }">
           <Tag
             v-if="data.booking_id && bookingTitle.get(data.booking_id)"
             :value="bookingTitle.get(data.booking_id)"
             severity="secondary"
           />
-          <span v-else class="text-xs text-ink-faint">Nivel de viaje</span>
+          <span v-else class="text-xs text-ink-faint">{{ $t('bookings.files.tripLevel') }}</span>
         </template>
       </Column>
-      <Column header="Tamaño" style="width: 6rem">
+      <Column :header="$t('bookings.files.columns.size')" style="width: 6rem">
         <template #body="{ data }">
           <span class="text-sm text-ink-muted">{{ formatSize(data.size_bytes) }}</span>
         </template>
       </Column>
-      <Column header="Subido" style="width: 8rem">
+      <Column :header="$t('bookings.files.columns.uploaded')" style="width: 8rem">
         <template #body="{ data }">
           <span class="text-sm text-ink-muted">{{ formatDate(data.created_at) }}</span>
         </template>

@@ -26,9 +26,9 @@ defineProps<{ trip: Trip; image: string | null }>()
           <div class="min-w-0">
             <p class="text-xs font-semibold uppercase tracking-widest text-white/70 mb-1">
               <template v-if="trip.status === 'ongoing'">
-                <i class="mdi mdi-airplane text-xs" /> En curso
+                <i class="mdi mdi-airplane text-xs" /> {{ $t('common.tripStatus.ongoing') }}
               </template>
-              <template v-else>Próximo viaje</template>
+              <template v-else>{{ $t('trips.hero.upcoming') }}</template>
             </p>
             <h2 class="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-3 flex-wrap">
               {{ trip.name }}
@@ -36,14 +36,16 @@ defineProps<{ trip: Trip; image: string | null }>()
                 {{ trip.countries.map(flagEmoji).join(' ') }}
               </span>
             </h2>
-            <p class="text-white/80 mt-1 text-xs sm:text-sm">{{ tripDateRange(trip) }}</p>
+            <p class="text-white/80 mt-1 text-xs sm:text-sm">
+              {{ tripDateRange(trip) ?? $t('trips.noDates') }}
+            </p>
           </div>
           <div
             v-if="daysUntil(trip.start_date)"
             class="text-center bg-white/15 backdrop-blur rounded-card px-3 py-2 sm:px-5 sm:py-3"
           >
             <p class="text-xl sm:text-3xl font-bold leading-none">{{ daysUntil(trip.start_date) }}</p>
-            <p class="text-xs text-white/80 mt-1">días para salir</p>
+            <p class="text-xs text-white/80 mt-1">{{ $t('trips.stats.daysToStart') }}</p>
           </div>
         </div>
       </div>

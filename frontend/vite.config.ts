@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest: {
-        name: 'Turtle Trips',
-        short_name: 'Turtle Trips',
-        description: 'Gestión de viajes self-hosted',
+        name: 'TurtleTrips',
+        short_name: 'TurtleTrips',
+        description: 'Self-hosted trips management',
         lang: 'es',
         start_url: '/',
         scope: '/',

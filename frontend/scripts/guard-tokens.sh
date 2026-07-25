@@ -33,9 +33,10 @@ check "sin text-[..px] ni z-[..] arbitrarios" 'text-\[[0-9]+px\]|z-\[[0-9]+\]|mi
 # el easing vive en el token --tt-ease-spring (única definición en style.css)
 check "cubic-bezier solo en la definición del token" 'cubic-bezier' src --glob '!style.css'
 
-# toasts/confirms solo a través de los composables
+# toasts/confirms solo a través de los composables (con paréntesis: la llamada,
+# no las claves i18n tipo "toast.addError")
 check "sin confirm.require/toast.add/String(err) fuera de composables" \
-  'confirm\.require|toast\.add|String\(err\)' src --glob '!**/composables/**'
+  'confirm\.require\(|toast\.add\(|String\(err\)' src --glob '!**/composables/**'
 
 if [ "$fail" -eq 0 ]; then
   echo "Tokens OK"

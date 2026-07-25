@@ -5,7 +5,7 @@ import PlaceMap from '../../components/PlaceMap.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import type { Trip } from '../../api/types'
-import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
+import { BOOKING_TYPE_ICONS, BOOKING_TYPE_KEYS } from '../../constants'
 import { useExpensesStore } from '../../stores/expenses'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
@@ -65,30 +65,30 @@ const initialLoading = computed(
       <div class="tt-stagger grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="bg-surface rounded-card border border-line p-4 text-center">
           <p class="text-2xl font-bold text-ink-heading">{{ tripDays ?? '—' }}</p>
-          <p class="text-xs text-ink-faint mt-1">días de viaje</p>
+          <p class="text-xs text-ink-faint mt-1">{{ $t('trips.stats.tripDays') }}</p>
         </div>
         <div class="bg-surface rounded-card border border-line p-4 text-center">
           <p class="text-2xl font-bold" :class="daysToStart != null ? 'text-info' : 'text-ink-heading'">
             {{ daysToStart ?? '—' }}
           </p>
-          <p class="text-xs text-ink-faint mt-1">días para salir</p>
+          <p class="text-xs text-ink-faint mt-1">{{ $t('trips.stats.daysToStart') }}</p>
         </div>
         <div class="bg-surface rounded-card border border-line p-4 text-center">
           <p class="text-2xl font-bold text-ink-heading">{{ visitedCount }}/{{ places.items.length }}</p>
-          <p class="text-xs text-ink-faint mt-1">sitios visitados</p>
+          <p class="text-xs text-ink-faint mt-1">{{ $t('trips.stats.placesVisited') }}</p>
         </div>
         <div class="bg-surface rounded-card border border-line p-4 text-center">
           <p class="text-2xl font-bold text-ink-heading">{{ bookings.items.length }}</p>
-          <p class="text-xs text-ink-faint mt-1">reservas</p>
+          <p class="text-xs text-ink-faint mt-1">{{ $t('trips.stats.bookings') }}</p>
         </div>
       </div>
 
       <div class="bg-surface rounded-card border border-line p-4">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-semibold text-ink-secondary">Presupuesto</h3>
+          <h3 class="text-sm font-semibold text-ink-secondary">{{ $t('trips.overview.budget') }}</h3>
           <router-link :to="{ name: 'trip-expenses', params: { id: trip.id } }">
             <Button
-              label="Ver gastos"
+              :label="$t('trips.overview.viewExpenses')"
               text
               size="small"
               severity="warn"
@@ -102,23 +102,29 @@ const initialLoading = computed(
             {{ formatMoney(expenses.summary?.total_base ?? 0, trip.base_currency) }}
           </span>
           <span v-if="expenses.summary?.budget_amount" class="text-sm text-ink-faint">
-            de {{ formatMoney(expenses.summary.budget_amount, trip.base_currency) }}
+            {{
+              $t('trips.overview.ofBudget', {
+                amount: formatMoney(expenses.summary.budget_amount, trip.base_currency),
+              })
+            }}
           </span>
         </div>
         <div v-if="budgetPct != null" class="mt-3">
           <ProgressMeter :value="budgetPct" thresholds size="md" />
         </div>
         <p v-else class="text-xs text-ink-faint mt-2">
-          Define un presupuesto al editar el viaje para ver el progreso.
+          {{ $t('trips.overview.noBudgetHint') }}
         </p>
       </div>
 
       <div class="bg-surface rounded-card border border-line p-4">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-semibold text-ink-secondary">Próximas reservas</h3>
+          <h3 class="text-sm font-semibold text-ink-secondary">
+            {{ $t('trips.overview.nextBookings') }}
+          </h3>
           <router-link :to="{ name: 'trip-bookings', params: { id: trip.id } }">
             <Button
-              label="Ver reservas"
+              :label="$t('trips.overview.viewBookings')"
               text
               size="small"
               severity="info"
@@ -137,7 +143,7 @@ const initialLoading = computed(
             <div class="flex-1 min-w-0">
               <p class="font-medium text-sm text-ink truncate">{{ b.title }}</p>
               <p class="text-xs text-ink-faint">
-                {{ BOOKING_TYPE_LABELS[b.type] }} · {{ formatDateTime(b.start_dt) }}
+                {{ $t(BOOKING_TYPE_KEYS[b.type]) }} · {{ formatDateTime(b.start_dt) }}
               </p>
             </div>
             <span v-if="b.confirmation_code" class="text-xs font-mono text-ink-faint">
@@ -145,11 +151,13 @@ const initialLoading = computed(
             </span>
           </div>
         </div>
-        <p v-else class="text-sm text-ink-faint">Nada próximo en la agenda.</p>
+        <p v-else class="text-sm text-ink-faint">{{ $t('trips.overview.noUpcoming') }}</p>
       </div>
 
       <div v-if="trip.notes" class="bg-surface rounded-card border border-line p-4">
-        <h3 class="text-sm font-semibold text-ink-secondary mb-2">Notas</h3>
+        <h3 class="text-sm font-semibold text-ink-secondary mb-2">
+          {{ $t('trips.overview.notes') }}
+        </h3>
         <p class="text-sm text-ink-secondary whitespace-pre-wrap">{{ trip.notes }}</p>
       </div>
     </div>
@@ -163,7 +171,13 @@ const initialLoading = computed(
         />
       </div>
       <router-link :to="{ name: 'trip-places', params: { id: trip.id } }" class="no-underline">
-        <Button label="Ver todos los sitios" icon="pi pi-map" outlined severity="secondary" fluid />
+        <Button
+          :label="$t('trips.overview.viewAllPlaces')"
+          icon="pi pi-map"
+          outlined
+          severity="secondary"
+          fluid
+        />
       </router-link>
     </div>
   </div>

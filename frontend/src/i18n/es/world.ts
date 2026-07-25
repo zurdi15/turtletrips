@@ -1,0 +1,72 @@
+export default {
+  title: 'Mapa',
+  info: 'El diario de vuestros viajes: países, ciudades y sitios visitados, con notas. Se rellena solo con los viajes terminados, los sitios marcados como visitados y los sitios con gastos — y puedes añadir lo que quieras a mano.',
+  kind: {
+    country: 'País',
+    city: 'Ciudad',
+    place: 'Sitio',
+  },
+  noCountry: 'Sin país asignado',
+  stats: {
+    countries: 'países',
+    worldPct: '({pct}% del mundo)',
+    cities: 'ciudades',
+    places: 'sitios',
+  },
+  search: {
+    placePlaceholder: 'Buscar ciudad o sitio para añadir…',
+    countryPlaceholder: 'Marcar país visitado…',
+  },
+  view: {
+    map: 'Mapa',
+    list: 'Lista',
+  },
+  filters: {
+    all: 'Todo',
+    countries: 'Países',
+    cities: 'Ciudades',
+    places: 'Sitios',
+    allCountries: 'Todos los países',
+    anySource: 'Cualquier origen',
+    fromTrips: 'De viajes',
+    manual: 'Añadidos a mano',
+    searchPlaceholder: 'Filtrar por nombre, nota o viaje…',
+  },
+  empty: {
+    title: 'Tu diario está vacío',
+    listHint: 'Marca tu primer país, busca una ciudad, o termina un viaje y aparecerá solo',
+    mapHint: 'Busca una ciudad, marca un país visitado o termina un viaje y aparecerá solo',
+  },
+  list: {
+    noMatch: 'Nada coincide con los filtros',
+    visited: 'visitado',
+    tripOrigin: 'viaje: {origin}',
+    placeCount: '{n} lugares',
+    viewOnMap: 'Ver en el mapa',
+  },
+  map: {
+    tripOrigin: 'Viaje: {origin}',
+    editNote: 'Editar nota',
+  },
+  form: {
+    addTitle: 'Añadir al mapa',
+    editTitle: 'Editar lugar',
+    name: 'Nombre',
+    kind: 'Tipo',
+    country: 'País',
+    note: 'Nota',
+    notePlaceholder: 'Lo que quieras recordar de este lugar…',
+    autoInfo: 'Añadido automáticamente desde el viaje "{origin}".',
+    nameRequired: 'El nombre es obligatorio',
+  },
+  confirmRemove: {
+    header: 'Quitar del mapa',
+    accept: 'Quitar',
+    messageAuto: '"{name}" viene del viaje "{origin}". Se ocultará del mapa y no volverá a aparecer.',
+    messageManual: '¿Quitar "{name}" del mapa?',
+  },
+  toast: {
+    countryAdded: '{flag} {name} añadido',
+    addError: 'Error al añadir',
+  },
+}

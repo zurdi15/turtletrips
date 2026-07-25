@@ -1,7 +1,11 @@
 import type { Booking, ItineraryItem } from '../api/types'
-import { BOOKING_TYPE_LABELS, isTransport } from '../constants'
+import { BOOKING_TYPE_KEYS, isTransport } from '../constants'
+import { intlLocale } from '../i18n'
 import { parseIsoDate } from '../composables/useMoney'
 import { addDays, daysBetween, eachDayInclusive } from './dates'
+
+/** `t` de vue-i18n (o un stub en tests): clave + interpolación con nombre */
+export type TranslateFn = (key: string, named?: Record<string, unknown>) => string
 
 // ---------------------------------------------------------------------------
 // Derivación pura de la agenda del itinerario: qué reservas aparecen en qué
@@ -86,11 +90,11 @@ function lodgingTime(b: Booking, day: string): string {
   return t !== '00:00' ? t : ''
 }
 
-function lodgingKindLabel(b: Booking, day: string): string {
+function lodgingKindLabel(b: Booking, day: string, t: TranslateFn): string {
   const kind = lodgingKind(b, day)
-  if (kind === 'checkin') return 'Check-in'
-  if (kind === 'checkout') return 'Check-out'
-  return 'noche'
+  if (kind === 'checkin') return t('itinerary.agenda.checkin')
+  if (kind === 'checkout') return t('itinerary.agenda.checkout')
+  return t('itinerary.agenda.night')
 }
 
 function transportTime(e: TransportEntry): string {
@@ -98,8 +102,8 @@ function transportTime(e: TransportEntry): string {
   return t !== '00:00' ? t : ''
 }
 
-function transportKind(e: TransportEntry): string {
-  return e.arrival ? 'Llegada' : BOOKING_TYPE_LABELS[e.b.type]
+function transportKind(e: TransportEntry, t: TranslateFn): string {
+  return e.arrival ? t('itinerary.agenda.arrival') : t(BOOKING_TYPE_KEYS[e.b.type])
 }
 
 export function transportLabel(e: TransportEntry): string {
@@ -114,20 +118,20 @@ function bookingTime(b: Booking): string {
 
 // cabecera de columna izquierda: "Check-in: 15:00", "Vuelo: 07:30", "noche"…
 
-export function transportHead(e: TransportEntry): string {
-  const t = transportTime(e)
-  return t ? `${transportKind(e)}: ${t}` : transportKind(e)
+export function transportHead(e: TransportEntry, t: TranslateFn): string {
+  const time = transportTime(e)
+  return time ? `${transportKind(e, t)}: ${time}` : transportKind(e, t)
 }
 
-export function lodgingHead(b: Booking, day: string): string {
-  const kind = lodgingKindLabel(b, day)
-  const t = lodgingTime(b, day)
-  return t ? `${kind}: ${t}` : kind
+export function lodgingHead(b: Booking, day: string, t: TranslateFn): string {
+  const kind = lodgingKindLabel(b, day, t)
+  const time = lodgingTime(b, day)
+  return time ? `${kind}: ${time}` : kind
 }
 
-export function bookingHead(b: Booking): string {
-  const t = bookingTime(b)
-  return t ? `${BOOKING_TYPE_LABELS[b.type]}: ${t}` : BOOKING_TYPE_LABELS[b.type]
+export function bookingHead(b: Booking, t: TranslateFn): string {
+  const time = bookingTime(b)
+  return time ? `${t(BOOKING_TYPE_KEYS[b.type])}: ${time}` : t(BOOKING_TYPE_KEYS[b.type])
 }
 
 /** Días que muestra la agenda: rango del viaje + items (con sus rangos) +
@@ -177,15 +181,16 @@ export function rangeNights(item: ItineraryItem): number {
 export function agendaDayLabel(
   iso: string,
   tripStart: string | null,
+  t: TranslateFn,
 ): { title: string; sub: string } {
-  const sub = parseIsoDate(iso).toLocaleDateString('es-ES', {
+  const sub = parseIsoDate(iso).toLocaleDateString(intlLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
   if (tripStart) {
     const diff = daysBetween(tripStart, iso) + 1
-    if (diff >= 1) return { title: `Día ${diff}`, sub }
+    if (diff >= 1) return { title: t('itinerary.agenda.dayN', { n: diff }), sub }
   }
   return { title: sub, sub: '' }
 }
@@ -195,5 +200,5 @@ export function fmtTime(t: string | null): string {
 }
 
 export function fmtDayShort(iso: string): string {
-  return parseIsoDate(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+  return parseIsoDate(iso).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
 }

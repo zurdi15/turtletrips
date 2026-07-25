@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import type { WorldPlace } from '../api/types'
+import { i18n } from '../i18n'
 import {
   displayName,
   emptyWorldFilters,
@@ -8,6 +9,12 @@ import {
   inferCountryCode,
   worldStats,
 } from './worldGrouping'
+
+// countryName (usado por displayName y groupByCountry) depende del locale activo:
+// fijarlo a 'es' para que el test no dependa del idioma del entorno
+beforeAll(() => {
+  i18n.global.locale.value = 'es'
+})
 
 let nextId = 1
 function makePlace(overrides: Partial<WorldPlace> = {}): WorldPlace {
@@ -26,13 +33,14 @@ function makePlace(overrides: Partial<WorldPlace> = {}): WorldPlace {
 }
 
 describe('groupByCountry', () => {
-  it('pone "Sin país" al final y ordena países alfabéticamente', () => {
+  it('pone "Sin país" al final (title null: lo traduce el componente) y ordena países alfabéticamente', () => {
     const groups = groupByCountry([
       makePlace({ country_code: null, name: 'Perdido' }),
       makePlace({ kind: 'country', country_code: 'JP', name: 'JP' }),
       makePlace({ kind: 'country', country_code: 'ES', name: 'ES' }),
     ])
     expect(groups.map((g) => g.code)).toEqual(['ES', 'JP', null])
+    expect(groups[2].title).toBeNull()
   })
 
   it('ordena hijos: ciudades antes que sitios, y alfabético dentro', () => {
@@ -97,8 +105,9 @@ describe('worldStats', () => {
 })
 
 describe('inferCountryCode / displayName', () => {
-  it('deduce el país del display_name de Nominatim', () => {
+  it('deduce el país del display_name de Nominatim (nombre en español o en inglés)', () => {
     expect(inferCountryCode('Sevilla, Andalucía, España')).toBe('ES')
+    expect(inferCountryCode('Seville, Andalusia, Spain')).toBe('ES')
     expect(inferCountryCode('Somewhere, Atlantis')).toBeNull()
   })
 

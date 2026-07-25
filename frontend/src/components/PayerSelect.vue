@@ -4,6 +4,7 @@ export type PayerValue = number | 'common' | null
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Select from 'primevue/select'
 import PayerTag from './PayerTag.vue'
 import type { Traveler } from '../api/types'
@@ -16,11 +17,12 @@ interface PayerOption {
 
 const props = defineProps<{ travelers: Traveler[] }>()
 const model = defineModel<PayerValue>({ required: true })
+const { t } = useI18n()
 
 const options = computed<PayerOption[]>(() => [
-  { value: null, label: 'Sin asignar' },
-  ...props.travelers.map((t) => ({ value: t.id, label: t.name, color: t.color })),
-  { value: 'common', label: 'Fondo común' },
+  { value: null, label: t('common.payer.unassigned') },
+  ...props.travelers.map((tr) => ({ value: tr.id, label: tr.name, color: tr.color })),
+  { value: 'common', label: t('common.payer.commonFund') },
 ])
 
 function optionFor(value: PayerValue): PayerOption | undefined {

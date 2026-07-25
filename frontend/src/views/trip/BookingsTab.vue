@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import BookingFormDialog from '../../components/bookings/BookingFormDialog.vue'
@@ -8,7 +9,7 @@ import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import { api } from '../../api/client'
 import type { Booking, BookingType, RateRead, Trip } from '../../api/types'
-import { BOOKING_TYPE_ICONS, BOOKING_TYPE_LABELS } from '../../constants'
+import { BOOKING_TYPE_ICONS, BOOKING_TYPE_KEYS } from '../../constants'
 import { expenseIdByBooking } from '../../utils/expenses'
 import { useBookingsStore } from '../../stores/bookings'
 import { useAttachmentsStore } from '../../stores/attachments'
@@ -20,6 +21,7 @@ import { useCrudView } from '../../composables/useCrudView'
 import { useTripTabData } from '../../composables/useTripTabData'
 
 const props = defineProps<{ trip: Trip }>()
+const { t } = useI18n()
 const store = useBookingsStore()
 const attachments = useAttachmentsStore()
 const expenses = useExpensesStore()
@@ -75,8 +77,8 @@ const {
   removeItem: removeBooking,
 } = useCrudView<Booking>({
   confirm: (booking) => ({
-    message: `¿Eliminar la reserva "${booking.title}"? Sus adjuntos pasarán a nivel de viaje.`,
-    header: 'Eliminar reserva',
+    message: t('bookings.confirmDelete.message', { title: booking.title }),
+    header: t('bookings.confirmDelete.header'),
   }),
   remove: (booking) => store.remove(booking.id),
 })
@@ -99,12 +101,12 @@ async function createExpense(booking: Booking) {
     }
     const expense = await store.createExpense(booking.id, rate)
     notify.success(
-      'Gasto creado',
+      t('bookings.toast.expenseCreated'),
       `${expense.description}: ${formatMoney(expense.amount_base, props.trip.base_currency)}`,
     )
     expenses.load(props.trip.id) // refresca el enlace reserva → gasto
   } catch (err) {
-    notify.error('No se pudo crear el gasto', err)
+    notify.error(t('bookings.toast.expenseCreateError'), err)
   } finally {
     creatingExpenseId.value = null
   }
@@ -112,14 +114,19 @@ async function createExpense(booking: Booking) {
 
 function copyCode(code: string) {
   navigator.clipboard?.writeText(code)
-  notify.info('Código copiado')
+  notify.info(t('bookings.toast.codeCopied'))
 }
 </script>
 
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <Button label="Nueva reserva" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
+      <Button
+        :label="$t('bookings.newBooking')"
+        icon="pi pi-plus"
+        class="w-full sm:w-auto"
+        @click="openNew"
+      />
     </div>
 
     <TabSkeleton v-if="store.loading && !store.items.length" variant="cards" :rows="3" />
@@ -127,15 +134,15 @@ function copyCode(code: string) {
     <EmptyState
       v-else-if="!store.items.length"
       icon="pi pi-ticket"
-      title="Sin reservas"
-      subtitle="Guarda aquí hoteles, vuelos y actividades con sus PDFs"
+      :title="$t('bookings.empty.title')"
+      :subtitle="$t('bookings.empty.subtitle')"
     />
 
     <div v-else class="tt-stagger flex flex-col gap-8">
       <section v-for="group in grouped" :key="group.type">
         <h2 class="text-sm font-semibold uppercase tracking-wide text-ink-faint mb-3">
           <i :class="BOOKING_TYPE_ICONS[group.type]" class="mr-1.5" />
-          {{ BOOKING_TYPE_LABELS[group.type] }}
+          {{ $t(BOOKING_TYPE_KEYS[group.type]) }}
         </h2>
         <div class="flex flex-col gap-3">
           <BookingCard
