@@ -23,7 +23,7 @@
 
 # Overview
 
-Turtle Trips is a **self-hosted, single-user** app to plan your trips and keep track of what they cost: it replaces the post-vacation spreadsheet and tools like Wanderlog or Splitwise, with your data on your own server. Everything runs in **a single Docker image** (FastAPI serves the compiled SPA) with SQLite as storage. There is no authentication: it is meant to live behind your reverse proxy or VPN. The UI is currently Spanish-only.
+Turtle Trips is a **self-hosted, single-user** app to plan your trips: manage your itinerary, bookings, expenses and the luggage with your data on your own server.
 
 ## Features
 
