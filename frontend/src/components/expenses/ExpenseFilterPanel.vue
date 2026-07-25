@@ -4,14 +4,16 @@ import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import DateRangePicker from '../DateRangePicker.vue'
+import PayerTag from '../PayerTag.vue'
 import type { ExpenseFilterState } from '../../utils/expenses'
 
 interface Option<T> {
   value: T
   label: string
+  color?: string | null
 }
 
-defineProps<{
+const props = defineProps<{
   filters: ExpenseFilterState
   categoryOptions: Option<string>[]
   excludeOptions: Option<string>[]
@@ -21,11 +23,15 @@ defineProps<{
 }>()
 
 defineEmits<{ clear: [] }>()
+
+function payerFor(value: number | 'all' | 'none' | 'common') {
+  return props.payerOptions.find((o) => o.value === value)
+}
 </script>
 
 <template>
   <div
-    class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3 mb-4"
+    class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3"
   >
     <InputText
       v-model="filters.searchText"
@@ -62,7 +68,14 @@ defineEmits<{ clear: [] }>()
       optionLabel="label"
       optionValue="value"
       class="flex-1 min-w-menu sm:flex-none sm:w-44"
-    />
+    >
+      <template #option="{ option }">
+        <PayerTag :value="option.value" :label="option.label" :color="option.color" />
+      </template>
+      <template #value="{ value }">
+        <PayerTag :value="value" :label="payerFor(value)?.label ?? ''" :color="payerFor(value)?.color" />
+      </template>
+    </Select>
     <Select
       v-model="filters.place"
       :options="placeOptions"

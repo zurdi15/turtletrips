@@ -113,6 +113,7 @@ function tripImage(trip: Trip): string | null {
             class="w-full sm:w-auto"
             @click="showForm = true"
           />
+          <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
           <SelectButton
             v-model="grouping"
             :options="groupingOptions"
@@ -121,7 +122,6 @@ function tripImage(trip: Trip): string | null {
             :allowEmpty="false"
             class="flex-1 [&_.p-togglebutton]:flex-1"
           />
-          <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
         </div>
 
         <TripFilterBar

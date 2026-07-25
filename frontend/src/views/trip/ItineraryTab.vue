@@ -167,7 +167,16 @@ function openNew(day?: string) {
 <template>
   <div>
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <Button label="Nueva actividad" icon="pi pi-plus" @click="openNew()" />
+      <Button label="Nueva actividad" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew()" />
+      <span class="hidden sm:block flex-1" />
+      <SelectButton
+        v-model="view"
+        :options="viewOptions"
+        optionLabel="label"
+        optionValue="value"
+        :allowEmpty="false"
+        class="flex-1 sm:flex-none max-sm:[&_.p-togglebutton]:flex-1"
+      />
       <a :href="icsUrl" download>
         <Button
           label="Exportar"
@@ -186,15 +195,6 @@ function openNew(day?: string) {
         v-tooltip.bottom="'URL de suscripción: tu calendario se actualiza solo'"
         class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
         @click="showSubscribe = true"
-      />
-      <span class="flex-1" />
-      <SelectButton
-        v-model="view"
-        :options="viewOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        class="max-sm:basis-full max-sm:w-full max-sm:flex max-sm:[&_.p-togglebutton]:flex-1"
       />
     </div>
 

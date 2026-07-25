@@ -70,6 +70,11 @@ export const router = createRouter({
           name: 'trip-files',
           component: () => import('../views/trip/FilesTab.vue'),
         },
+        {
+          path: 'settings',
+          name: 'trip-settings',
+          component: () => import('../views/trip/SettingsTab.vue'),
+        },
       ],
     },
   ],

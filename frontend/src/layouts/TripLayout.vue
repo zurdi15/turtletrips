@@ -1,26 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import ProgressSpinner from 'primevue/progressspinner'
-import TripFormDialog from '../components/trips/TripFormDialog.vue'
 import TabSkeleton from '../components/TabSkeleton.vue'
 import TripHeader from '../components/trip/TripHeader.vue'
 import TripTabsNav from '../components/trip/TripTabsNav.vue'
 import { useTripsStore } from '../stores/trips'
-import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useCountryImage } from '../composables/useCountryImage'
-import { useNotify } from '../composables/useNotify'
 import { useRafDeferred } from '../composables/useRafDeferred'
 
 const props = defineProps<{ id: string }>()
 const route = useRoute()
-const router = useRouter()
-const confirmAction = useConfirmDelete()
-const notify = useNotify()
 const store = useTripsStore()
 
 const tripId = computed(() => Number(props.id))
-const showEdit = ref(false)
 const notFound = ref(false)
 
 const { imageFor } = useCountryImage()
@@ -62,22 +55,11 @@ const TAB_SKELETON: Record<string, TabSkeletonSpec> = {
   'trip-expenses': { stats: true, main: 'table', rows: 8 },
   'trip-packing': { main: 'list', rows: 8 },
   'trip-files': { main: 'table', rows: 4 },
+  'trip-settings': { main: 'cards', rows: 2 },
 }
 const tabSkeleton = computed(
   () => TAB_SKELETON[String(route.name)] ?? { main: 'table' as const, rows: 6 },
 )
-
-function deleteTrip() {
-  confirmAction({
-    message: `¿Eliminar "${store.current?.name}" con todos sus datos y ficheros?`,
-    header: 'Eliminar viaje',
-    accept: async () => {
-      await store.deleteTrip(tripId.value)
-      notify.success('Viaje eliminado')
-      router.push('/')
-    },
-  })
-}
 </script>
 
 <template>
@@ -89,12 +71,7 @@ function deleteTrip() {
       <ProgressSpinner style="width: 40px" />
     </div>
     <div v-else>
-      <TripHeader
-        :trip="store.current"
-        :bannerImage="bannerImage"
-        @edit="showEdit = true"
-        @delete="deleteTrip"
-      />
+      <TripHeader :trip="store.current" :bannerImage="bannerImage" />
 
       <TripTabsNav :tripId="id" />
 
@@ -104,8 +81,6 @@ function deleteTrip() {
       </div>
       <!-- la clase cae en la raíz de la tab: cada tab entra con un rise suave -->
       <router-view v-else :trip="store.current" class="tt-anim-rise" />
-
-      <TripFormDialog v-model:visible="showEdit" :trip="store.current" />
     </div>
   </div>
 </template>

@@ -2,7 +2,8 @@
 import type { Traveler } from '../api/types'
 import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 
-defineProps<{ member: Traveler }>()
+defineProps<{ member: Traveler; removable?: boolean }>()
+defineEmits<{ remove: [event: Event] }>()
 </script>
 
 <template>
@@ -14,5 +15,13 @@ defineProps<{ member: Traveler }>()
       :style="{ background: member.color ?? FALLBACK_CATEGORY_COLOR }"
     />
     {{ member.name }}
+    <button
+      v-if="removable"
+      type="button"
+      class="flex items-center text-ink-faint hover:text-ink cursor-pointer"
+      @click.stop="$emit('remove', $event)"
+    >
+      <i class="pi pi-times-circle text-xs" />
+    </button>
   </span>
 </template>

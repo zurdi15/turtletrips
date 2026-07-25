@@ -50,7 +50,7 @@ export function useExpenseFilters(ctx: {
   )
   const payerFilterOptions = computed(() => [
     { value: 'all' as const, label: 'Todos los pagadores' },
-    ...ctx.trip().travelers.map((t) => ({ value: t.id, label: t.name })),
+    ...ctx.trip().travelers.map((t) => ({ value: t.id, label: t.name, color: t.color })),
     { value: 'common' as const, label: 'Fondo común' },
     { value: 'none' as const, label: 'Sin asignar' },
   ])

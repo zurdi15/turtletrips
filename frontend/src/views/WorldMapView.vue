@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
+import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import AutoComplete from 'primevue/autocomplete'
 import PageHeader from '../components/ui/PageHeader.vue'
-import ProgressMeter from '../components/ui/ProgressMeter.vue'
+import FilterToggleButton from '../components/ui/FilterToggleButton.vue'
 import WorldMapPanel from '../components/world/WorldMapPanel.vue'
 import WorldCountryList from '../components/world/WorldCountryList.vue'
 import WorldPlaceDialog, {
@@ -42,8 +43,21 @@ const viewOptions = [
   { value: 'list', label: 'Lista', icon: 'pi pi-list' },
 ]
 
-// filtros
+// filtros (colapsados bajo el botón "Filtros", como en el home)
 const filters = reactive(emptyWorldFilters())
+const showFilters = ref(false)
+const activeFilterCount = computed(
+  () =>
+    (filters.searchText.trim() ? 1 : 0) +
+    (filters.kind !== 'all' ? 1 : 0) +
+    (filters.country !== 'all' ? 1 : 0) +
+    (filters.source !== 'all' ? 1 : 0),
+)
+
+function clearFilters() {
+  Object.assign(filters, emptyWorldFilters())
+}
+
 const kindFilterOptions = [
   { value: 'all', label: 'Todo' },
   { value: 'country', label: 'Países' },
@@ -170,19 +184,21 @@ function removePlace(place: WorldPlace) {
     <!-- estadísticas de diario -->
     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-sm text-ink-muted">
       <span>
-        🌍 <span class="font-semibold text-ink">{{ stats.countries }}</span> países
+        <i class="mdi mdi-earth mr-1" />
+        <span class="font-semibold text-ink">{{ stats.countries }}</span> países
         <span class="text-ink-faint">({{ stats.worldPct }}% del mundo)</span>
       </span>
-      <span>🏙 <span class="font-semibold text-ink">{{ stats.cities }}</span> ciudades</span>
       <span>
-        <i class="pi pi-map-marker text-xs" />
+        <i class="mdi mdi-city-variant-outline mr-1" />
+        <span class="font-semibold text-ink">{{ stats.cities }}</span> ciudades
+      </span>
+      <span>
+        <i class="mdi mdi-map-marker mr-1" />
         <span class="font-semibold text-ink">{{ stats.places }}</span> sitios
       </span>
-      <span>💬 <span class="font-semibold text-ink">{{ stats.notes }}</span> notas</span>
-      <ProgressMeter :value="stats.worldPct" color="warn" size="xs" class="w-full sm:w-56" />
     </div>
 
-    <!-- añadir + vista -->
+    <!-- añadir -->
     <div class="flex flex-wrap items-center gap-2 mb-3">
       <AutoComplete
         v-model="searchValue"
@@ -204,45 +220,63 @@ function removePlace(place: WorldPlace) {
         class="w-full sm:w-56"
         @update:modelValue="addCountry"
       />
-      <span class="flex-1" />
-      <SelectButton
-        v-model="viewMode"
-        :options="viewOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-      />
     </div>
 
-    <!-- filtros -->
-    <div class="flex flex-wrap items-center gap-2 mb-4">
-      <InputText
-        v-model="filters.searchText"
-        placeholder="Filtrar por nombre, nota o viaje…"
-        class="w-full sm:w-64"
-      />
-      <Select
-        v-model="filters.kind"
-        :options="kindFilterOptions"
-        optionLabel="label"
-        optionValue="value"
-        class="flex-1 min-w-[7rem] sm:flex-none sm:w-36"
-      />
-      <Select
-        v-model="filters.country"
-        :options="countryFilterOptions"
-        optionLabel="label"
-        optionValue="value"
-        filter
-        class="flex-1 min-w-menu sm:flex-none sm:w-52"
-      />
-      <Select
-        v-model="filters.source"
-        :options="sourceFilterOptions"
-        optionLabel="label"
-        optionValue="value"
-        class="flex-1 min-w-menu sm:flex-none sm:w-48"
-      />
+    <!-- filtros + vista -->
+    <div class="flex flex-col gap-3 mb-4">
+      <div class="flex items-center gap-2">
+        <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
+        <SelectButton
+          v-model="viewMode"
+          :options="viewOptions"
+          optionLabel="label"
+          optionValue="value"
+          :allowEmpty="false"
+          class="flex-1 [&_.p-togglebutton]:flex-1"
+        />
+      </div>
+
+      <div
+        v-if="showFilters"
+        class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3"
+      >
+        <InputText
+          v-model="filters.searchText"
+          placeholder="Filtrar por nombre, nota o viaje…"
+          class="w-full sm:w-auto sm:flex-1"
+        />
+        <Select
+          v-model="filters.kind"
+          :options="kindFilterOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="flex-1 min-w-[7rem] sm:flex-none sm:w-36"
+        />
+        <Select
+          v-model="filters.country"
+          :options="countryFilterOptions"
+          optionLabel="label"
+          optionValue="value"
+          filter
+          class="flex-1 min-w-menu sm:flex-none sm:w-52"
+        />
+        <Select
+          v-model="filters.source"
+          :options="sourceFilterOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="flex-1 min-w-menu sm:flex-none sm:w-48"
+        />
+        <Button
+          v-if="activeFilterCount"
+          label="Limpiar"
+          icon="pi pi-times"
+          text
+          severity="secondary"
+          size="small"
+          @click="clearFilters"
+        />
+      </div>
     </div>
 
     <WorldMapPanel

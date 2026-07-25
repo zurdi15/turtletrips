@@ -87,7 +87,14 @@ const initialLoading = computed(
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-semibold text-ink-secondary">Presupuesto</h3>
           <router-link :to="{ name: 'trip-expenses', params: { id: trip.id } }">
-            <Button label="Ver gastos" text size="small" icon="pi pi-arrow-right" iconPos="right" />
+            <Button
+              label="Ver gastos"
+              text
+              size="small"
+              severity="warn"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+            />
           </router-link>
         </div>
         <div class="flex items-baseline gap-2">
@@ -107,7 +114,19 @@ const initialLoading = computed(
       </div>
 
       <div class="bg-surface rounded-card border border-line p-4">
-        <h3 class="text-sm font-semibold text-ink-secondary mb-3">Próximas reservas</h3>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-ink-secondary">Próximas reservas</h3>
+          <router-link :to="{ name: 'trip-bookings', params: { id: trip.id } }">
+            <Button
+              label="Ver reservas"
+              text
+              size="small"
+              severity="info"
+              icon="pi pi-arrow-right"
+              iconPos="right"
+            />
+          </router-link>
+        </div>
         <div v-if="nextBookings.length" class="tt-stagger flex flex-col gap-2">
           <div
             v-for="b in nextBookings"

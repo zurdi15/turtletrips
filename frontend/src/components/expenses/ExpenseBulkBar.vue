@@ -2,13 +2,15 @@
 import { ref } from 'vue'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
+import PayerTag from '../PayerTag.vue'
 
 interface Option<T> {
   value: T
   label: string
+  color?: string | null
 }
 
-defineProps<{
+const props = defineProps<{
   count: number
   working: boolean
   categoryOptions: Option<string>[]
@@ -32,6 +34,10 @@ function onCategory(name: string | null) {
 function onPayer(value: number | 'none' | 'common' | null) {
   if (value != null) emit('set-payer', value)
   bulkPayer.value = null
+}
+
+function payerFor(value: number | 'none' | 'common') {
+  return props.payerOptions.find((o) => o.value === value)
 }
 </script>
 
@@ -58,7 +64,20 @@ function onPayer(value: number | 'none' | 'common' | null) {
       :disabled="working"
       class="w-full sm:w-48"
       @update:modelValue="onPayer"
-    />
+    >
+      <template #option="{ option }">
+        <PayerTag :value="option.value" :label="option.label" :color="option.color" />
+      </template>
+      <template #value="{ value, placeholder }">
+        <PayerTag
+          v-if="value != null"
+          :value="value"
+          :label="payerFor(value)?.label ?? ''"
+          :color="payerFor(value)?.color"
+        />
+        <template v-else>{{ placeholder }}</template>
+      </template>
+    </Select>
     <span class="hidden sm:block flex-1" />
     <Button
       icon="pi pi-trash"

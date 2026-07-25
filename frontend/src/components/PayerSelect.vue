@@ -5,9 +5,8 @@ export type PayerValue = number | 'common' | null
 <script setup lang="ts">
 import { computed } from 'vue'
 import Select from 'primevue/select'
-import Pill from './ui/Pill.vue'
+import PayerTag from './PayerTag.vue'
 import type { Traveler } from '../api/types'
-import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
 
 interface PayerOption {
   value: PayerValue
@@ -32,30 +31,20 @@ function optionFor(value: PayerValue): PayerOption | undefined {
 <template>
   <Select v-model="model" :options="options" optionLabel="label" optionValue="value">
     <template #option="{ option }">
-      <Pill v-if="option.value === 'common'" color="warn" icon="pi pi-wallet">
-        {{ option.label }}
-      </Pill>
-      <span v-else-if="option.value === null" class="text-ink-faint">
-        {{ option.label }}
-      </span>
-      <span v-else class="inline-flex items-center gap-1.5">
-        <span
-          class="w-2 h-2 rounded-full shrink-0"
-          :style="{ background: option.color ?? FALLBACK_CATEGORY_COLOR }"
-        />
-        {{ option.label }}
-      </span>
+      <PayerTag
+        :value="option.value"
+        :label="option.label"
+        :color="option.color"
+        :muted="option.value === null"
+      />
     </template>
     <template #value="{ value }">
-      <Pill v-if="value === 'common'" color="warn" icon="pi pi-wallet">Fondo común</Pill>
-      <span v-else-if="value == null" class="text-ink-faint">Sin asignar</span>
-      <span v-else class="inline-flex items-center gap-1.5">
-        <span
-          class="w-2 h-2 rounded-full shrink-0"
-          :style="{ background: optionFor(value)?.color ?? FALLBACK_CATEGORY_COLOR }"
-        />
-        {{ optionFor(value)?.label }}
-      </span>
+      <PayerTag
+        :value="value ?? null"
+        :label="optionFor(value ?? null)?.label ?? ''"
+        :color="optionFor(value ?? null)?.color"
+        :muted="value == null"
+      />
     </template>
   </Select>
 </template>

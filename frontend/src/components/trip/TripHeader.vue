@@ -8,7 +8,6 @@ import { formatDate } from '../../composables/useMoney'
 import { countryName, flagEmoji } from '../../countries'
 
 defineProps<{ trip: Trip; bannerImage: string | null }>()
-defineEmits<{ edit: []; delete: [] }>()
 </script>
 
 <template>
@@ -51,10 +50,14 @@ defineEmits<{ edit: []; delete: [] }>()
             {{ formatDate(trip.start_date) }}
             <template v-if="trip.end_date">→ {{ formatDate(trip.end_date) }}</template>
           </span>
+          <!-- en desktop los chips acompañan a países y fechas; en móvil van al bloque de abajo -->
+          <span class="hidden sm:flex gap-1 flex-wrap">
+            <MemberChip v-for="t in trip.travelers" :key="t.id" :member="t" />
+          </span>
         </p>
       </div>
       <div class="flex items-center gap-2 flex-wrap max-sm:w-full">
-        <div class="flex gap-1 mr-2 flex-wrap max-sm:flex-1">
+        <div class="flex gap-1 mr-2 flex-wrap max-sm:flex-1 sm:hidden">
           <MemberChip v-for="t in trip.travelers" :key="t.id" :member="t" />
         </div>
         <Button
@@ -69,24 +72,6 @@ defineEmits<{ edit: []; delete: [] }>()
           size="small"
           class="tt-banner-btn"
           v-tooltip.bottom="'Álbum de fotos'"
-        />
-        <Button
-          icon="pi pi-pencil"
-          severity="secondary"
-          outlined
-          size="small"
-          class="tt-banner-btn"
-          v-tooltip.bottom="'Editar viaje'"
-          @click="$emit('edit')"
-        />
-        <Button
-          icon="pi pi-trash"
-          severity="danger"
-          outlined
-          size="small"
-          class="tt-banner-btn"
-          v-tooltip.bottom="'Eliminar viaje'"
-          @click="$emit('delete')"
         />
       </div>
     </div>

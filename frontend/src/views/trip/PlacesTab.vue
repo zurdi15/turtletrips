@@ -30,7 +30,7 @@ const filterVisited = ref<'all' | 'pending' | 'visited'>('all')
 
 // vista de la tab: lista, mapa a todo el ancho, o ambos lado a lado.
 // En móvil arranca en lista (no cabe todo); en escritorio en ambos.
-const panel = ref<'list' | 'both' | 'map'>(window.innerWidth < 1024 ? 'list' : 'both')
+const panel = ref<'list' | 'both' | 'map'>('both')
 const mapRef = ref<InstanceType<typeof PlaceMap> | null>(null)
 const panelOptions = [
   { value: 'list', label: 'Lista', icon: 'pi pi-list' },
@@ -64,9 +64,10 @@ const categoryOptions = [
   { value: 'all', label: 'Todas las categorías' },
   ...toSelectOptions(PLACE_CATEGORY_LABELS),
 ]
+// "Todos" en el centro, igual que "Ambos" en el selector de panel
 const visitedOptions = [
-  { value: 'all', label: 'Todos' },
   { value: 'pending', label: 'Pendientes' },
+  { value: 'all', label: 'Todos' },
   { value: 'visited', label: 'Visitados' },
 ]
 
@@ -114,7 +115,7 @@ const {
 <template>
   <div>
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <Button label="Nuevo sitio" icon="pi pi-plus" @click="openNew" />
+      <Button label="Nuevo sitio" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
       <InputText v-model="searchText" placeholder="Buscar…" class="flex-1 sm:flex-none sm:w-44" />
       <!-- el selector de categoría absorbe el espacio sobrante: la fila queda completa -->
       <Select
@@ -130,6 +131,7 @@ const {
         optionLabel="label"
         optionValue="value"
         :allowEmpty="false"
+        class="max-sm:basis-full max-sm:w-full max-sm:flex max-sm:[&_.p-togglebutton]:flex-1"
       />
       <SelectButton
         v-model="panel"
@@ -137,6 +139,7 @@ const {
         optionLabel="label"
         optionValue="value"
         :allowEmpty="false"
+        class="max-sm:basis-full max-sm:w-full max-sm:flex max-sm:[&_.p-togglebutton]:flex-1"
       />
       <span class="shrink-0 text-sm text-ink-faint hidden sm:block">
         {{ store.items.filter((p) => p.visited).length }}/{{ store.items.length }} visitados

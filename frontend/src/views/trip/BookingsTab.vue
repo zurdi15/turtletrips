@@ -119,7 +119,7 @@ function copyCode(code: string) {
 <template>
   <div>
     <div class="flex items-center justify-between mb-4">
-      <Button label="Nueva reserva" icon="pi pi-plus" @click="openNew" />
+      <Button label="Nueva reserva" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
     </div>
 
     <TabSkeleton v-if="store.loading && !store.items.length" variant="cards" :rows="3" />

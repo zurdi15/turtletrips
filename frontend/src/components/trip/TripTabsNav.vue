@@ -14,6 +14,7 @@ const tabs = [
   { name: 'trip-expenses', label: 'Gastos', icon: 'pi pi-wallet' },
   { name: 'trip-packing', label: 'Maleta', icon: 'pi pi-briefcase' },
   { name: 'trip-files', label: 'Ficheros', icon: 'pi pi-paperclip' },
+  { name: 'trip-settings', label: 'Ajustes', icon: 'pi pi-cog' },
 ]
 
 // la tab clicada se marca activa al momento (optimista), sin esperar al router

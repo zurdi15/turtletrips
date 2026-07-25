@@ -144,6 +144,7 @@ const bulkPayerOptions = computed(() => [
   ...props.trip.travelers.map((t) => ({
     value: t.id as number | 'none' | 'common',
     label: t.name,
+    color: t.color,
   })),
   { value: 'common' as const, label: 'Fondo común' },
   { value: 'none' as const, label: 'Sin asignar' },
@@ -224,7 +225,7 @@ const {
 
     <!-- barra de acciones -->
     <div class="flex flex-wrap items-center gap-2 mb-3">
-      <Button label="Nuevo gasto" icon="pi pi-plus" @click="openNew" />
+      <Button label="Nuevo gasto" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
       <FilterToggleButton
         v-if="viewMode !== 'balances'"
         v-model="showFilters"
@@ -236,15 +237,28 @@ const {
         :options="tableGroupOptions"
         optionLabel="label"
         optionValue="value"
-        class="w-52"
+        class="flex-1 sm:flex-none sm:w-52"
       />
-      <span class="flex-1" />
+      <!-- en móvil el panel salta aquí (justo bajo su botón); en desktop order-last lo baja tras la fila única -->
+      <ExpenseFilterPanel
+        v-if="showFilters && viewMode !== 'balances'"
+        class="w-full sm:order-last"
+        :filters="filters"
+        :categoryOptions="categoryFilterOptions"
+        :excludeOptions="excludeOptions"
+        :payerOptions="payerFilterOptions"
+        :placeOptions="placeFilterOptions"
+        :activeFilterCount="activeFilterCount"
+        @clear="clearFilters"
+      />
+      <span class="hidden sm:block flex-1" />
       <SelectButton
         v-model="viewMode"
         :options="viewOptions"
         optionLabel="label"
         optionValue="value"
         :allowEmpty="false"
+        class="flex-1 sm:flex-none max-sm:[&_.p-togglebutton]:flex-1"
       />
       <Button
         icon="pi pi-file-import"
@@ -262,17 +276,6 @@ const {
         />
       </a>
     </div>
-
-    <ExpenseFilterPanel
-      v-if="showFilters && viewMode !== 'balances'"
-      :filters="filters"
-      :categoryOptions="categoryFilterOptions"
-      :excludeOptions="excludeOptions"
-      :payerOptions="payerFilterOptions"
-      :placeOptions="placeFilterOptions"
-      :activeFilterCount="activeFilterCount"
-      @clear="clearFilters"
-    />
 
     <EmptyState
       v-if="!store.loading && !store.items.length"

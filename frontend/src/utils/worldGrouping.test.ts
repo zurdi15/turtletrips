@@ -92,7 +92,7 @@ describe('worldStats', () => {
       ],
       100,
     )
-    expect(stats).toEqual({ countries: 1, worldPct: 1, cities: 1, places: 1, notes: 1 })
+    expect(stats).toEqual({ countries: 1, worldPct: 1, cities: 1, places: 1 })
   })
 })
 

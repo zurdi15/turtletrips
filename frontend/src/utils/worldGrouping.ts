@@ -95,7 +95,6 @@ export interface WorldStats {
   worldPct: number
   cities: number
   places: number
-  notes: number
 }
 
 export function worldStats(items: WorldPlace[], totalCountries = COUNTRIES.length): WorldStats {
@@ -105,7 +104,6 @@ export function worldStats(items: WorldPlace[], totalCountries = COUNTRIES.lengt
     worldPct: Math.round((countries / totalCountries) * 100),
     cities: items.filter((p) => p.kind === 'city').length,
     places: items.filter((p) => p.kind === 'place').length,
-    notes: items.filter((p) => p.note).length,
   }
 }
 
