@@ -3,9 +3,10 @@ import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
 import AutoComplete from 'primevue/autocomplete'
+import ClusterBtn from '../components/ui/ClusterBtn.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
+import CollapsePanel from '../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../components/ui/FilterToggleButton.vue'
 import WorldMapPanel from '../components/world/WorldMapPanel.vue'
 import WorldCountryList from '../components/world/WorldCountryList.vue'
@@ -41,7 +42,7 @@ const viewMode = ref<'map' | 'list'>('map')
 const viewOptions = [
   { value: 'map', label: 'Mapa', icon: 'pi pi-map' },
   { value: 'list', label: 'Lista', icon: 'pi pi-list' },
-]
+] as const
 
 // filtros (colapsados bajo el botón "Filtros", como en el home)
 const filters = reactive(emptyWorldFilters())
@@ -226,18 +227,13 @@ function removePlace(place: WorldPlace) {
     <div class="flex flex-col gap-3 mb-4">
       <div class="flex items-center gap-2">
         <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
-        <SelectButton
-          v-model="viewMode"
-          :options="viewOptions"
-          optionLabel="label"
-          optionValue="value"
-          :allowEmpty="false"
-          class="flex-1 [&_.p-togglebutton]:flex-1"
-        />
+        <ClusterBtn v-model="viewMode" :options="viewOptions" class="flex-1" />
       </div>
 
+      <!-- -mt-3 anula el gap del padre con el panel cerrado; el pt-3 interno lo repone animado -->
+      <CollapsePanel :open="showFilters" class="-mt-3">
+      <div class="pt-3">
       <div
-        v-if="showFilters"
         class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3"
       >
         <InputText
@@ -277,6 +273,8 @@ function removePlace(place: WorldPlace) {
           @click="clearFilters"
         />
       </div>
+      </div>
+      </CollapsePanel>
     </div>
 
     <WorldMapPanel

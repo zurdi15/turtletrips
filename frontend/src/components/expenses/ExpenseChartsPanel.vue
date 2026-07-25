@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import Chart from 'primevue/chart'
-import SelectButton from 'primevue/selectbutton'
+import ClusterBtn from '../ui/ClusterBtn.vue'
 import type { Expense, Trip } from '../../api/types'
 import { useExpenseCharts } from '../../composables/useExpenseCharts'
 import { formatMoney } from '../../composables/useMoney'
@@ -40,26 +40,9 @@ const {
 <template>
   <div class="bg-surface rounded-card border border-line p-4 sm:p-5">
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <SelectButton
-        v-model="chartDim"
-        :options="dimOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        size="small"
-      />
+      <ClusterBtn v-model="chartDim" :options="dimOptions" size="small" />
       <span class="flex-1" />
-      <SelectButton
-        v-model="chartType"
-        :options="typeOptions"
-        optionValue="value"
-        :allowEmpty="false"
-        size="small"
-      >
-        <template #option="{ option }">
-          <i :class="option.icon" v-tooltip.top="option.label" />
-        </template>
-      </SelectButton>
+      <ClusterBtn v-model="chartType" :options="typeOptions" size="small" iconOnly />
     </div>
     <p v-if="!chartSeries.length" class="text-sm text-ink-faint text-center py-10">
       Sin datos con los filtros actuales

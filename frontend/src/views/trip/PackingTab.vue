@@ -165,7 +165,7 @@ async function saveTemplate() {
   <div>
     <!-- selector de maleta: común + una por viajero -->
     <BagSelector v-model:active="activeTraveler" :bags="bags" class="mb-4">
-      <p v-if="!trip.travelers.length" class="text-xs text-ink-faint ml-2">
+      <p v-if="!trip.travelers.length" class="text-xs text-ink-faint sm:ml-2 max-sm:col-span-full self-center">
         Añade viajeros al viaje para que cada uno tenga su maleta
       </p>
     </BagSelector>

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputNumber from 'primevue/inputnumber'
-import SelectButton from 'primevue/selectbutton'
+import ClusterBtn from './ui/ClusterBtn.vue'
 import type { SplitMode, Traveler } from '../api/types'
 import { equalSplit, splitRemaining, sumValues } from '../composables/useSplit'
 import { formatMoney } from '../composables/useMoney'
@@ -32,10 +32,10 @@ watch(
 )
 
 const modeOptions = [
-  { value: 'equal', label: 'Partes iguales' },
-  { value: 'amount', label: 'Importes' },
-  { value: 'percent', label: 'Porcentajes' },
-]
+  { value: 'equal', label: 'Partes iguales', icon: 'pi pi-equals' },
+  { value: 'amount', label: 'Importes', icon: 'pi pi-money-bill' },
+  { value: 'percent', label: 'Porcentajes', icon: 'pi pi-percentage' },
+] as const
 
 const mode = computed({
   get: () => model.value.split_mode,
@@ -145,14 +145,7 @@ function fmt(v: number): string {
     </p>
 
     <div v-if="expanded" class="mt-3 flex flex-col gap-3">
-      <SelectButton
-        v-model="mode"
-        :options="modeOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        size="small"
-      />
+      <ClusterBtn v-model="mode" :options="modeOptions" size="small" />
       <div class="flex flex-col gap-1.5">
         <div v-for="t in travelers" :key="t.id" class="flex items-center gap-2.5">
           <Checkbox

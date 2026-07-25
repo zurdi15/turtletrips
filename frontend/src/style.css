@@ -333,6 +333,33 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   transform: translateY(8px);
 }
 
+/* colapso suave (CollapsePanel): la altura se anima con grid-template-rows
+   0fr→1fr (excepción consciente a transform/opacity: es la única forma de que
+   el contenido de debajo acompañe en vez de saltar) y el panel entra con
+   fade + deslizamiento desde el botón. El hijo directo clipa y NO debe llevar
+   padding/margen propios: el espaciado va dentro del slot. */
+.tt-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--tt-dur-250) var(--tt-ease-spring);
+}
+.tt-collapse-open {
+  grid-template-rows: 1fr;
+}
+.tt-collapse-clip {
+  overflow: hidden;
+  min-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity var(--tt-dur-250) ease,
+    transform var(--tt-dur-250) var(--tt-ease-spring);
+}
+.tt-collapse-open > .tt-collapse-clip {
+  opacity: 1;
+  transform: none;
+}
+
 /* TransitionGroup para listas vivas (liquidaciones, pagos registrados):
    entrada, salida y recolocación suave del resto. El contenedor necesita
    position: relative para que la salida (absolute) no descoloque nada. */
@@ -433,6 +460,9 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   }
   .tt-fade-enter-active,
   .tt-rise-enter-active,
+  .tt-collapse,
+  .tt-collapse-clip,
+  .tt-cluster-pill,
   .tt-list-move,
   .tt-list-enter-active,
   .tt-list-leave-active,

@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
-import SelectButton from 'primevue/selectbutton'
+import ClusterBtn from '../components/ui/ClusterBtn.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import EditableListItem from '../components/ui/EditableListItem.vue'
 import ColorSwatchPopover from '../components/ui/ColorSwatchPopover.vue'
@@ -31,7 +31,7 @@ const theme = computed<'light' | 'dark'>({
 const themeOptions = [
   { value: 'light', label: 'Claro', icon: 'pi pi-sun' },
   { value: 'dark', label: 'Oscuro', icon: 'pi pi-moon' },
-]
+] as const
 
 // ---- copia de seguridad ----
 
@@ -136,21 +136,7 @@ const sections: { kind: 'expense' | 'packing'; title: string; hint: string }[] =
       <section class="bg-surface rounded-card border border-line p-5">
         <h2 class="font-semibold text-ink mb-1">Apariencia</h2>
         <p class="text-xs text-ink-faint mb-4">Tema de la interfaz.</p>
-        <SelectButton
-          v-model="theme"
-          :options="themeOptions"
-          optionLabel="label"
-          optionValue="value"
-          :allowEmpty="false"
-          aria-label="Tema de la interfaz"
-        >
-          <template #option="{ option }">
-            <span class="flex items-center gap-2">
-              <i :class="option.icon" />
-              {{ option.label }}
-            </span>
-          </template>
-        </SelectButton>
+        <ClusterBtn v-model="theme" :options="themeOptions" aria-label="Tema de la interfaz" />
       </section>
 
       <section

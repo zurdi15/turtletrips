@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
-import SelectButton from 'primevue/selectbutton'
 import ProgressSpinner from 'primevue/progressspinner'
+import ClusterBtn from '../components/ui/ClusterBtn.vue'
 import TripFormDialog from '../components/trips/TripFormDialog.vue'
 import EmptyState from '../components/EmptyState.vue'
+import CollapsePanel from '../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../components/ui/FilterToggleButton.vue'
 import TripCard from '../components/trips/TripCard.vue'
 import TripFilterBar from '../components/trips/TripFilterBar.vue'
@@ -58,9 +59,9 @@ const countryOptions = computed(() => {
 })
 
 const groupingOptions = [
-  { value: 'year', label: 'Por año' },
-  { value: 'status', label: 'Por estado' },
-]
+  { value: 'year', label: 'Por año', icon: 'pi pi-calendar' },
+  { value: 'status', label: 'Por estado', icon: 'pi pi-flag' },
+] as const
 
 const filtered = computed(() =>
   store.trips.filter((t) => {
@@ -114,26 +115,23 @@ function tripImage(trip: Trip): string | null {
             @click="showForm = true"
           />
           <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
-          <SelectButton
-            v-model="grouping"
-            :options="groupingOptions"
-            optionLabel="label"
-            optionValue="value"
-            :allowEmpty="false"
-            class="flex-1 [&_.p-togglebutton]:flex-1"
-          />
+          <ClusterBtn v-model="grouping" :options="groupingOptions" class="flex-1" />
         </div>
 
-        <TripFilterBar
-          v-if="showFilters"
-          v-model:search="searchText"
-          v-model:status="filterStatus"
-          v-model:country="filterCountry"
-          :statusOptions="statusOptions"
-          :countryOptions="countryOptions"
-          :activeCount="activeFilterCount"
-          @clear="clearFilters"
-        />
+        <!-- -mt-3 anula el gap del padre con el panel cerrado; el pt-3 interno lo repone animado -->
+        <CollapsePanel :open="showFilters" class="-mt-3">
+          <div class="pt-3">
+            <TripFilterBar
+              v-model:search="searchText"
+              v-model:status="filterStatus"
+              v-model:country="filterCountry"
+              :statusOptions="statusOptions"
+              :countryOptions="countryOptions"
+              :activeCount="activeFilterCount"
+              @clear="clearFilters"
+            />
+          </div>
+        </CollapsePanel>
       </div>
 
       <!-- Grupos -->

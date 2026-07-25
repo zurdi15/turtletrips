@@ -22,23 +22,23 @@ export function useExpenseCharts(ctx: {
   const chartType = ref<ChartKind>('pie')
 
   const dimOptions = [
-    { value: 'category', label: 'Categoría' },
-    { value: 'payer', label: 'Pagador' },
-    { value: 'place', label: 'Sitio' },
-    { value: 'day', label: 'Día' },
-  ]
+    { value: 'category', label: 'Categoría', icon: 'pi pi-tag' },
+    { value: 'payer', label: 'Pagador', icon: 'pi pi-user' },
+    { value: 'place', label: 'Sitio', icon: 'pi pi-map-marker' },
+    { value: 'day', label: 'Día', icon: 'pi pi-calendar' },
+  ] as const
 
   const typeOptions = computed(() =>
     chartDim.value === 'day'
-      ? [
+      ? ([
           { value: 'bar', label: 'Barras', icon: 'pi pi-chart-bar' },
           { value: 'line', label: 'Línea', icon: 'pi pi-chart-line' },
           { value: 'cumulative', label: 'Acumulado', icon: 'pi pi-arrow-up-right' },
-        ]
-      : [
+        ] as const)
+      : ([
           { value: 'pie', label: 'Tarta', icon: 'pi pi-chart-pie' },
           { value: 'bar', label: 'Barras', icon: 'pi pi-chart-bar' },
-        ],
+        ] as const),
   )
 
   // si cambia la dimensión y el tipo actual no aplica, elegir el primero válido

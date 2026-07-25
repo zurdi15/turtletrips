@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
+import ClusterBtn from '../../components/ui/ClusterBtn.vue'
 import PlaceMap from '../../components/PlaceMap.vue'
 import PlaceFormDialog from '../../components/places/PlaceFormDialog.vue'
 import PlaceCard from '../../components/places/PlaceCard.vue'
@@ -36,7 +36,7 @@ const panelOptions = [
   { value: 'list', label: 'Lista', icon: 'pi pi-list' },
   { value: 'both', label: 'Ambos', icon: 'pi pi-objects-column' },
   { value: 'map', label: 'Mapa', icon: 'pi pi-map' },
-]
+] as const
 
 watch(panel, async (value) => {
   if (value === 'list') return
@@ -66,10 +66,10 @@ const categoryOptions = [
 ]
 // "Todos" en el centro, igual que "Ambos" en el selector de panel
 const visitedOptions = [
-  { value: 'pending', label: 'Pendientes' },
-  { value: 'all', label: 'Todos' },
-  { value: 'visited', label: 'Visitados' },
-]
+  { value: 'pending', label: 'Pendientes', icon: 'pi pi-clock' },
+  { value: 'all', label: 'Todos', icon: 'pi pi-asterisk' },
+  { value: 'visited', label: 'Visitados', icon: 'pi pi-check-circle' },
+] as const
 
 // reservas enlazadas a cada sitio (chip → pestaña Reservas)
 const bookingsByPlace = computed(() => {
@@ -114,36 +114,45 @@ const {
 
 <template>
   <div>
+    <!-- el DOM es el orden móvil; en desktop los sm:order-* lo recomponen en dos
+         filas: acciones arriba y, justo encima del contenido, contador (izquierda)
+         + selector de vista (derecha) -->
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <Button label="Nuevo sitio" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
-      <InputText v-model="searchText" placeholder="Buscar…" class="flex-1 sm:flex-none sm:w-44" />
+      <Button
+        label="Nuevo sitio"
+        icon="pi pi-plus"
+        class="w-full sm:w-auto sm:order-1"
+        @click="openNew"
+      />
+      <InputText
+        v-model="searchText"
+        placeholder="Buscar…"
+        class="flex-1 sm:flex-none sm:w-44 sm:order-2"
+      />
       <!-- el selector de categoría absorbe el espacio sobrante: la fila queda completa -->
       <Select
         v-model="filterCategory"
         :options="categoryOptions"
         optionLabel="label"
         optionValue="value"
-        class="flex-1 min-w-[10rem]"
+        class="flex-1 min-w-[10rem] sm:order-3"
       />
-      <SelectButton
+      <ClusterBtn
         v-model="filterVisited"
         :options="visitedOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        class="max-sm:basis-full max-sm:w-full max-sm:flex max-sm:[&_.p-togglebutton]:flex-1"
+        class="max-sm:basis-full max-sm:w-full sm:order-4"
       />
-      <SelectButton
+      <ClusterBtn
         v-model="panel"
         :options="panelOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        class="max-sm:basis-full max-sm:w-full max-sm:flex max-sm:[&_.p-togglebutton]:flex-1"
+        class="max-sm:basis-full max-sm:w-full sm:order-8"
       />
-      <span class="shrink-0 text-sm text-ink-faint hidden sm:block">
+      <span class="hidden sm:block shrink-0 text-sm text-ink-faint sm:order-6">
         {{ store.items.filter((p) => p.visited).length }}/{{ store.items.length }} visitados
       </span>
+      <span class="hidden sm:block flex-1 sm:order-7" />
+      <!-- salto de fila entre acciones y vista; el -mt-2 compensa el doble row-gap -->
+      <span class="hidden sm:block basis-full -mt-2 sm:order-5" />
     </div>
 
     <div class="grid grid-cols-1 gap-6" :class="panel === 'both' ? 'lg:grid-cols-2' : ''">

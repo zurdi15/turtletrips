@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
-import SelectButton from 'primevue/selectbutton'
+import ClusterBtn from '../../components/ui/ClusterBtn.vue'
 import ExpenseFormDialog from '../../components/expenses/ExpenseFormDialog.vue'
 import ExpenseImportDialog from '../../components/expenses/ExpenseImportDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -14,6 +14,7 @@ import ExpenseTable from '../../components/expenses/ExpenseTable.vue'
 import ExpenseChartsPanel from '../../components/expenses/ExpenseChartsPanel.vue'
 import BalancesPanel from '../../components/expenses/BalancesPanel.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
+import CollapsePanel from '../../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../../components/ui/FilterToggleButton.vue'
 import type { Expense, Trip } from '../../api/types'
 import { useExpensesStore } from '../../stores/expenses'
@@ -64,7 +65,7 @@ const viewOptions = [
   { value: 'table', label: 'Tabla', icon: 'pi pi-table' },
   { value: 'charts', label: 'Gráficos', icon: 'pi pi-chart-pie' },
   { value: 'balances', label: 'Saldos', icon: 'pi pi-users' },
-]
+] as const
 
 // el cambio de vista se pinta en dos fases: primero el botón + skeleton (frame
 // inmediato) y en el siguiente frame se monta la vista pesada — así el click
@@ -239,27 +240,27 @@ const {
         optionValue="value"
         class="flex-1 sm:flex-none sm:w-52"
       />
-      <!-- en móvil el panel salta aquí (justo bajo su botón); en desktop order-last lo baja tras la fila única -->
-      <ExpenseFilterPanel
-        v-if="showFilters && viewMode !== 'balances'"
-        class="w-full sm:order-last"
-        :filters="filters"
-        :categoryOptions="categoryFilterOptions"
-        :excludeOptions="excludeOptions"
-        :payerOptions="payerFilterOptions"
-        :placeOptions="placeFilterOptions"
-        :activeFilterCount="activeFilterCount"
-        @clear="clearFilters"
-      />
+      <!-- en móvil el panel salta aquí (justo bajo su botón); en desktop order-last lo baja
+           tras la fila única. -mt-2 anula el gap extra de la línea fantasma cerrada -->
+      <CollapsePanel
+        v-if="viewMode !== 'balances'"
+        :open="showFilters"
+        class="w-full sm:order-last -mt-2"
+      >
+        <div class="pt-2">
+          <ExpenseFilterPanel
+            :filters="filters"
+            :categoryOptions="categoryFilterOptions"
+            :excludeOptions="excludeOptions"
+            :payerOptions="payerFilterOptions"
+            :placeOptions="placeFilterOptions"
+            :activeFilterCount="activeFilterCount"
+            @clear="clearFilters"
+          />
+        </div>
+      </CollapsePanel>
       <span class="hidden sm:block flex-1" />
-      <SelectButton
-        v-model="viewMode"
-        :options="viewOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        class="flex-1 sm:flex-none max-sm:[&_.p-togglebutton]:flex-1"
-      />
+      <ClusterBtn v-model="viewMode" :options="viewOptions" class="flex-1 sm:flex-none" />
       <Button
         icon="pi pi-file-import"
         severity="secondary"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import Button from 'primevue/button'
-import SelectButton from 'primevue/selectbutton'
+import ClusterBtn from '../../components/ui/ClusterBtn.vue'
 import draggable from 'vuedraggable'
 import ItineraryFormDialog from '../../components/itinerary/ItineraryFormDialog.vue'
 import CalendarSubscribeDialog from '../../components/itinerary/CalendarSubscribeDialog.vue'
@@ -44,7 +44,7 @@ const view = ref<'agenda' | 'calendar'>('agenda')
 const viewOptions = [
   { value: 'agenda', label: 'Agenda', icon: 'pi pi-list' },
   { value: 'calendar', label: 'Calendario', icon: 'pi pi-calendar' },
-]
+] as const
 
 const showSubscribe = ref(false)
 const presetDay = ref<string | null>(null)
@@ -169,14 +169,7 @@ function openNew(day?: string) {
     <div class="flex flex-wrap items-center gap-2 mb-4">
       <Button label="Nueva actividad" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew()" />
       <span class="hidden sm:block flex-1" />
-      <SelectButton
-        v-model="view"
-        :options="viewOptions"
-        optionLabel="label"
-        optionValue="value"
-        :allowEmpty="false"
-        class="flex-1 sm:flex-none max-sm:[&_.p-togglebutton]:flex-1"
-      />
+      <ClusterBtn v-model="view" :options="viewOptions" class="flex-1 sm:flex-none" />
       <a :href="icsUrl" download>
         <Button
           label="Exportar"
