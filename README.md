@@ -27,14 +27,14 @@ Turtle Trips is a **self-hosted, single-user** app to plan your trips and keep t
 
 ## Features
 
-- 🌍 **Trips** with countries (multiple, with flag and automatic cover from Wikivoyage or your own photo), dates, automatic status, budget and **reusable global travelers** — no user accounts.
-- 📍 **Places to see** with categories (city, sight, nature…), priority, geocoding (Nominatim/OpenStreetMap) and a Leaflet map.
+- 🌍 **Trips** with countries (multiple, with flag and automatic cover from Wikivoyage or your own photo), dates, automatic status and budget.
+- 📍 **Places to see** with categories (city, sight, nature…), priority, geocoding and a map.
 - 🗓️ **Day-by-day itinerary** with drag & drop, multi-day stays and a calendar view; dated bookings (flights, hotels, activities) show up in the agenda on their own.
 - 🎫 **Bookings** (hotel, flight, train, activity…) with confirmation code, flight number and attachments. A booking with a cost **creates its expense automatically** and both stay in sync in either direction; it also links itself to the nearest place on the map.
 - 💶 **Multi-currency expenses** with cached, editable ECB exchange rates (frankfurter), configurable categories, groupings, charts, bulk editing and **CSV import/export** to migrate from Excel.
 - 🤝 **Splitwise-style splitting**: equal parts, amounts or percentages per expense, a **common fund** as virtual payer, per-traveler balances, settlement suggestions and recorded payments until the trip shows "Settled".
 - 🧳 **Packing list** per traveler (plus a shared one) with progress, categories and **reusable templates** across trips.
-- 🗺️ **World map**: a journal of visited countries, cities and places that **fills itself in** from finished trips — and lets you add everything from before the app by hand.
+- 🗺️ **World map**: a journal of visited countries, cities and places that **fills itself in** from finished trips and lets you add everything from before the app by hand.
 - 📅 **.ics calendar**: export the itinerary or **subscribe by URL** from Google Calendar to keep it always up to date.
 - 📱 **Installable PWA** with app-shell precaching and basic offline support.
 - 💾 **Backups** as a ZIP (database + files) from the app itself, with validated hot restore.
@@ -77,7 +77,7 @@ docker run -d --name tt \
 Or with the repo's `docker-compose.yml` (`docker compose up -d`). All data (SQLite + uploaded files) lives in `/data`: a single directory to back up.
 
 > [!IMPORTANT]
-> The app ships without authentication: only expose it behind your reverse proxy (with auth) or VPN. If you use the calendar subscription, leave `/api/v1/calendar/*` exempt from auth — it is a feed with its own token.
+> The app ships without authentication: only expose it behind your reverse proxy (with auth) or VPN. If you use the calendar subscription, leave `/api/v1/calendar/*` exempt from auth. It is a feed with its own token.
 
 ## Environment variables
 
