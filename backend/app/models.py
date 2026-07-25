@@ -127,6 +127,9 @@ class Trip(TimestampMixin, Base):
     settlements: Mapped[list["Settlement"]] = relationship(
         back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
     )
+    day_journals: Mapped[list["DayJournal"]] = relationship(
+        back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     @property
     def debts_settled(self) -> bool:
@@ -352,6 +355,37 @@ class Attachment(TimestampMixin, Base):
 
     trip: Mapped[Trip] = relationship(back_populates="attachments")
     booking: Mapped["Booking | None"] = relationship(back_populates="attachments")
+
+
+class DayJournal(TimestampMixin, Base):
+    """Diario (texto libre) y postal (una foto) por día de un viaje.
+
+    Único por (trip_id, day). No hay entidad "día": los días de la agenda se
+    derivan de las fechas, así que el diario se ancla directamente a la fecha.
+    """
+
+    __tablename__ = "day_journals"
+    __table_args__ = (UniqueConstraint("trip_id", "day"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trip_id: Mapped[int] = mapped_column(
+        ForeignKey("trips.id", ondelete="CASCADE"), index=True
+    )
+    day: Mapped[date] = mapped_column(Date, index=True)
+    text: Mapped[str | None] = mapped_column(Text)
+    # nombre del fichero guardado (como Trip.cover_image); la ruta la resuelve services/files
+    photo_image: Mapped[str | None] = mapped_column(String(100))
+
+    trip: Mapped[Trip] = relationship(back_populates="day_journals")
+
+    @property
+    def photo_url(self) -> str | None:
+        if not self.photo_image:
+            return None
+        return (
+            f"/api/v1/trips/{self.trip_id}/journal/"
+            f"{self.day.isoformat()}/photo?v={self.photo_image}"
+        )
 
 
 class Category(TimestampMixin, Base):

@@ -13,9 +13,11 @@ import AgendaBookingSection, {
   type AgendaRow,
 } from '../../components/itinerary/AgendaBookingSection.vue'
 import AgendaItemRow from '../../components/itinerary/AgendaItemRow.vue'
+import AgendaDayJournal from '../../components/itinerary/AgendaDayJournal.vue'
 import { API_BASE } from '../../api/client'
 import type { ItineraryItem, Trip } from '../../api/types'
 import { useItineraryStore } from '../../stores/itinerary'
+import { useItineraryJournalStore } from '../../stores/itineraryJournal'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
@@ -38,6 +40,7 @@ import {
 const props = defineProps<{ trip: Trip }>()
 const { t } = useI18n()
 const store = useItineraryStore()
+const journal = useItineraryJournalStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
 const expenses = useExpensesStore()
@@ -59,6 +62,7 @@ const icsUrl = computed(() => `${API_BASE}/trips/${props.trip.id}/calendar.ics`)
 useTripTabData(() => props.trip, {
   load(tripId) {
     store.load(tripId)
+    journal.load(tripId)
     places.load(tripId)
     bookings.load(tripId)
     expenses.load(tripId)
@@ -303,6 +307,8 @@ function openNew(day?: string) {
         >
           {{ t('itinerary.agenda.noActivities') }}
         </p>
+        <!-- diario + postal del día (plegable, siempre al pie de la tarjeta) -->
+        <AgendaDayJournal :tripId="trip.id" :day="day" />
       </div>
     </div>
 

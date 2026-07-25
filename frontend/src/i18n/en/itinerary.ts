@@ -30,6 +30,22 @@ export default {
     placeTooltip: 'Place: {name}',
     bookingTooltip: 'Booking: {name}',
   },
+  journal: {
+    title: 'Journal',
+    empty: 'Add a note or a postcard',
+    placeholder: 'What happened today?',
+    saved: 'Saved',
+    saveError: 'Could not save the journal',
+    postcard: 'Postcard',
+    addPhoto: 'Add postcard',
+    replacePhoto: 'Replace',
+    deletePhoto: 'Delete',
+    deletePhotoConfirm: {
+      header: 'Delete postcard',
+      message: 'Delete this day’s postcard?',
+    },
+    photoError: 'Could not upload the postcard',
+  },
   confirm: {
     header: 'Delete activity',
     message: 'Remove "{title}" from the itinerary?',

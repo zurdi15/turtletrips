@@ -1,0 +1,103 @@
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..db import get_db
+from ..models import DayJournal, Trip
+from ..schemas.journal import DayJournalRead, DayJournalUpdate
+from ..services import files
+from .common import get_or_404
+
+router = APIRouter(tags=["journal"])
+
+
+def _get_or_create(db: Session, trip_id: int, day: date) -> DayJournal:
+    """Fila de diario de (trip_id, day), creándola si no existe."""
+    get_or_404(db, Trip, trip_id)
+    entry = db.scalar(
+        select(DayJournal).where(
+            DayJournal.trip_id == trip_id, DayJournal.day == day
+        )
+    )
+    if entry is None:
+        entry = DayJournal(trip_id=trip_id, day=day)
+        db.add(entry)
+    return entry
+
+
+@router.get("/trips/{trip_id}/journal", response_model=list[DayJournalRead])
+def list_journal(trip_id: int, db: Session = Depends(get_db)):
+    get_or_404(db, Trip, trip_id)
+    return db.scalars(
+        select(DayJournal)
+        .where(DayJournal.trip_id == trip_id)
+        .order_by(DayJournal.day)
+    ).all()
+
+
+@router.put("/trips/{trip_id}/journal/{day}", response_model=DayJournalRead)
+def upsert_journal(
+    trip_id: int, day: date, payload: DayJournalUpdate, db: Session = Depends(get_db)
+):
+    entry = _get_or_create(db, trip_id, day)
+    entry.text = payload.text
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.post("/trips/{trip_id}/journal/{day}/photo", response_model=DayJournalRead)
+async def upload_photo(
+    trip_id: int, day: date, file: UploadFile, db: Session = Depends(get_db)
+):
+    entry = _get_or_create(db, trip_id, day)
+    if not (file.content_type or "").startswith("image/"):
+        raise HTTPException(status_code=415, detail="La postal debe ser una imagen")
+    try:
+        stored_name, _size = await files.save_upload(trip_id, file)
+    except files.FileValidationError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    if entry.photo_image:
+        files.delete_stored_file(trip_id, entry.photo_image)
+    entry.photo_image = stored_name
+    db.commit()
+    db.refresh(entry)
+    return entry
+
+
+@router.get("/trips/{trip_id}/journal/{day}/photo", include_in_schema=False)
+def get_photo(trip_id: int, day: date, db: Session = Depends(get_db)):
+    entry = db.scalar(
+        select(DayJournal).where(
+            DayJournal.trip_id == trip_id, DayJournal.day == day
+        )
+    )
+    if entry is None or not entry.photo_image:
+        raise HTTPException(status_code=404, detail="Sin postal")
+    try:
+        path = files.resolve_stored_file(trip_id, entry.photo_image)
+    except files.FileValidationError as exc:
+        raise HTTPException(status_code=404, detail="Sin postal") from exc
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Sin postal")
+    return FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.delete("/trips/{trip_id}/journal/{day}/photo", response_model=DayJournalRead)
+def delete_photo(trip_id: int, day: date, db: Session = Depends(get_db)):
+    entry = db.scalar(
+        select(DayJournal).where(
+            DayJournal.trip_id == trip_id, DayJournal.day == day
+        )
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Sin postal")
+    if entry.photo_image:
+        files.delete_stored_file(trip_id, entry.photo_image)
+        entry.photo_image = None
+        db.commit()
+        db.refresh(entry)
+    return entry

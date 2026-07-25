@@ -102,6 +102,15 @@ export interface ItineraryItem {
   booking_id: number | null
 }
 
+// diario + postal por día del itinerario (único por trip_id + day)
+export interface DayJournal {
+  id: number
+  trip_id: number
+  day: string // "YYYY-MM-DD"
+  text: string | null
+  photo_url: string | null
+}
+
 export interface Booking {
   id: number
   trip_id: number

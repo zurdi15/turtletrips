@@ -59,7 +59,7 @@ defineEmits<{ edit: []; remove: [] }>()
         :targetId="expenseId"
         class="ml-2"
       />
-      <p v-if="item.notes" class="text-xs text-ink-faint truncate">{{ item.notes }}</p>
+      <p v-if="item.notes" class="text-xs text-ink-faint whitespace-pre-line break-words">{{ item.notes }}</p>
     </div>
     <RowActions @edit="$emit('edit')" @remove="$emit('remove')" />
   </div>

@@ -30,6 +30,22 @@ export default {
     placeTooltip: 'Sitio: {name}',
     bookingTooltip: 'Reserva: {name}',
   },
+  journal: {
+    title: 'Diario',
+    empty: 'Añade una nota o una postal',
+    placeholder: '¿Qué ha pasado hoy?',
+    saved: 'Guardado',
+    saveError: 'No se pudo guardar el diario',
+    postcard: 'Postal',
+    addPhoto: 'Añadir postal',
+    replacePhoto: 'Reemplazar',
+    deletePhoto: 'Eliminar',
+    deletePhotoConfirm: {
+      header: 'Eliminar postal',
+      message: '¿Eliminar la postal de este día?',
+    },
+    photoError: 'No se pudo subir la postal',
+  },
   confirm: {
     header: 'Eliminar actividad',
     message: '¿Eliminar "{title}" del itinerario?',
