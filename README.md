@@ -5,7 +5,10 @@
     <img src="docs/logo-light.svg" alt="turtletrips" width="440">
   </picture>
 
-  <h3>Plan your trips, split the expenses and take the journal with you.<br>Self-hosted, no accounts, in a single Docker image.</h3>
+  <h3>Plan your trips, split the expenses and take the journal with you.
+  
+  <br/>
+  <br/>
 
   <div>
     <img src="https://img.shields.io/badge/ghcr.io-zurdi15%2Fturtletrips-10B981?logo=docker&logoColor=white" alt="ghcr.io">
@@ -44,7 +47,7 @@ Turtle Trips is a **self-hosted, single-user** app to plan your trips and keep t
 
 | Trip overview | Multi-currency expenses |
 | :---: | :---: |
-| <img src="docs/screenshots/trip-overview.png" alt="trip overview"> | <img src="docs/screenshots/expenses.png" alt="expenses"> |
+| <img src="docs/screenshots/trip-overview-light.png" alt="trip overview"> | <img src="docs/screenshots/expenses-light.png" alt="expenses"> |
 
 | Itinerary | World map |
 | :---: | :---: |
@@ -55,7 +58,7 @@ Turtle Trips is a **self-hosted, single-user** app to plan your trips and keep t
 
 | Places to see | Packing list |
 | :---: | :---: |
-| <img src="docs/screenshots/places.png" alt="places"> | <img src="docs/screenshots/packing.png" alt="packing"> |
+| <img src="docs/screenshots/places-light.png" alt="places"> | <img src="docs/screenshots/packing-light.png" alt="packing"> |
 
 </details>
 
