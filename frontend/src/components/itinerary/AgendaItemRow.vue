@@ -21,20 +21,12 @@ defineEmits<{ edit: []; remove: [] }>()
     class="flex items-center gap-3 px-4 py-2.5 border-b border-line-faint last:border-b-0 hover:bg-surface-hover group"
   >
     <i class="pi pi-bars drag-handle cursor-grab text-ink-disabled group-hover:text-ink-faint" />
-    <!-- sin horas no se pinta nada; el ancho fijo mantiene la columna alineada -->
-    <span class="text-xs sm:text-sm font-mono text-ink-faint w-16 sm:w-24 shrink-0">
-      <template v-if="item.start_time">
+    <div class="flex-1 min-w-0 ml-1">
+      <!-- la hora en su propia fila (no columna): sin ella no se reserva espacio -->
+      <p v-if="item.start_time" class="text-xs font-mono text-ink-faint">
         {{ fmtTime(item.start_time) }}<template v-if="item.end_time">–{{ fmtTime(item.end_time) }}</template>
-      </template>
-    </span>
-    <div class="flex-1 min-w-0">
+      </p>
       <span class="font-medium text-ink">{{ item.title }}</span>
-      <span
-        v-if="item.end_day && item.end_day > item.day"
-        class="ml-2 text-xs px-1.5 py-0.5 rounded bg-nature-tint text-nature-strong"
-      >
-        {{ $t('itinerary.agenda.rangeBadge', { n: rangeNights(item) + 1, date: fmtDayShort(item.end_day) }) }}
-      </span>
       <!-- enlaces compactos: solo icono, el detalle vive en el tooltip -->
       <EntityLink
         v-if="item.place_id && placeName"
@@ -59,6 +51,12 @@ defineEmits<{ edit: []; remove: [] }>()
         :targetId="expenseId"
         class="ml-2"
       />
+      <!-- la duración multi-día en su propia línea: junto al título quedaba raro en móvil -->
+      <div v-if="item.end_day && item.end_day > item.day" class="mt-1">
+        <span class="text-xs px-1.5 py-0.5 rounded bg-nature-tint text-nature-strong">
+          {{ $t('itinerary.agenda.rangeBadge', { n: rangeNights(item) + 1, date: fmtDayShort(item.end_day) }) }}
+        </span>
+      </div>
       <p v-if="item.notes" class="text-xs text-ink-faint whitespace-pre-line break-words">{{ item.notes }}</p>
     </div>
     <RowActions @edit="$emit('edit')" @remove="$emit('remove')" />
