@@ -34,31 +34,48 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
         : 'border-line'
     "
   >
-    <div class="flex items-start gap-3">
-      <!-- izquierda: título y detalles (encoge y trunca, nunca empuja las acciones) -->
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 flex-wrap">
-          <h3 class="font-semibold text-ink-heading">{{ booking.title }}</h3>
-          <span v-if="booking.provider" class="text-sm text-ink-faint">
-            · {{ booking.provider }}
-          </span>
-          <Tag
-            v-if="booking.confirmation_code"
-            :value="booking.confirmation_code"
-            severity="secondary"
-            class="cursor-pointer font-mono"
-            v-tooltip.top="$t('bookings.card.copyBookingCode')"
-            @click="$emit('copy-code', booking.confirmation_code!)"
-          />
-          <Tag
-            v-if="booking.flight_number"
-            :value="booking.flight_number"
-            severity="info"
-            class="cursor-pointer font-mono"
-            v-tooltip.top="$t('bookings.card.copyFlightCode')"
-            @click="$emit('copy-code', booking.flight_number!)"
-          />
-        </div>
+    <!-- grid de 2 columnas: en móvil los detalles y el pagador ocupan todo el
+         ancho (filas propias) para que no los estruje la columna de acciones -->
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3">
+      <!-- título -->
+      <div class="row-start-1 col-start-1 min-w-0 self-start flex items-center gap-2 flex-wrap">
+        <h3 class="font-semibold text-ink-heading">{{ booking.title }}</h3>
+        <span v-if="booking.provider" class="text-sm text-ink-faint">
+          {{ booking.provider }}
+        </span>
+        <Tag
+          v-if="booking.confirmation_code"
+          :value="booking.confirmation_code"
+          severity="secondary"
+          class="cursor-pointer font-mono"
+          v-tooltip.top="$t('bookings.card.copyBookingCode')"
+          @click="$emit('copy-code', booking.confirmation_code!)"
+        />
+        <Tag
+          v-if="booking.flight_number"
+          :value="booking.flight_number"
+          severity="info"
+          class="cursor-pointer font-mono"
+          v-tooltip.top="$t('bookings.card.copyFlightCode')"
+          @click="$emit('copy-code', booking.flight_number!)"
+        />
+      </div>
+
+      <!-- importe + acciones: en la fila del título, sin estirarse con ella
+           (self-start) y subidos el padding del botón (-mt-1) para que queden
+           centrados en la PRIMERA línea del nombre aunque el título salte -->
+      <div class="row-start-1 col-start-2 flex items-center gap-1 self-start -mt-1 shrink-0">
+        <span
+          v-if="booking.cost_amount != null"
+          class="font-semibold text-ink-heading mr-1.5 whitespace-nowrap"
+        >
+          {{ formatMoney(booking.cost_amount, booking.cost_currency ?? trip.base_currency) }}
+        </span>
+        <RowActions always @edit="$emit('edit')" @remove="$emit('remove')" />
+      </div>
+
+      <!-- detalles: a todo el ancho en móvil, bajo el título en escritorio -->
+      <div class="row-start-2 col-span-2 sm:col-start-1 sm:col-span-1 min-w-0">
         <!-- transporte: origen→destino y fechas en filas separadas (cada
              una ya lleva su flecha); el resto en línea compacta -->
         <div
@@ -105,17 +122,11 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
         <p v-if="booking.notes" class="text-sm text-ink-faint mt-1">{{ booking.notes }}</p>
       </div>
 
-      <!-- derecha: importe + acciones en una línea, y el gasto debajo -->
-      <div class="flex flex-col items-end shrink-0">
-        <div class="flex items-center gap-1">
-          <span
-            v-if="booking.cost_amount != null"
-            class="font-semibold text-ink-heading mr-1.5 whitespace-nowrap"
-          >
-            {{ formatMoney(booking.cost_amount, booking.cost_currency ?? trip.base_currency) }}
-          </span>
-          <RowActions always @edit="$emit('edit')" @remove="$emit('remove')" />
-        </div>
+      <!-- pagador y "crear gasto": bajo el importe en escritorio, fila propia
+           a la derecha en móvil (así no roban ancho al título) -->
+      <div
+        class="row-start-3 col-span-2 sm:row-start-2 sm:col-start-2 sm:col-span-1 flex flex-col items-end shrink-0"
+      >
         <Pill
           v-if="booking.paid_by_common"
           color="warn"
