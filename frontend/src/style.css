@@ -445,6 +445,14 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   transition: width var(--tt-dur-600) var(--tt-ease-spring);
 }
 
+/* lightbox de la postal del diario: el vuelo miniatura↔centro se anima por WAAPI
+   en AgendaDayJournal (keyframes atómicos, sin transiciones CSS que puedan
+   reiniciarse); el tamaño exacto va inline y estos máximos son red de seguridad */
+.tt-lightbox-img {
+  max-width: min(85vw, 56rem);
+  max-height: 80vh;
+}
+
 /* accesibilidad: sin movimiento si el sistema lo pide. Guard ÚNICO de la app:
    cubre también las animaciones declaradas en estilos scoped de componentes
    (EmptyState, filas de ExpenseTable, subrayado de tabs) — lo global puede

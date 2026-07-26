@@ -87,10 +87,11 @@ export default {
       },
       // bandas de apilamiento: contenido 0-40 < paneles Leaflet 400-700
       // (aislados por .leaflet-container { z-index: 0 }) < overlays de mapa 500
-      // < overlays de PrimeVue ~1100
+      // < overlays de PrimeVue ~1100 < lightbox 1200
       zIndex: {
         header: '40',
         'map-overlay': '500',
+        lightbox: '1200',
       },
     },
   },
