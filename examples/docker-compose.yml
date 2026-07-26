@@ -1,7 +1,7 @@
 services:
   turtletrips:
     container_name: turtletrips
-    image: ghcr.io/turtletrips/turtletrips:latest
+    image: ghcr.io/zurdi15/turtletrips:latest
     ports:
       - 8000:8000
     volumes:
