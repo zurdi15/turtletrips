@@ -5,15 +5,18 @@ import InputText from 'primevue/inputtext'
 import PageHeader from '../components/ui/PageHeader.vue'
 import EditableListItem from '../components/ui/EditableListItem.vue'
 import ColorSwatchPopover from '../components/ui/ColorSwatchPopover.vue'
+import Pill from '../components/ui/Pill.vue'
 import type { Traveler } from '../api/types'
 import { CATEGORY_PALETTE } from '../theme'
 import { FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { useFamiliesStore } from '../stores/families'
 import { useTravelersStore } from '../stores/travelers'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
 import { useI18n } from 'vue-i18n'
 
 const travelers = useTravelersStore()
+const families = useFamiliesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
 const { t } = useI18n()
@@ -22,7 +25,15 @@ const newName = ref('')
 const colorTargetId = ref<number | null>(null)
 const colorPopover = ref<InstanceType<typeof ColorSwatchPopover>>()
 
-onMounted(() => travelers.load(true))
+onMounted(() => {
+  travelers.load(true)
+  families.load()
+})
+
+function familyName(traveler: Traveler): string | null {
+  if (traveler.family_id === null) return null
+  return families.items.find((f) => f.id === traveler.family_id)?.name ?? null
+}
 
 function openColorPicker(event: Event, id: number) {
   colorTargetId.value = id
@@ -78,10 +89,23 @@ function remove(traveler: Traveler) {
           :name="traveler.name"
           :color="traveler.color"
           :colorFallback="FALLBACK_CATEGORY_COLOR"
+          :avatar-url="traveler.avatar_url"
           @rename="(name) => rename(traveler, name)"
           @remove="remove(traveler)"
           @pick-color="(event) => openColorPicker(event, traveler.id)"
-        />
+        >
+          <Pill
+            v-if="traveler.has_user"
+            color="brand"
+            icon="pi pi-user"
+            v-tooltip.top="t('travelers.badges.accountTooltip')"
+          >
+            {{ t('travelers.badges.account') }}
+          </Pill>
+          <Pill v-if="familyName(traveler)" color="neutral" icon="pi pi-home">
+            {{ familyName(traveler) }}
+          </Pill>
+        </EditableListItem>
         <li v-if="!travelers.items.length" class="text-sm text-ink-faint px-3 py-4 text-center">
           {{ t('travelers.empty') }}
         </li>

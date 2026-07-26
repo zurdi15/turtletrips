@@ -8,9 +8,10 @@ import EditableListItem from '../components/ui/EditableListItem.vue'
 import ColorSwatchPopover from '../components/ui/ColorSwatchPopover.vue'
 import UploadButton from '../components/ui/UploadButton.vue'
 import { api, API_BASE } from '../api/client'
-import type { Category } from '../api/types'
+import type { Category, ThemePref } from '../api/types'
 import { CATEGORY_PALETTE } from '../theme'
 import { useCategoriesStore, FALLBACK_CATEGORY_COLOR } from '../stores/categories'
+import { useSessionStore } from '../stores/session'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
 import { useTheme } from '../composables/useTheme'
@@ -18,15 +19,27 @@ import { useI18n } from 'vue-i18n'
 import { setLocale, type AppLocale } from '../i18n'
 
 const categories = useCategoriesStore()
+const session = useSessionStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
 const { t, locale } = useI18n()
+
+// tema e idioma se aplican en local al instante y se persisten en la cuenta
+// (best-effort: si el PATCH falla, la preferencia local sigue valiendo)
+function persistSettings(patch: { theme?: ThemePref; language?: AppLocale }) {
+  session.updateSettings(patch).catch((err) => {
+    notify.error(t('settings.toast.saveError'), err)
+  })
+}
 
 // ---- idioma ----
 
 const language = computed<AppLocale>({
   get: () => locale.value as AppLocale,
-  set: (v) => setLocale(v),
+  set: (v) => {
+    setLocale(v)
+    persistSettings({ language: v })
+  },
 })
 // endónimos: el nombre de cada idioma no se traduce
 const languageOptions = [
@@ -34,13 +47,14 @@ const languageOptions = [
   { value: 'en', label: 'English' },
 ] as const
 
-// ---- apariencia (tema claro/oscuro) ----
+// ---- apariencia (claro/oscuro/sistema) ----
 
-const { isDark, toggle } = useTheme()
-const theme = computed<'light' | 'dark'>({
-  get: () => (isDark.value ? 'dark' : 'light'),
+const { themePref, setThemePref } = useTheme()
+const theme = computed<ThemePref>({
+  get: () => themePref.value,
   set: (v) => {
-    if ((v === 'dark') !== isDark.value) toggle()
+    setThemePref(v)
+    persistSettings({ theme: v })
   },
 })
 const themeOptions = computed(
@@ -48,6 +62,7 @@ const themeOptions = computed(
     [
       { value: 'light', label: t('settings.appearance.light'), icon: 'pi pi-sun' },
       { value: 'dark', label: t('settings.appearance.dark'), icon: 'pi pi-moon' },
+      { value: 'system', label: t('settings.appearance.system'), icon: 'pi pi-desktop' },
     ] as const,
 )
 
@@ -196,7 +211,7 @@ const sections = computed<{ kind: 'expense' | 'packing'; title: string; hint: st
         </div>
       </section>
 
-      <section class="bg-surface rounded-card border border-line p-5">
+      <section v-if="session.isAdmin" class="bg-surface rounded-card border border-line p-5">
         <h2 class="font-semibold text-ink mb-1">{{ t('settings.backup.title') }}</h2>
         <p class="text-xs text-ink-faint mb-4">
           {{ t('settings.backup.hint') }}

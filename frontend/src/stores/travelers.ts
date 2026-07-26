@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { api } from '../api/client'
 import type { Traveler } from '../api/types'
 import { useGlobalResource } from './globalResource'
 
@@ -6,7 +7,7 @@ export const useTravelersStore = defineStore('travelers', () => {
   const base = useGlobalResource<
     Traveler,
     { name: string; color?: string | null },
-    { name?: string; color?: string | null }
+    { name?: string; color?: string | null; family_id?: number | null }
   >({
     listPath: '/travelers',
     itemPath: (id) => `/travelers/${id}`,
@@ -17,5 +18,27 @@ export const useTravelersStore = defineStore('travelers', () => {
     return base.create({ name, color })
   }
 
-  return { ...base, create }
+  function _replace(item: Traveler) {
+    const idx = base.items.value.findIndex((t) => t.id === item.id)
+    if (idx >= 0) base.items.value[idx] = item
+  }
+
+  async function uploadAvatar(id: number, file: File): Promise<Traveler> {
+    const form = new FormData()
+    form.append('file', file)
+    const item = await api.upload<Traveler>(`/travelers/${id}/avatar`, form)
+    _replace(item)
+    return item
+  }
+
+  async function removeAvatar(id: number): Promise<Traveler> {
+    // api.delete ignora el cuerpo de respuesta: se parchea en local
+    await api.delete(`/travelers/${id}/avatar`)
+    const current = base.items.value.find((t) => t.id === id)
+    const updated = { ...(current as Traveler), id, avatar_url: null }
+    if (current) _replace(updated)
+    return updated
+  }
+
+  return { ...base, create, uploadAvatar, removeAvatar }
 })

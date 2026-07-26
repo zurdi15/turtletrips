@@ -1,27 +1,43 @@
 import { ref } from 'vue'
+import type { ThemePref } from '../api/types'
 
+const themePref = ref<ThemePref>('system')
 const isDark = ref(false)
+
+/** Pura (testeable sin DOM): resuelve si toca modo oscuro. */
+export function resolveDark(pref: ThemePref, systemPrefersDark: boolean): boolean {
+  return pref === 'dark' || (pref === 'system' && systemPrefersDark)
+}
+
+function systemDark(): boolean {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
 
 function apply() {
   document.documentElement.classList.toggle('tt-dark', isDark.value)
 }
 
+/** Fija la preferencia, la aplica y la espeja a localStorage (caché anti-flash). */
+export function setThemePref(pref: ThemePref) {
+  themePref.value = pref
+  isDark.value = resolveDark(pref, systemDark())
+  localStorage.setItem('tt-theme', pref)
+  apply()
+}
+
 /** Llamar antes de montar la app para evitar el destello de tema claro */
 export function initTheme() {
   const stored = localStorage.getItem('tt-theme')
-  isDark.value = stored
-    ? stored === 'dark'
-    : window.matchMedia('(prefers-color-scheme: dark)').matches
+  // los valores legacy 'light'/'dark' (era pre-'system') siguen valiendo tal cual
+  const pref: ThemePref =
+    stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+  themePref.value = pref
+  isDark.value = resolveDark(pref, systemDark())
   apply()
 }
 
 export function useTheme() {
-  function toggle() {
-    isDark.value = !isDark.value
-    localStorage.setItem('tt-theme', isDark.value ? 'dark' : 'light')
-    apply()
-  }
-  return { isDark, toggle }
+  return { isDark, themePref, setThemePref }
 }
 
 /**

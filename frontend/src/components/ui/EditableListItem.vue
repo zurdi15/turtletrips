@@ -9,6 +9,8 @@ const props = defineProps<{
   /** color del punto redondo; null usa el fallback */
   color?: string | null
   colorFallback?: string
+  /** foto: sustituye al punto de color (el clic sigue abriendo el picker) */
+  avatarUrl?: string | null
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -36,11 +38,13 @@ function confirmEdit() {
 <template>
   <li class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-hover group">
     <button
-      class="w-5 h-5 rounded-full shrink-0 ring-1 ring-line hover:scale-110 transition-transform"
-      :style="{ background: color ?? colorFallback }"
+      class="w-5 h-5 rounded-full shrink-0 ring-1 ring-line hover:scale-110 transition-transform overflow-hidden"
+      :style="avatarUrl ? undefined : { background: color ?? colorFallback }"
       v-tooltip.top="$t('common.actions.changeColor')"
       @click="$emit('pick-color', $event)"
-    />
+    >
+      <img v-if="avatarUrl" :src="avatarUrl" :alt="name" class="w-full h-full object-cover" />
+    </button>
     <template v-if="editing">
       <InputText
         v-model="editName"

@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from fastapi import Request
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 
@@ -32,4 +33,10 @@ def get_db(request: Request) -> Iterator[Session]:
     try:
         yield db
     finally:
-        db.close()
+        try:
+            db.close()
+        except DBAPIError:
+            # el restore de backup recrea el engine en caliente: la sesión que
+            # abrió la dependencia de auth apunta al engine viejo ya cerrado y
+            # su close() no debe tumbar la respuesta
+            pass

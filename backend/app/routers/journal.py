@@ -5,18 +5,19 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import CurrentUser
 from ..db import get_db
-from ..models import DayJournal, Trip
+from ..models import DayJournal, User
 from ..schemas.journal import DayJournalRead, DayJournalUpdate
 from ..services import files
-from .common import get_or_404
+from .common import ensure_trip_member
 
 router = APIRouter(tags=["journal"])
 
 
-def _get_or_create(db: Session, trip_id: int, day: date) -> DayJournal:
+def _get_or_create(db: Session, user: User, trip_id: int, day: date) -> DayJournal:
     """Fila de diario de (trip_id, day), creándola si no existe."""
-    get_or_404(db, Trip, trip_id)
+    ensure_trip_member(db, user, trip_id)
     entry = db.scalar(
         select(DayJournal).where(
             DayJournal.trip_id == trip_id, DayJournal.day == day
@@ -29,8 +30,8 @@ def _get_or_create(db: Session, trip_id: int, day: date) -> DayJournal:
 
 
 @router.get("/trips/{trip_id}/journal", response_model=list[DayJournalRead])
-def list_journal(trip_id: int, db: Session = Depends(get_db)):
-    get_or_404(db, Trip, trip_id)
+def list_journal(trip_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    ensure_trip_member(db, user, trip_id)
     return db.scalars(
         select(DayJournal)
         .where(DayJournal.trip_id == trip_id)
@@ -40,9 +41,13 @@ def list_journal(trip_id: int, db: Session = Depends(get_db)):
 
 @router.put("/trips/{trip_id}/journal/{day}", response_model=DayJournalRead)
 def upsert_journal(
-    trip_id: int, day: date, payload: DayJournalUpdate, db: Session = Depends(get_db)
+    trip_id: int,
+    day: date,
+    payload: DayJournalUpdate,
+    user: CurrentUser,
+    db: Session = Depends(get_db),
 ):
-    entry = _get_or_create(db, trip_id, day)
+    entry = _get_or_create(db, user, trip_id, day)
     entry.text = payload.text
     db.commit()
     db.refresh(entry)
@@ -51,9 +56,9 @@ def upsert_journal(
 
 @router.post("/trips/{trip_id}/journal/{day}/photo", response_model=DayJournalRead)
 async def upload_photo(
-    trip_id: int, day: date, file: UploadFile, db: Session = Depends(get_db)
+    trip_id: int, day: date, file: UploadFile, user: CurrentUser, db: Session = Depends(get_db)
 ):
-    entry = _get_or_create(db, trip_id, day)
+    entry = _get_or_create(db, user, trip_id, day)
     if not (file.content_type or "").startswith("image/"):
         raise HTTPException(status_code=415, detail="La postal debe ser una imagen")
     try:
@@ -69,7 +74,8 @@ async def upload_photo(
 
 
 @router.get("/trips/{trip_id}/journal/{day}/photo", include_in_schema=False)
-def get_photo(trip_id: int, day: date, db: Session = Depends(get_db)):
+def get_photo(trip_id: int, day: date, user: CurrentUser, db: Session = Depends(get_db)):
+    ensure_trip_member(db, user, trip_id)
     entry = db.scalar(
         select(DayJournal).where(
             DayJournal.trip_id == trip_id, DayJournal.day == day
@@ -87,7 +93,8 @@ def get_photo(trip_id: int, day: date, db: Session = Depends(get_db)):
 
 
 @router.delete("/trips/{trip_id}/journal/{day}/photo", response_model=DayJournalRead)
-def delete_photo(trip_id: int, day: date, db: Session = Depends(get_db)):
+def delete_photo(trip_id: int, day: date, user: CurrentUser, db: Session = Depends(get_db)):
+    ensure_trip_member(db, user, trip_id)
     entry = db.scalar(
         select(DayJournal).where(
             DayJournal.trip_id == trip_id, DayJournal.day == day

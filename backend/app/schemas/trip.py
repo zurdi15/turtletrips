@@ -14,6 +14,8 @@ class TravelerCreate(BaseModel):
 class TravelerUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     color: str | None = None
+    # asignación de familia: solo la puede tocar el admin (lo valida el router)
+    family_id: int | None = None
 
 
 class TravelerRead(BaseModel):
@@ -22,6 +24,10 @@ class TravelerRead(BaseModel):
     id: int
     name: str
     color: str | None
+    family_id: int | None
+    avatar_url: str | None
+    # True si el viajero tiene cuenta de usuario vinculada
+    has_user: bool
 
 
 def _validate_countries(codes: list[str]) -> list[str]:
@@ -87,6 +93,7 @@ class TripRead(BaseModel):
     album_url: str | None
     ics_token: str | None
     notes: str | None
+    family_id: int | None
     travelers: list[TravelerRead] = []
     # True si hay liquidaciones registradas y los saldos quedan a cero
     debts_settled: bool

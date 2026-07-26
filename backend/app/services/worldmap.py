@@ -1,13 +1,13 @@
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from ..models import Expense, Trip, WorldPlace
+from ..models import Expense, Traveler, Trip, WorldPlace, trip_travelers
 
 
 def ensure_country_entry(
-    db: Session, country_code: str | None, origin: str | None = None
+    db: Session, family_id: int, country_code: str | None, origin: str | None = None
 ) -> bool:
-    """Añade la entrada de país si no existe ninguna (ni siquiera oculta).
+    """Añade la entrada de país al diario de la familia si no existe (ni oculta).
 
     Una ciudad/sitio en el diario implica haber estado en su país. Respeta los
     borrados del usuario (hidden cuenta como existente). No hace commit.
@@ -16,24 +16,28 @@ def ensure_country_entry(
         return False
     exists = db.scalar(
         select(WorldPlace).where(
-            WorldPlace.kind == "country", WorldPlace.country_code == country_code
+            WorldPlace.family_id == family_id,
+            WorldPlace.kind == "country",
+            WorldPlace.country_code == country_code,
         )
     )
     if exists:
         return False
-    # el nombre en español lo resuelve el frontend a partir del código
+    # el nombre en el idioma activo lo resuelve el frontend a partir del código
     db.add(
         WorldPlace(
-            name=country_code, kind="country", country_code=country_code,
-            auto=True, origin=origin,
+            family_id=family_id, name=country_code, kind="country",
+            country_code=country_code, auto=True, origin=origin,
         )
     )
     return True
 
 
-def sync_world_places(db: Session) -> None:
-    """Deriva entradas del diario mundial a partir de los viajes (idempotente).
+def sync_world_places(db: Session, family_id: int) -> None:
+    """Deriva el diario mundial de UNA familia a partir de sus viajes (idempotente).
 
+    Cuentan los viajes de la familia (trip.family_id) y aquellos donde participa
+    al menos un viajero de la familia (viajes conjuntos con otras familias):
     - Países de viajes TERMINADOS (estado derivado de fechas, así que un viaje
       antiguo añadido a posteriori entra solo).
     - Sitios de viajes marcados como visitados, o enlazados a algún gasto
@@ -42,24 +46,38 @@ def sync_world_places(db: Session) -> None:
     Las entradas derivadas se marcan auto=True; si el usuario las borra se
     ocultan (hidden) para no reaparecer en el siguiente sync.
     """
-    world = db.scalars(select(WorldPlace)).all()
+    world = db.scalars(
+        select(WorldPlace).where(WorldPlace.family_id == family_id)
+    ).all()
     known_codes = {w.country_code for w in world if w.kind == "country" and w.country_code}
     known_trip_place_ids = {w.trip_place_id for w in world if w.trip_place_id is not None}
     expense_place_ids = set(
         db.scalars(select(Expense.place_id).where(Expense.place_id.is_not(None)))
     )
 
+    family_traveler_ids = select(Traveler.id).where(Traveler.family_id == family_id)
+    family_trips = select(Trip).where(
+        or_(
+            Trip.family_id == family_id,
+            Trip.id.in_(
+                select(trip_travelers.c.trip_id).where(
+                    trip_travelers.c.traveler_id.in_(family_traveler_ids)
+                )
+            ),
+        )
+    )
+
     changed = False
-    for trip in db.scalars(select(Trip)):
+    for trip in db.scalars(family_trips):
         if trip.status == "done":
             for code in trip.countries or []:
                 if code in known_codes:
                     continue
-                # el nombre en español lo resuelve el frontend a partir del código
+                # el nombre lo resuelve el frontend a partir del código
                 db.add(
                     WorldPlace(
-                        name=code, kind="country", country_code=code,
-                        auto=True, origin=trip.name,
+                        family_id=family_id, name=code, kind="country",
+                        country_code=code, auto=True, origin=trip.name,
                     )
                 )
                 known_codes.add(code)
@@ -75,8 +93,8 @@ def sync_world_places(db: Session) -> None:
             kind = "city" if place.category in ("city", "town") else "place"
             db.add(
                 WorldPlace(
-                    name=place.name, kind=kind, country_code=place_country,
-                    lat=place.lat, lon=place.lon,
+                    family_id=family_id, name=place.name, kind=kind,
+                    country_code=place_country, lat=place.lat, lon=place.lon,
                     auto=True, origin=trip.name, trip_place_id=place.id,
                 )
             )
@@ -86,8 +104,8 @@ def sync_world_places(db: Session) -> None:
             if place_country and place_country not in known_codes:
                 db.add(
                     WorldPlace(
-                        name=place_country, kind="country", country_code=place_country,
-                        auto=True, origin=trip.name,
+                        family_id=family_id, name=place_country, kind="country",
+                        country_code=place_country, auto=True, origin=trip.name,
                     )
                 )
                 known_codes.add(place_country)

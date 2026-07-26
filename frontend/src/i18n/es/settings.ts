@@ -9,6 +9,10 @@ export default {
     hint: 'Tema de la interfaz.',
     light: 'Claro',
     dark: 'Oscuro',
+    system: 'Sistema',
+  },
+  toast: {
+    saveError: 'No se pudo guardar la preferencia',
   },
   categories: {
     expense: {

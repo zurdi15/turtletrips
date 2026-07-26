@@ -8,6 +8,9 @@ import packing from './packing'
 import world from './world'
 import settings from './settings'
 import travelers from './travelers'
+import auth from './auth'
+import profile from './profile'
+import admin from './admin'
 
 export default {
   common,
@@ -20,4 +23,7 @@ export default {
   world,
   settings,
   travelers,
+  auth,
+  profile,
+  admin,
 }

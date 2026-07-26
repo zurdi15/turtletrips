@@ -1,8 +1,37 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useSessionStore } from '../stores/session'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** accesible sin sesión (login) */
+    public?: boolean
+    /** sin cabecera de la app (pantalla completa) */
+    bare?: boolean
+    /** solo administradores */
+    admin?: boolean
+  }
+}
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+      meta: { public: true, bare: true },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../views/ProfileView.vue'),
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/AdminView.vue'),
+      meta: { admin: true },
+    },
     {
       path: '/',
       name: 'trips',
@@ -78,4 +107,22 @@ export const router = createRouter({
       ],
     },
   ],
+})
+
+// guard de sesión: espera a conocer al usuario (una única carga deduplicada)
+// antes de resolver cualquier navegación. Requiere pinia instalada antes que
+// el router en main.ts.
+router.beforeEach(async (to) => {
+  const session = useSessionStore()
+  await session.ensureLoaded()
+  if (to.meta.public) {
+    // ya logueado, el login no pinta nada útil
+    if (to.name === 'login' && session.isAuthenticated) return { path: '/' }
+    return true
+  }
+  if (!session.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.admin && !session.isAdmin) return { path: '/' }
+  return true
 })

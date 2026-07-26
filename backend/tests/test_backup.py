@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.config import get_settings
 from app.main import create_app
+from conftest import bootstrap
 
 PNG = (
     b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
@@ -23,6 +24,7 @@ def backup_client(tmp_path, monkeypatch, engine):
     get_settings.cache_clear()
     app = create_app(engine=engine)
     with TestClient(app) as client:
+        bootstrap(client)
         yield client, tmp_path
     get_settings.cache_clear()
 
@@ -54,7 +56,7 @@ def test_export_contains_db_manifest_and_uploads(backup_client, tmp_path):
         assert "manifest.json" in names
         manifest = json.loads(zf.read("manifest.json"))
         assert manifest["app"] == "turtle-trips"
-        assert manifest["format"] == 1
+        assert manifest["format"] == 2
         uploads = [n for n in names if n.startswith(f"uploads/{trip['id']}/")]
         assert len(uploads) == 1
 

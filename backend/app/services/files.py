@@ -26,14 +26,15 @@ def _trip_dir(trip_id: int) -> Path:
     return get_settings().uploads_dir / str(trip_id)
 
 
-async def save_upload(trip_id: int, upload: UploadFile) -> tuple[str, int]:
-    """Guarda el fichero subido y devuelve (stored_name, size_bytes)."""
-    if not is_allowed_content_type(upload.content_type):
-        raise FileValidationError("Solo se admiten PDFs e imágenes")
+def _avatars_dir() -> Path:
+    # plano y compartido: los avatares no pertenecen a ningún viaje
+    return get_settings().uploads_dir / "avatars"
 
+
+async def _write_upload(target_dir: Path, upload: UploadFile) -> tuple[str, int]:
+    """Escritura por chunks con límite de tamaño; devuelve (stored_name, size)."""
     suffix = Path(upload.filename or "").suffix.lower()[:10]
     stored_name = f"{uuid.uuid4().hex}{suffix}"
-    target_dir = _trip_dir(trip_id)
     target_dir.mkdir(parents=True, exist_ok=True)
     target = target_dir / stored_name
 
@@ -49,6 +50,37 @@ async def save_upload(trip_id: int, upload: UploadFile) -> tuple[str, int]:
         target.unlink(missing_ok=True)
         raise
     return stored_name, size
+
+
+async def save_upload(trip_id: int, upload: UploadFile) -> tuple[str, int]:
+    """Guarda el fichero subido y devuelve (stored_name, size_bytes)."""
+    if not is_allowed_content_type(upload.content_type):
+        raise FileValidationError("Solo se admiten PDFs e imágenes")
+    return await _write_upload(_trip_dir(trip_id), upload)
+
+
+async def save_avatar(upload: UploadFile) -> str:
+    """Guarda un avatar de viajero (solo imágenes); devuelve stored_name."""
+    if not (upload.content_type or "").startswith("image/"):
+        raise FileValidationError("El avatar debe ser una imagen")
+    stored_name, _size = await _write_upload(_avatars_dir(), upload)
+    return stored_name
+
+
+def resolve_avatar(stored_name: str) -> Path:
+    """Ruta absoluta de un avatar, a prueba de path traversal."""
+    base = _avatars_dir().resolve()
+    path = (base / stored_name).resolve()
+    if not path.is_relative_to(base):
+        raise FileValidationError("Ruta de fichero inválida")
+    return path
+
+
+def delete_avatar(stored_name: str) -> None:
+    try:
+        resolve_avatar(stored_name).unlink(missing_ok=True)
+    except FileValidationError:
+        pass
 
 
 def save_bytes(trip_id: int, content: bytes, suffix: str) -> str:

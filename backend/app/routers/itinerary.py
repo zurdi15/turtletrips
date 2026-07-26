@@ -5,6 +5,7 @@ from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import CurrentUser
 from ..db import get_db
 from ..models import Booking, ItineraryItem, Place, Trip
 from ..schemas.itinerary import (
@@ -16,14 +17,16 @@ from ..schemas.itinerary import (
 from ..services.ics import build_calendar
 from .common import (
     ascii_filename,
-    delete_by_id,
     ensure_in_trip,
-    get_or_404,
+    ensure_trip_member,
+    get_trip_scoped,
     save_new,
     save_updates,
 )
 
 router = APIRouter(tags=["itinerary"])
+# feed de suscripción: el token es la llave, queda fuera del candado de sesión
+public_router = APIRouter(tags=["itinerary"])
 
 
 def _validate_links(db: Session, trip_id: int, place_id: int | None, booking_id: int | None):
@@ -36,8 +39,8 @@ def _validate_links(db: Session, trip_id: int, place_id: int | None, booking_id:
 
 
 @router.get("/trips/{trip_id}/itinerary", response_model=list[ItineraryItemRead])
-def list_itinerary(trip_id: int, db: Session = Depends(get_db)):
-    get_or_404(db, Trip, trip_id)
+def list_itinerary(trip_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    ensure_trip_member(db, user, trip_id)
     return db.scalars(
         select(ItineraryItem)
         .where(ItineraryItem.trip_id == trip_id)
@@ -46,28 +49,36 @@ def list_itinerary(trip_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/trips/{trip_id}/itinerary", response_model=ItineraryItemRead, status_code=201)
-def create_item(trip_id: int, payload: ItineraryItemCreate, db: Session = Depends(get_db)):
-    get_or_404(db, Trip, trip_id)
+def create_item(
+    trip_id: int, payload: ItineraryItemCreate, user: CurrentUser, db: Session = Depends(get_db)
+):
+    ensure_trip_member(db, user, trip_id)
     _validate_links(db, trip_id, payload.place_id, payload.booking_id)
     return save_new(db, ItineraryItem(trip_id=trip_id), payload.model_dump())
 
 
 @router.patch("/itinerary/{item_id}", response_model=ItineraryItemRead)
-def update_item(item_id: int, payload: ItineraryItemUpdate, db: Session = Depends(get_db)):
-    item = get_or_404(db, ItineraryItem, item_id)
+def update_item(
+    item_id: int, payload: ItineraryItemUpdate, user: CurrentUser, db: Session = Depends(get_db)
+):
+    item = get_trip_scoped(db, user, ItineraryItem, item_id)
     data = payload.model_dump(exclude_unset=True)
     _validate_links(db, item.trip_id, data.get("place_id"), data.get("booking_id"))
     return save_updates(db, item, data)
 
 
 @router.delete("/itinerary/{item_id}", status_code=204)
-def delete_item(item_id: int, db: Session = Depends(get_db)):
-    delete_by_id(db, ItineraryItem, item_id)
+def delete_item(item_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    item = get_trip_scoped(db, user, ItineraryItem, item_id)
+    db.delete(item)
+    db.commit()
 
 
 @router.get("/trips/{trip_id}/calendar.ics")
-def export_calendar(trip_id: int, bookings: bool = True, db: Session = Depends(get_db)):
-    trip = get_or_404(db, Trip, trip_id)
+def export_calendar(
+    trip_id: int, user: CurrentUser, bookings: bool = True, db: Session = Depends(get_db)
+):
+    trip = ensure_trip_member(db, user, trip_id)
     content = build_calendar(db, trip, include_bookings=bookings)
     filename = f"itinerario-{ascii_filename(trip.name, 'viaje')}.ics"
     return Response(
@@ -78,18 +89,18 @@ def export_calendar(trip_id: int, bookings: bool = True, db: Session = Depends(g
 
 
 @router.post("/trips/{trip_id}/ics-token")
-def rotate_ics_token(trip_id: int, db: Session = Depends(get_db)) -> dict:
+def rotate_ics_token(trip_id: int, user: CurrentUser, db: Session = Depends(get_db)) -> dict:
     """Genera (o rota, invalidando el anterior) el token de suscripción."""
-    trip = get_or_404(db, Trip, trip_id)
+    trip = ensure_trip_member(db, user, trip_id)
     trip.ics_token = secrets.token_urlsafe(24)
     db.commit()
     return {"token": trip.ics_token}
 
 
-@router.get("/calendar/{token}.ics")
+@public_router.get("/calendar/{token}.ics")
 def subscribed_calendar(token: str, bookings: bool = True, db: Session = Depends(get_db)):
     """Feed de suscripción (Google Calendar «Desde URL»): el token es la llave,
-    pensado para quedar exento de la autenticación del reverse proxy."""
+    exento tanto de la sesión de la app como de la auth del reverse proxy."""
     trip = db.scalar(select(Trip).where(Trip.ics_token == token)) if token else None
     if trip is None:
         raise HTTPException(status_code=404, detail="Calendario no encontrado")
@@ -102,9 +113,9 @@ def subscribed_calendar(token: str, bookings: bool = True, db: Session = Depends
 
 
 @router.post("/itinerary/reorder", status_code=204)
-def reorder_items(payload: ReorderRequest, db: Session = Depends(get_db)):
+def reorder_items(payload: ReorderRequest, user: CurrentUser, db: Session = Depends(get_db)):
     for entry in payload.items:
-        item = get_or_404(db, ItineraryItem, entry.id)
+        item = get_trip_scoped(db, user, ItineraryItem, entry.id)
         item.day = entry.day
         item.order_index = entry.order_index
     db.commit()

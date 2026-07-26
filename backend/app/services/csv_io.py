@@ -92,14 +92,20 @@ def _parse_amount(raw: str) -> Decimal:
         raise ValueError(f"Importe no reconocido: {raw!r}") from exc
 
 
-def _resolve_category(db: Session, raw: str) -> str:
-    """Alias conocidos, categoría existente (sin distinguir mayúsculas/acentos) o el texto tal cual."""
+def _resolve_category(db: Session, family_id: int | None, raw: str) -> str:
+    """Alias conocidos, categoría de la familia (sin distinguir mayúsculas/acentos) o el texto tal cual."""
     normalized = _normalize(raw)
     if normalized in _CATEGORY_ALIASES:
         return _CATEGORY_ALIASES[normalized]
-    for cat in db.scalars(select(Category).where(Category.kind == CategoryKind.expense.value)):
-        if _normalize(cat.name) == normalized:
-            return cat.name
+    if family_id is not None:
+        for cat in db.scalars(
+            select(Category).where(
+                Category.kind == CategoryKind.expense.value,
+                Category.family_id == family_id,
+            )
+        ):
+            if _normalize(cat.name) == normalized:
+                return cat.name
     return raw.strip()[:50]
 
 
@@ -183,7 +189,11 @@ def import_csv(db: Session, trip: Trip, content: bytes, dry_run: bool) -> Import
             if len(currency) != 3:
                 raise ValueError(f"Moneda no reconocida: {currency!r}")
 
-            category = _resolve_category(db, row["category"]) if row.get("category") else "Otros"
+            category = (
+                _resolve_category(db, trip.family_id, row["category"])
+                if row.get("category")
+                else "Otros"
+            )
 
             if row.get("exchange_rate"):
                 rate = _parse_amount(row["exchange_rate"])
@@ -214,11 +224,17 @@ def import_csv(db: Session, trip: Trip, content: bytes, dry_run: bool) -> Import
         places_by_name = {p.name.strip().lower(): p for p in trip.places}
         known_categories = {
             _normalize(c.name)
-            for c in db.scalars(select(Category).where(Category.kind == CategoryKind.expense.value))
+            for c in db.scalars(
+                select(Category).where(
+                    Category.kind == CategoryKind.expense.value,
+                    Category.family_id == trip.family_id,
+                )
+            )
         }
         max_pos = db.scalar(
             select(func.coalesce(func.max(Category.position), -1)).where(
-                Category.kind == CategoryKind.expense.value
+                Category.kind == CategoryKind.expense.value,
+                Category.family_id == trip.family_id,
             )
         )
         for preview, paid_by_name in valid:
@@ -228,18 +244,26 @@ def import_csv(db: Session, trip: Trip, content: bytes, dry_run: bool) -> Import
                 key = paid_by_name.strip().lower()
                 traveler = travelers_by_name.get(key)
                 if traveler is None:
-                    traveler = Traveler(name=paid_by_name.strip())
+                    # el viajero nuevo entra en la familia del viaje
+                    traveler = Traveler(
+                        name=paid_by_name.strip(), family_id=trip.family_id
+                    )
                     db.add(traveler)
                     db.flush()
                     travelers_by_name[key] = traveler
                 if traveler not in trip.travelers:
                     trip.travelers.append(traveler)
                 paid_by_id = traveler.id
-            # las categorías desconocidas se crean automáticamente
-            if _normalize(preview.category) not in known_categories:
+            # las categorías desconocidas se crean automáticamente (en la
+            # familia del viaje; un viaje legacy sin familia no crea ninguna)
+            if (
+                trip.family_id is not None
+                and _normalize(preview.category) not in known_categories
+            ):
                 max_pos += 1
                 db.add(
                     Category(
+                        family_id=trip.family_id,
                         kind=CategoryKind.expense.value,
                         name=preview.category,
                         color="#94a3b8",

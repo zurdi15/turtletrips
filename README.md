@@ -23,7 +23,7 @@
 
 # Overview
 
-Turtle Trips is a **self-hosted, single-user** app to plan your trips: manage your itinerary, bookings, expenses and the luggage with your data on your own server.
+Turtle Trips is a **self-hosted, multi-user** app to plan your trips: manage your itinerary, bookings, expenses and the luggage with your data on your own server. Every user is a traveler (travelers without an account — kids, guests — also exist), users group into **families** with their own world map, categories and packing templates, and a trip is shared by everyone traveling on it.
 
 ## Features
 
@@ -49,7 +49,8 @@ Turtle Trips is a **self-hosted, single-user** app to plan your trips: manage yo
 
 ### And more
 
-- 🗺️ **World map**: a journal of visited countries, cities and places that **fills itself in** from finished trips and lets you add everything from before the app by hand.
+- 👥 **Multi-user with login**: session cookies with no secrets to configure, per-user theme and language stored in the database, profile page (name, color, photo, password) and an admin area to manage accounts and families. A new account can claim an existing virtual traveler.
+- 🗺️ **World map**: a per-family journal of visited countries, cities and places that **fills itself in** from finished trips where the family took part, and lets you add everything from before the app by hand.
 - 🌐 **Multi-language UI** ^^(English and Spanish), switchable from Settings.
 - 📱 **Installable PWA** with app-shell precaching and basic offline support.
 - 💾 **Backups** as a ZIP (database + files) from the app itself, with validated hot restore.
@@ -91,8 +92,12 @@ docker run -d --name tt \
 
 Or with the repo's `docker-compose.yml` (`docker compose up -d`). All data (SQLite + uploaded files) lives in `/data`: a single directory to back up.
 
-> [!IMPORTANT]
-> The app ships without authentication: only expose it behind your reverse proxy (with auth) or VPN. If you use the calendar subscription, leave `/api/v1/calendar/*` exempt from auth. It is a feed with its own token.
+On first run the login screen offers to create the **admin account**; the admin then creates the rest of the users (optionally linking them to existing virtual travelers) and manages families from the Administration page.
+
+> [!NOTE]
+> The app now ships with its own login (session cookie, `HttpOnly` + `SameSite=Lax`). A reverse proxy with auth is no longer required, but if you keep one, leave `/api/v1/calendar/*` exempt: the calendar subscription is a public feed with its own token. Set `TT_COOKIE_SECURE=1` when serving over HTTPS.
+>
+> Locked out of the only admin account? Reset it by hand against the volume: `sqlite3 /data/app.db "DELETE FROM users; DELETE FROM sessions;"` — the next visit shows the admin bootstrap screen again (travelers, trips and data are untouched).
 
 ## Environment variables
 
@@ -102,6 +107,8 @@ Or with the repo's `docker-compose.yml` (`docker compose up -d`). All data (SQLi
 | `TT_DEFAULT_CURRENCY` | `EUR` | Default base currency for new trips |
 | `TT_NOMINATIM_URL` | `https://nominatim.openstreetmap.org` | Geocoding server (you can point it to your own) |
 | `TT_RATES_URL` | `https://api.frankfurter.dev/v1` | Exchange-rate API (self-hostable) |
+| `TT_COOKIE_SECURE` | `0` | Mark the session cookie as `Secure` (enable behind HTTPS) |
+| `TT_SESSION_TTL_DAYS` | `30` | Session lifetime; it renews itself while the app is in use |
 
 ## Backup
 

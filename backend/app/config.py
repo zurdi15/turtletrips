@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     default_currency: str = "EUR"
     # en dev (dev.sh) se pone a 0 para que :8000 no sirva una SPA compilada obsoleta
     serve_static: bool = True
+    # duración de la sesión (cookie tt_session); se renueva sola al usar la app
+    session_ttl_days: int = 30
+    # marcar la cookie como Secure (activar en despliegues con HTTPS)
+    cookie_secure: bool = False
+    # coste de bcrypt (los tests lo bajan a 4 para no pagar ~0,3 s por hash)
+    bcrypt_rounds: int = 12
 
     @property
     def db_path(self) -> Path:

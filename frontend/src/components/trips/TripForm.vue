@@ -17,6 +17,7 @@ import { intlLocale } from '../../i18n'
 import { MEMBER_COLORS } from '../../theme'
 import { FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
 import { countryName, countryOptions as buildCountryOptions } from '../../countries'
+import { useSessionStore } from '../../stores/session'
 import { useTripsStore } from '../../stores/trips'
 import { useTravelersStore } from '../../stores/travelers'
 import { useNotify } from '../../composables/useNotify'
@@ -34,11 +35,17 @@ const { t } = useI18n()
 const notify = useNotify()
 const store = useTripsStore()
 const travelersStore = useTravelersStore()
+const session = useSessionStore()
 travelersStore.load()
 
 const name = ref(props.trip?.name ?? '')
 const countries = ref<string[]>(props.trip?.countries ? [...props.trip.countries] : [])
-const travelerIds = ref<number[]>(props.trip?.travelers?.map((tr) => tr.id) ?? [])
+// al crear, el propio viajero viene preseleccionado (el backend lo garantiza
+// igualmente, pero así el formulario lo enseña desde el principio)
+const travelerIds = ref<number[]>(
+  props.trip?.travelers?.map((tr) => tr.id) ??
+    (session.travelerId !== null ? [session.travelerId] : []),
+)
 const newTravelerName = ref('')
 const startDate = ref<Date | null>(props.trip?.start_date ? parseIsoDate(props.trip.start_date) : null)
 const endDate = ref<Date | null>(props.trip?.end_date ? parseIsoDate(props.trip.end_date) : null)

@@ -24,9 +24,21 @@ async function parseError(resp: Response): Promise<never> {
   throw new ApiError(resp.status, detail)
 }
 
+// handler de sesión caducada: lo registra main.ts (inversión de dependencias
+// para que el cliente no conozca el router ni las stores)
+let onUnauthorized: (() => void) | null = null
+export function setUnauthorizedHandler(fn: () => void) {
+  onUnauthorized = fn
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const resp = await fetch(`${API_BASE}${path}`, init)
-  if (!resp.ok) await parseError(resp)
+  if (!resp.ok) {
+    // /auth/* queda exento: un login fallido o el propio fetchMe no deben
+    // disparar el redirect (bucle) — el resto de 401 = sesión caducada
+    if (resp.status === 401 && !path.startsWith('/auth/')) onUnauthorized?.()
+    await parseError(resp)
+  }
   if (resp.status === 204) return undefined as T
   return resp.json()
 }

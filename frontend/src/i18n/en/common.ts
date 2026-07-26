@@ -22,6 +22,12 @@ export default {
     travelers: 'Travelers',
     settings: 'Settings',
   },
+  userMenu: {
+    profile: 'Profile',
+    admin: 'Administration',
+    settings: 'Settings',
+    logout: 'Sign out',
+  },
   payer: {
     unassigned: 'Unassigned',
     commonFund: 'Common fund',

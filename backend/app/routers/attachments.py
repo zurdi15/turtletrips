@@ -3,20 +3,24 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import CurrentUser
 from ..db import get_db
-from ..models import Attachment, Booking, Trip
+from ..models import Attachment, Booking
 from ..schemas.attachment import AttachmentRead
 from ..services import files
-from .common import ensure_in_trip, get_or_404
+from .common import ensure_in_trip, ensure_trip_member, get_trip_scoped
 
 router = APIRouter(tags=["attachments"])
 
 
 @router.get("/trips/{trip_id}/attachments", response_model=list[AttachmentRead])
 def list_attachments(
-    trip_id: int, booking_id: int | None = None, db: Session = Depends(get_db)
+    trip_id: int,
+    user: CurrentUser,
+    booking_id: int | None = None,
+    db: Session = Depends(get_db),
 ):
-    get_or_404(db, Trip, trip_id)
+    ensure_trip_member(db, user, trip_id)
     query = select(Attachment).where(Attachment.trip_id == trip_id)
     if booking_id is not None:
         query = query.where(Attachment.booking_id == booking_id)
@@ -27,10 +31,11 @@ def list_attachments(
 async def upload_attachment(
     trip_id: int,
     file: UploadFile,
+    user: CurrentUser,
     booking_id: int | None = Form(default=None),
     db: Session = Depends(get_db),
 ):
-    get_or_404(db, Trip, trip_id)
+    ensure_trip_member(db, user, trip_id)
     ensure_in_trip(
         db, Booking, booking_id, trip_id, message="La reserva no pertenece a este viaje"
     )
@@ -56,9 +61,12 @@ async def upload_attachment(
 
 @router.get("/attachments/{attachment_id}/download")
 def download_attachment(
-    attachment_id: int, inline: bool = False, db: Session = Depends(get_db)
+    attachment_id: int,
+    user: CurrentUser,
+    inline: bool = False,
+    db: Session = Depends(get_db),
 ):
-    attachment = get_or_404(db, Attachment, attachment_id)
+    attachment = get_trip_scoped(db, user, Attachment, attachment_id)
     try:
         path = files.resolve_stored_file(attachment.trip_id, attachment.stored_name)
     except files.FileValidationError as exc:
@@ -74,8 +82,8 @@ def download_attachment(
 
 
 @router.delete("/attachments/{attachment_id}", status_code=204)
-def delete_attachment(attachment_id: int, db: Session = Depends(get_db)):
-    attachment = get_or_404(db, Attachment, attachment_id)
+def delete_attachment(attachment_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    attachment = get_trip_scoped(db, user, Attachment, attachment_id)
     files.delete_stored_file(attachment.trip_id, attachment.stored_name)
     db.delete(attachment)
     db.commit()

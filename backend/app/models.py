@@ -9,6 +9,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     Numeric,
     String,
@@ -79,6 +80,8 @@ trip_travelers = Table(
     Base.metadata,
     Column("trip_id", ForeignKey("trips.id", ondelete="CASCADE"), primary_key=True),
     Column("traveler_id", ForeignKey("travelers.id", ondelete="CASCADE"), primary_key=True),
+    # la lista de viajes filtra por viajero en cada carga de la home
+    Index("ix_trip_travelers_traveler_id", "traveler_id"),
 )
 
 
@@ -99,6 +102,11 @@ class Trip(TimestampMixin, Base):
     # llave secreta del feed .ics de suscripción (URL pública sin auth)
     ics_token: Mapped[str | None] = mapped_column(String(64), unique=True)
     notes: Mapped[str | None] = mapped_column(Text)
+    # familia del creador: determina qué categorías/plantillas usa el viaje.
+    # Nullable como red de seguridad para datos legacy; la app siempre lo asigna.
+    family_id: Mapped[int | None] = mapped_column(
+        ForeignKey("families.id", ondelete="SET NULL")
+    )
 
     travelers: Mapped[list["Traveler"]] = relationship(
         secondary=trip_travelers, order_by="Traveler.name", passive_deletes=True
@@ -158,14 +166,87 @@ class Trip(TimestampMixin, Base):
         return f"/api/v1/trips/{self.id}/cover?v={self.cover_image}"
 
 
+class Family(TimestampMixin, Base):
+    """Grupo de viajeros (con o sin cuenta): scoping de mapa, categorías y plantillas."""
+
+    __tablename__ = "families"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True)
+
+
 class Traveler(TimestampMixin, Base):
-    """Viajero global, reutilizable entre viajes. No es una cuenta de usuario."""
+    """Viajero global, reutilizable entre viajes.
+
+    Puede tener cuenta de usuario asociada (User.traveler_id) o ser "virtual"
+    (niños, invitados sin cuenta). Pertenece como mucho a una familia.
+    """
 
     __tablename__ = "travelers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
     color: Mapped[str | None] = mapped_column(String(7))
+    family_id: Mapped[int | None] = mapped_column(
+        ForeignKey("families.id", ondelete="RESTRICT")
+    )
+    # nombre del fichero guardado en uploads/avatars (como Trip.cover_image)
+    avatar_image: Mapped[str | None] = mapped_column(String(100))
+
+    family: Mapped["Family | None"] = relationship()
+    user: Mapped["User | None"] = relationship(
+        back_populates="traveler", lazy="selectin"
+    )
+
+    @property
+    def avatar_url(self) -> str | None:
+        if not self.avatar_image:
+            return None
+        return f"/api/v1/travelers/{self.id}/avatar?v={self.avatar_image}"
+
+    @property
+    def has_user(self) -> bool:
+        return self.user is not None
+
+
+class User(TimestampMixin, Base):
+    """Cuenta de acceso. Siempre vinculada 1:1 a un viajero (su identidad)."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(50), unique=True)  # lookup case-insensitive
+    password_hash: Mapped[str] = mapped_column(String(100))
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    traveler_id: Mapped[int] = mapped_column(
+        ForeignKey("travelers.id", ondelete="RESTRICT"), unique=True
+    )
+    # preferencias de UI por usuario (viven en DB, no en localStorage)
+    theme: Mapped[str] = mapped_column(String(10), default="system")  # light|dark|system
+    language: Mapped[str] = mapped_column(String(5), default="en")  # es|en
+
+    traveler: Mapped[Traveler] = relationship(back_populates="user")
+
+
+class UserSession(Base):
+    """Sesión server-side: el token viaja en cookie y se guarda hasheado (sha256).
+
+    Tokens aleatorios de entropía plena → sin claves de firma que gestionar.
+    """
+
+    __tablename__ = "sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+    user: Mapped[User] = relationship()
 
 
 class Place(TimestampMixin, Base):
@@ -389,12 +470,19 @@ class DayJournal(TimestampMixin, Base):
 
 
 class Category(TimestampMixin, Base):
-    """Categorías configurables para gastos y maleta."""
+    """Categorías configurables para gastos y maleta, propias de cada familia."""
 
     __tablename__ = "categories"
-    __table_args__ = (UniqueConstraint("kind", "name"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "family_id", "kind", "name", name="uq_categories_family_kind_name"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    family_id: Mapped[int] = mapped_column(
+        ForeignKey("families.id", ondelete="CASCADE")
+    )
     kind: Mapped[str] = mapped_column(String(10))  # expense | packing
     name: Mapped[str] = mapped_column(String(50))
     color: Mapped[str | None] = mapped_column(String(7))
@@ -438,12 +526,18 @@ class PackingSelection(Base):
 
 
 class PackingTemplate(TimestampMixin, Base):
-    """Maleta guardada como plantilla reutilizable entre viajes."""
+    """Maleta guardada como plantilla reutilizable entre viajes (por familia)."""
 
     __tablename__ = "packing_templates"
+    __table_args__ = (
+        UniqueConstraint("family_id", "name", name="uq_packing_templates_family_name"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True)
+    family_id: Mapped[int] = mapped_column(
+        ForeignKey("families.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(String(100))
 
     items: Mapped[list["PackingTemplateItem"]] = relationship(
         back_populates="template", cascade="all, delete-orphan", passive_deletes=True
@@ -465,11 +559,14 @@ class PackingTemplateItem(Base):
 
 
 class WorldPlace(TimestampMixin, Base):
-    """Diario mundial: lugares visitados, añadidos a mano o derivados de los viajes."""
+    """Diario mundial de una familia: lugares visitados, a mano o derivados de viajes."""
 
     __tablename__ = "world_places"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    family_id: Mapped[int] = mapped_column(
+        ForeignKey("families.id", ondelete="CASCADE"), index=True
+    )
     name: Mapped[str] = mapped_column(String(200))
     kind: Mapped[str] = mapped_column(String(10), default="place")  # country|city|place
     country_code: Mapped[str | None] = mapped_column(String(2))  # ISO alpha-2

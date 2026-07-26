@@ -1,6 +1,10 @@
 export default {
   title: 'Viajeros',
-  info: 'Globales y reutilizables: créalos una vez y asócialos a cualquier viaje para marcar quién pagó cada gasto. No son cuentas de usuario.',
+  info: 'Globales y reutilizables: créalos una vez y asócialos a cualquier viaje para marcar quién pagó cada gasto. Algunos tienen cuenta de usuario; el resto son virtuales (niños, invitados…).',
+  badges: {
+    account: 'Cuenta',
+    accountTooltip: 'Tiene cuenta de usuario',
+  },
   empty: 'Sin viajeros todavía: añade el primero abajo',
   newPlaceholder: 'Nuevo viajero…',
   confirmDelete: {

@@ -24,6 +24,13 @@ export default {
     travelers: 'Viajeros',
     settings: 'Ajustes',
   },
+  // menú de usuario (AppNav, derecha)
+  userMenu: {
+    profile: 'Perfil',
+    admin: 'Administración',
+    settings: 'Ajustes',
+    logout: 'Cerrar sesión',
+  },
   // selector de pagador (PayerSelect)
   payer: {
     unassigned: 'Sin asignar',

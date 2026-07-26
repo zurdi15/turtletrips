@@ -37,12 +37,14 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           // API (solo GET): red primero con fallback a caché para consultar
-          // el viaje sin conexión; nunca se cachean descargas ni backups
+          // el viaje sin conexión; nunca se cachean descargas ni backups, ni
+          // auth/users/families (un /auth/me cacheado serviría al usuario
+          // anterior del dispositivo)
           {
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               url.pathname.startsWith('/api/v1/') &&
-              !/\/(backup|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover)/.test(
+              !/\/(auth|users|families|backup|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(
                 url.pathname,
               ),
             handler: 'NetworkFirst',
@@ -63,10 +65,10 @@ export default defineConfig({
               expiration: { maxEntries: 500, maxAgeSeconds: 30 * 86400 },
             },
           },
-          // portadas e imágenes de país (Wikimedia)
+          // portadas, avatares e imágenes de país (Wikimedia)
           {
             urlPattern: ({ url }) =>
-              /^\/api\/v1\/trips\/\d+\/cover/.test(url.pathname) ||
+              /^\/api\/v1\/(trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(url.pathname) ||
               url.hostname === 'upload.wikimedia.org',
             handler: 'StaleWhileRevalidate',
             options: {

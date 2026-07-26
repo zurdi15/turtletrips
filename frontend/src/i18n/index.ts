@@ -14,7 +14,7 @@ function isSupported(value: string | null | undefined): value is AppLocale {
   return !!value && (SUPPORTED_LOCALES as readonly string[]).includes(value)
 }
 
-/** Preferencia guardada → idioma del navegador → español (comportamiento histórico) */
+/** Preferencia guardada → inglés (sin detección de navegador: el default es fijo) */
 function detectLocale(): AppLocale {
   // try/catch y no typeof: Node ≥22 expone un localStorage global no funcional
   // (rompería los tests de utils que importan este módulo transitivamente)
@@ -25,14 +25,7 @@ function detectLocale(): AppLocale {
     stored = null
   }
   if (isSupported(stored)) return stored
-  let nav: string | null = null
-  try {
-    nav = navigator.language?.slice(0, 2) ?? null
-  } catch {
-    nav = null
-  }
-  if (isSupported(nav)) return nav
-  return 'es'
+  return 'en'
 }
 
 export const i18n = createI18n({

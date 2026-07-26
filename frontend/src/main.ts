@@ -17,7 +17,11 @@ import { primevueEs } from './locale/es'
 import { primevueEn } from './locale/en'
 import { i18n, initLocale, type AppLocale } from './i18n'
 import { initTheme } from './composables/useTheme'
+import { setUnauthorizedHandler } from './api/client'
+import { useSessionStore } from './stores/session'
 
+// anti-flash: el último tema/idioma conocidos (localStorage) hasta que
+// /auth/me aplique los guardados en DB (antes del primer paint, ver isReady)
 initTheme()
 initLocale()
 
@@ -46,4 +50,16 @@ watch(i18n.global.locale, (locale) => {
   app.config.globalProperties.$primevue.config.locale = PRIMEVUE_LOCALES[locale as AppLocale]
 })
 
-app.mount('#app')
+// sesión caducada en cualquier llamada → limpiar y volver al login
+setUnauthorizedHandler(() => {
+  const session = useSessionStore()
+  session.clearSession()
+  const current = router.currentRoute.value
+  if (current.name !== 'login') {
+    router.push({ name: 'login', query: { redirect: current.fullPath } })
+  }
+})
+
+// la navegación inicial (y su fetchMe en el guard) termina antes del primer
+// paint: sin flash de tema/idioma ni de UI protegida
+router.isReady().then(() => app.mount('#app'))

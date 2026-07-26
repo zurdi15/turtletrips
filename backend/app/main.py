@@ -1,20 +1,24 @@
 import threading
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.engine import Engine
 
+from .auth import get_current_user, require_admin
 from .config import get_settings
 from .db import make_engine, make_sessionmaker
 from .routers import (
+    admin,
     attachments,
+    auth,
     backup,
     bookings,
     categories,
     countries,
     expenses,
+    families,
     geocode,
     itinerary,
     journal,
@@ -25,7 +29,7 @@ from .routers import (
     trips,
     world,
 )
-from .services.categories import ensure_default_categories
+from .services.categories import ensure_default_categories_all
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 API_PREFIX = "/api/v1"
@@ -48,6 +52,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     # serializa export/restore de backups (una restauración a medias es fatal)
     app.state.backup_lock = threading.Lock()
 
+    # protegidos: cualquier usuario con sesión
     for router in (
         trips.router,
         travelers.router,
@@ -63,13 +68,25 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         geocode.router,
         rates.router,
         world.router,
-        backup.router,
+        families.router,  # GET para todos; mutaciones con candado admin por endpoint
     ):
-        app.include_router(router, prefix=API_PREFIX)
+        app.include_router(
+            router, prefix=API_PREFIX, dependencies=[Depends(get_current_user)]
+        )
 
-    # sembrar categorías por defecto (idempotente; la tabla ya existe tras alembic/create_all)
+    # solo admin: gestión de usuarios y backup de la instancia entera
+    for router in (admin.router, backup.router):
+        app.include_router(
+            router, prefix=API_PREFIX, dependencies=[Depends(require_admin)]
+        )
+
+    # públicos: auth (login/bootstrap/status) y el feed .ics de suscripción
+    app.include_router(auth.router, prefix=API_PREFIX)
+    app.include_router(itinerary.public_router, prefix=API_PREFIX)
+
+    # sembrar categorías por defecto de cada familia (idempotente)
     with app.state.sessionmaker() as session:
-        ensure_default_categories(session)
+        ensure_default_categories_all(session)
 
     @app.get(f"{API_PREFIX}/health", tags=["health"])
     def health():

@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
+from ..auth import CurrentUser
 from ..db import get_db
 from ..models import (
     Booking,
@@ -30,9 +31,11 @@ from ..services.balances import split_amount, trip_balances, validate_shares
 from ..services.rates import resolve_rate, to_base
 from .common import (
     ascii_filename,
-    delete_by_id,
+    delete_trip_scoped,
     ensure_in_trip,
+    ensure_trip_member,
     get_or_404,
+    get_trip_scoped,
     save_new,
     save_updates,
 )
@@ -71,12 +74,13 @@ def _checked_shares(
 @router.get("/trips/{trip_id}/expenses", response_model=list[ExpenseRead])
 def list_expenses(
     trip_id: int,
+    user: CurrentUser,
     category: str | None = None,
     day: date | None = None,
     paid_by_id: int | None = None,
     db: Session = Depends(get_db),
 ):
-    get_or_404(db, Trip, trip_id)
+    ensure_trip_member(db, user, trip_id)
     query = select(Expense).where(Expense.trip_id == trip_id)
     if category is not None:
         query = query.where(Expense.category == category)
@@ -91,15 +95,17 @@ def list_expenses(
 
 
 @router.get("/trips/{trip_id}/balances", response_model=TripBalances)
-def get_trip_balances(trip_id: int, db: Session = Depends(get_db)):
-    trip = get_or_404(db, Trip, trip_id)
+def get_trip_balances(trip_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    trip = ensure_trip_member(db, user, trip_id)
     return trip_balances(db, trip)
 
 
 @router.post("/trips/{trip_id}/settlements", response_model=TripBalances, status_code=201)
-def create_settlement(trip_id: int, payload: SettlementCreate, db: Session = Depends(get_db)):
+def create_settlement(
+    trip_id: int, payload: SettlementCreate, user: CurrentUser, db: Session = Depends(get_db)
+):
     """Registra un pago entre viajeros y devuelve los saldos actualizados."""
-    trip = get_or_404(db, Trip, trip_id)
+    trip = ensure_trip_member(db, user, trip_id)
     if payload.from_id == payload.to_id:
         raise HTTPException(status_code=400, detail="El pagador y el receptor deben ser distintos")
     get_or_404(db, Traveler, payload.from_id)
@@ -117,13 +123,15 @@ def create_settlement(trip_id: int, payload: SettlementCreate, db: Session = Dep
 
 
 @router.delete("/settlements/{settlement_id}", status_code=204)
-def delete_settlement(settlement_id: int, db: Session = Depends(get_db)):
-    delete_by_id(db, Settlement, settlement_id)
+def delete_settlement(settlement_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    delete_trip_scoped(db, user, Settlement, settlement_id)
 
 
 @router.post("/trips/{trip_id}/expenses", response_model=ExpenseRead, status_code=201)
-async def create_expense(trip_id: int, payload: ExpenseCreate, db: Session = Depends(get_db)):
-    trip = get_or_404(db, Trip, trip_id)
+async def create_expense(
+    trip_id: int, payload: ExpenseCreate, user: CurrentUser, db: Session = Depends(get_db)
+):
+    trip = ensure_trip_member(db, user, trip_id)
     ensure_in_trip(db, Place, payload.place_id, trip_id, message=PLACE_NOT_IN_TRIP)
     currency = (payload.currency or trip.base_currency).upper()
     rate = await resolve_rate(db, trip.base_currency, currency, payload.day, payload.exchange_rate)
@@ -141,8 +149,10 @@ async def create_expense(trip_id: int, payload: ExpenseCreate, db: Session = Dep
 
 
 @router.patch("/expenses/{expense_id}", response_model=ExpenseRead)
-async def update_expense(expense_id: int, payload: ExpenseUpdate, db: Session = Depends(get_db)):
-    expense = get_or_404(db, Expense, expense_id)
+async def update_expense(
+    expense_id: int, payload: ExpenseUpdate, user: CurrentUser, db: Session = Depends(get_db)
+):
+    expense = get_trip_scoped(db, user, Expense, expense_id)
     trip = db.get(Trip, expense.trip_id)
     data = payload.model_dump(exclude_unset=True)
     _enforce_common_exclusivity(data)
@@ -212,13 +222,13 @@ async def update_expense(expense_id: int, payload: ExpenseUpdate, db: Session = 
 
 
 @router.delete("/expenses/{expense_id}", status_code=204)
-def delete_expense(expense_id: int, db: Session = Depends(get_db)):
-    delete_by_id(db, Expense, expense_id)
+def delete_expense(expense_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    delete_trip_scoped(db, user, Expense, expense_id)
 
 
 @router.get("/trips/{trip_id}/expenses/export.csv")
-def export_expenses(trip_id: int, db: Session = Depends(get_db)):
-    trip = get_or_404(db, Trip, trip_id)
+def export_expenses(trip_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    trip = ensure_trip_member(db, user, trip_id)
     content = csv_io.export_csv(db, trip)
     filename = f"gastos-{ascii_filename(trip.name, 'viaje')}.csv"
     return Response(
@@ -232,10 +242,11 @@ def export_expenses(trip_id: int, db: Session = Depends(get_db)):
 async def import_expenses(
     trip_id: int,
     file: UploadFile,
+    user: CurrentUser,
     dry_run: bool = Query(default=True),
     db: Session = Depends(get_db),
 ):
-    trip = get_or_404(db, Trip, trip_id)
+    trip = ensure_trip_member(db, user, trip_id)
     content = await file.read()
     if len(content) > 5 * 1024 * 1024:
         raise HTTPException(status_code=413, detail="CSV demasiado grande (máx 5 MB)")

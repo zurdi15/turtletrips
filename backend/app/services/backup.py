@@ -23,13 +23,15 @@ from sqlalchemy.engine import Engine
 
 from ..config import get_settings
 from ..db import make_engine, make_sessionmaker
-from .categories import ensure_default_categories
+from .categories import ensure_default_categories_all
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
-BACKUP_FORMAT = 1
+# formato 2 = multi-usuario (avatares en uploads/avatars/); los ZIP formato 1
+# restauran igual: la compatibilidad real la marca la revisión de alembic
+BACKUP_FORMAT = 2
 MAX_RESTORE_BYTES = 1024**3  # 1 GiB comprimido
 MAX_EXTRACTED_BYTES = 4 * 1024**3  # 4 GiB descomprimido (anti zip-bomb)
-_UPLOAD_ENTRY = re.compile(r"^uploads/\d+/[^/\\]+$")
+_UPLOAD_ENTRY = re.compile(r"^uploads/(\d+|avatars)/[^/\\]+$")
 
 
 class BackupValidationError(Exception):
@@ -200,7 +202,7 @@ def restore_backup(app: FastAPI, zip_path: Path) -> dict:
             app.state.engine = engine
             app.state.sessionmaker = make_sessionmaker(engine)
             with app.state.sessionmaker() as session:
-                ensure_default_categories(session)
+                ensure_default_categories_all(session)
                 trips = session.execute(text("SELECT count(*) FROM trips")).scalar()
             return {
                 "restored": True,

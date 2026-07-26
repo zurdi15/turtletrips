@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth import CurrentUser
 from ..db import get_db
 from ..models import (
     Booking,
@@ -26,7 +27,7 @@ from ..schemas.expense import ExpenseRead
 from ..services.balances import split_amount
 from ..services.booking_place import ensure_booking_place
 from ..services.rates import resolve_rate, to_base
-from .common import apply_updates, get_or_404
+from .common import apply_updates, ensure_trip_member, get_trip_scoped
 
 router = APIRouter(tags=["bookings"])
 
@@ -43,8 +44,13 @@ BOOKING_EXPENSE_CATEGORY = {
 
 
 @router.get("/trips/{trip_id}/bookings", response_model=list[BookingRead])
-def list_bookings(trip_id: int, type: BookingType | None = None, db: Session = Depends(get_db)):
-    get_or_404(db, Trip, trip_id)
+def list_bookings(
+    trip_id: int,
+    user: CurrentUser,
+    type: BookingType | None = None,
+    db: Session = Depends(get_db),
+):
+    ensure_trip_member(db, user, trip_id)
     query = select(Booking).where(Booking.trip_id == trip_id)
     if type is not None:
         query = query.where(Booking.type == type.value)
@@ -135,9 +141,9 @@ async def _sync_linked_expense(db: Session, booking: Booking) -> None:
 
 @router.post("/trips/{trip_id}/bookings", response_model=BookingRead, status_code=201)
 async def create_booking(
-    trip_id: int, payload: BookingCreate, db: Session = Depends(get_db)
+    trip_id: int, payload: BookingCreate, user: CurrentUser, db: Session = Depends(get_db)
 ):
-    get_or_404(db, Trip, trip_id)
+    ensure_trip_member(db, user, trip_id)
     booking = Booking(trip_id=trip_id)
     data = payload.model_dump()
     _enforce_common_exclusivity(data)
@@ -153,9 +159,9 @@ async def create_booking(
 
 @router.patch("/bookings/{booking_id}", response_model=BookingRead)
 async def update_booking(
-    booking_id: int, payload: BookingUpdate, db: Session = Depends(get_db)
+    booking_id: int, payload: BookingUpdate, user: CurrentUser, db: Session = Depends(get_db)
 ):
-    booking = get_or_404(db, Booking, booking_id)
+    booking = get_trip_scoped(db, user, Booking, booking_id)
     data = payload.model_dump(exclude_unset=True)
     _enforce_common_exclusivity(data)
     apply_updates(booking, data)
@@ -172,8 +178,8 @@ async def update_booking(
 
 
 @router.delete("/bookings/{booking_id}", status_code=204)
-def delete_booking(booking_id: int, db: Session = Depends(get_db)):
-    booking = get_or_404(db, Booking, booking_id)
+def delete_booking(booking_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    booking = get_trip_scoped(db, user, Booking, booking_id)
     # el gasto espejo muere con la reserva
     expense = db.scalar(select(Expense).where(Expense.booking_id == booking.id))
     if expense is not None:
@@ -200,10 +206,11 @@ def delete_booking(booking_id: int, db: Session = Depends(get_db)):
 @router.post("/bookings/{booking_id}/create-expense", response_model=ExpenseRead, status_code=201)
 async def create_expense_from_booking(
     booking_id: int,
+    user: CurrentUser,
     payload: CreateExpenseFromBooking | None = None,
     db: Session = Depends(get_db),
 ):
-    booking = get_or_404(db, Booking, booking_id)
+    booking = get_trip_scoped(db, user, Booking, booking_id)
     if booking.cost_amount is None or not booking.cost_currency:
         raise HTTPException(
             status_code=400, detail="La reserva no tiene coste o moneda definidos"

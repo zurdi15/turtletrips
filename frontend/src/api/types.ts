@@ -8,6 +8,74 @@ export interface Traveler {
   id: number
   name: string
   color: string | null
+  family_id: number | null
+  // ya trae ?v= de cache-bust; null si no hay foto
+  avatar_url: string | null
+  // true si el viajero tiene cuenta de usuario vinculada
+  has_user: boolean
+}
+
+// --- sesión y administración ---
+
+export type ThemePref = 'light' | 'dark' | 'system'
+export type UiLanguage = 'es' | 'en'
+
+export interface Family {
+  id: number
+  name: string
+}
+
+export interface SessionUser {
+  id: number
+  username: string
+  is_admin: boolean
+  theme: ThemePref
+  language: UiLanguage
+}
+
+export interface Me {
+  user: SessionUser
+  traveler: Traveler
+  family: Family | null
+}
+
+export interface User {
+  id: number
+  username: string
+  is_admin: boolean
+  traveler: Traveler
+}
+
+export interface LoginInput {
+  username: string
+  password: string
+}
+
+export interface BootstrapInput {
+  username: string
+  password: string
+  traveler_name: string
+}
+
+export interface SettingsInput {
+  theme?: ThemePref
+  language?: UiLanguage
+}
+
+// vincular un viajero existente O crear uno nuevo (exactamente uno de los dos)
+export type UserCreateInput = {
+  username: string
+  password: string
+  is_admin: boolean
+  family_id?: number | null
+} & ({ traveler_id: number } | { traveler_name: string })
+
+export interface UserUpdateInput {
+  is_admin?: boolean
+}
+
+export interface FamilyInput {
+  name: string
 }
 
 export interface Trip {

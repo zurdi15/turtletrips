@@ -12,6 +12,7 @@ tests/test_csv.py
 tests/test_expenses.py
 tests/test_ics.py
 tests/test_itinerary_bookings.py
+tests/test_journal.py
 tests/test_packing_categories.py
 tests/test_static.py
 tests/test_trips.py

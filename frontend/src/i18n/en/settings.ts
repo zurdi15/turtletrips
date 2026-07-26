@@ -9,6 +9,10 @@ export default {
     hint: 'Interface theme.',
     light: 'Light',
     dark: 'Dark',
+    system: 'System',
+  },
+  toast: {
+    saveError: 'Could not save the preference',
   },
   categories: {
     expense: {
