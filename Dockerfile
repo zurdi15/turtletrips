@@ -1,5 +1,7 @@
 # Stage 1: build del frontend
-FROM node:22-alpine AS webbuild
+# --platform=$BUILDPLATFORM: el dist son estáticos (independientes de la arch),
+# así el build multi-arch no emula npm/vite bajo QEMU para arm64
+FROM --platform=$BUILDPLATFORM node:22-alpine AS webbuild
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
