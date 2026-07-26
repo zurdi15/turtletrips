@@ -157,6 +157,19 @@ function lodgingRows(day: string): AgendaRow[] {
   }))
 }
 
+// día sin nada de nada: ni actividades, ni continuaciones, ni reservas.
+// Solo entonces la lista de actividades vacía reserva alto (zona de drop)
+// y se muestra el mensaje "sin actividades"
+function dayIsEmpty(day: string): boolean {
+  return (
+    !lists[day]?.length &&
+    !(continuations.value.get(day) ?? []).length &&
+    !(transportsByDay.value.get(day) ?? []).length &&
+    !(otherBookingsByDay.value.get(day) ?? []).length &&
+    !(lodgingByDay.value.get(day) ?? []).length
+  )
+}
+
 const crud = useCrudView<ItineraryItem>({
   confirm: (item) => ({
     message: t('itinerary.confirm.message', { title: item.title }),
@@ -255,12 +268,14 @@ function openNew(day?: string) {
           :rows="otherBookingRows(day)"
         />
 
+        <!-- sin actividades pero con reservas: la lista colapsa a alto cero
+             para no dejar una franja en blanco entre secciones -->
         <draggable
           :list="lists[day]"
           group="itinerary"
           item-key="id"
           handle=".drag-handle"
-          class="min-h-[2.5rem]"
+          :class="{ 'min-h-[2.5rem]': dayIsEmpty(day) }"
           @end="persistOrder"
         >
           <template #item="{ element }">
@@ -295,16 +310,7 @@ function openNew(day?: string) {
           :rows="lodgingRows(day)"
           position="bottom"
         />
-        <p
-          v-if="
-            !lists[day]?.length &&
-            !(continuations.get(day) ?? []).length &&
-            !(transportsByDay.get(day) ?? []).length &&
-            !(otherBookingsByDay.get(day) ?? []).length &&
-            !(lodgingByDay.get(day) ?? []).length
-          "
-          class="px-4 pb-3 pt-1 text-xs text-ink-disabled"
-        >
+        <p v-if="dayIsEmpty(day)" class="px-4 pb-3 pt-1 text-xs text-ink-disabled">
           {{ t('itinerary.agenda.noActivities') }}
         </p>
         <!-- diario + postal del día (plegable, siempre al pie de la tarjeta) -->

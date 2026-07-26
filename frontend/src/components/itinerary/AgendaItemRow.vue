@@ -21,11 +21,11 @@ defineEmits<{ edit: []; remove: [] }>()
     class="flex items-center gap-3 px-4 py-2.5 border-b border-line-faint last:border-b-0 hover:bg-surface-hover group"
   >
     <i class="pi pi-bars drag-handle cursor-grab text-ink-disabled group-hover:text-ink-faint" />
+    <!-- sin horas no se pinta nada; el ancho fijo mantiene la columna alineada -->
     <span class="text-xs sm:text-sm font-mono text-ink-faint w-16 sm:w-24 shrink-0">
       <template v-if="item.start_time">
         {{ fmtTime(item.start_time) }}<template v-if="item.end_time">–{{ fmtTime(item.end_time) }}</template>
       </template>
-      <template v-else>—</template>
     </span>
     <div class="flex-1 min-w-0">
       <span class="font-medium text-ink">{{ item.title }}</span>
