@@ -44,7 +44,7 @@ def upgrade() -> None:
             nullable=False,
             unique=True,
         ),
-        sa.Column("theme", sa.String(10), nullable=False, server_default="system"),
+        sa.Column("theme", sa.String(10), nullable=False, server_default="light"),
         sa.Column("language", sa.String(5), nullable=False, server_default="en"),
         sa.Column("created_at", sa.DateTime(), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),
         sa.Column("updated_at", sa.DateTime(), server_default=sa.text("(CURRENT_TIMESTAMP)"), nullable=False),

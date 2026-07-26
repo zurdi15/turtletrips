@@ -27,7 +27,6 @@ export default {
   // menú de usuario (AppNav, derecha)
   userMenu: {
     profile: 'Perfil',
-    admin: 'Administración',
     settings: 'Ajustes',
     logout: 'Cerrar sesión',
   },

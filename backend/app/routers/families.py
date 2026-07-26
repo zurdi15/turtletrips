@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from ..auth import AdminUser
 from ..db import get_db
 from ..models import Family, Traveler, Trip
-from ..schemas.admin import FamilyCreate, FamilyUpdate
+from ..schemas.admin import FamilyCreate, FamilyReorder, FamilyUpdate
 from ..schemas.auth import FamilyRead
 from ..services.categories import ensure_default_categories
 from .common import get_or_404
@@ -28,19 +28,31 @@ def _find_by_name(db: Session, name: str) -> Family | None:
 
 @router.get("/families", response_model=list[FamilyRead])
 def list_families(db: Session = Depends(get_db)):
-    return db.scalars(select(Family).order_by(Family.name)).all()
+    return db.scalars(select(Family).order_by(Family.position, Family.id)).all()
 
 
 @router.post("/families", response_model=FamilyRead, status_code=201)
 def create_family(payload: FamilyCreate, _admin: AdminUser, db: Session = Depends(get_db)):
     if _find_by_name(db, payload.name):
         raise HTTPException(status_code=409, detail="Ya existe una familia con ese nombre")
-    family = Family(name=payload.name.strip())
+    max_pos = db.scalar(select(func.coalesce(func.max(Family.position), -1)))
+    family = Family(name=payload.name.strip(), position=max_pos + 1)
     db.add(family)
     db.commit()
     db.refresh(family)
     ensure_default_categories(db, family.id)
     return family
+
+
+@router.post("/families/reorder", status_code=204)
+def reorder_families(payload: FamilyReorder, _admin: AdminUser, db: Session = Depends(get_db)):
+    """Fija el orden manual: la posición es el índice en la lista recibida."""
+    families = {f.id: f for f in db.scalars(select(Family))}
+    for position, family_id in enumerate(payload.ids):
+        family = families.get(family_id)
+        if family is not None:
+            family.position = position
+    db.commit()
 
 
 @router.patch("/families/{family_id}", response_model=FamilyRead)

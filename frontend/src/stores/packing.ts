@@ -73,6 +73,13 @@ export const usePackingStore = defineStore('packing', () => {
     return template
   }
 
+  /** Desvincula la plantilla asociada a la maleta (los elementos no se tocan) */
+  async function clearSelection(travelerId: number | null) {
+    const query = travelerId != null ? `?traveler_id=${travelerId}` : ''
+    await api.delete(`/trips/${base.tripId.value}/packing/selection${query}`)
+    await refreshSelections()
+  }
+
   async function applyTemplate(templateId: number, travelerId: number | null) {
     const query = travelerId != null ? `?traveler_id=${travelerId}` : ''
     base.items.value = await api.post<PackingItem[]>(
@@ -102,6 +109,7 @@ export const usePackingStore = defineStore('packing', () => {
     itemsFor,
     toggle,
     saveAsTemplate,
+    clearSelection,
     applyTemplate,
     syncTemplateFromTrip,
   }

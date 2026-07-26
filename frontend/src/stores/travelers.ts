@@ -6,7 +6,7 @@ import { useGlobalResource } from './globalResource'
 export const useTravelersStore = defineStore('travelers', () => {
   const base = useGlobalResource<
     Traveler,
-    { name: string; color?: string | null },
+    { name: string; color?: string | null; family_id?: number | null },
     { name?: string; color?: string | null; family_id?: number | null }
   >({
     listPath: '/travelers',
@@ -14,8 +14,13 @@ export const useTravelersStore = defineStore('travelers', () => {
     sort: (a, b) => a.name.localeCompare(b.name, 'es'),
   })
 
-  function create(name: string, color?: string | null) {
-    return base.create({ name, color })
+  /** family_id ausente = familia del creador (alta rápida del TripForm). */
+  function create(name: string, color?: string | null, familyId?: number | null) {
+    return base.create({
+      name,
+      color,
+      ...(familyId !== undefined ? { family_id: familyId } : {}),
+    })
   }
 
   function _replace(item: Traveler) {

@@ -55,6 +55,8 @@ export interface BootstrapInput {
   username: string
   password: string
   traveler_name: string
+  // idioma activo en la pantalla de login: la cuenta nace con él
+  language?: UiLanguage
 }
 
 export interface SettingsInput {
@@ -124,6 +126,7 @@ export interface PackingSelection {
 
 export interface PackingTemplate {
   id: number
+  traveler_id: number // dueño (viajero con cuenta o virtual de la familia)
   name: string
   item_count: number
 }
@@ -138,6 +141,7 @@ export interface PackingTemplateItem {
 
 export interface PackingTemplateDetail {
   id: number
+  traveler_id: number
   name: string
   items: PackingTemplateItem[]
 }

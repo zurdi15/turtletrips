@@ -23,7 +23,7 @@
 
 # Overview
 
-Turtle Trips is a **self-hosted, multi-user** app to plan your trips: manage your itinerary, bookings, expenses and the luggage with your data on your own server. Every user is a traveler (travelers without an account — kids, guests — also exist), users group into **families** with their own world map, categories and packing templates, and a trip is shared by everyone traveling on it.
+Turtle Trips is a **self-hosted, multi-user** app to plan your trips: manage your itinerary, bookings, expenses and the luggage with your data on your own server. Every user is a traveler (travelers without an account — kids, guests — also exist), users group into **families** with their own world map and categories, and a trip is shared by everyone traveling on it.
 
 ## Features
 
@@ -44,12 +44,12 @@ Turtle Trips is a **self-hosted, multi-user** app to plan your trips: manage you
 
 ### Packing
 
-- 🧳 **One packing list per traveler** (plus a shared one) with progress and categories.
-- 📋 **Reusable templates**: apply one to a traveler's luggage and tweak it freely, trip after trip.
+- 🧳 **One packing list per traveler** (plus a shared one) with progress and categories. Families pack together: everyone from your family on the trip can edit each other's bags, while other families' bags stay private.
+- 📋 **Reusable templates, per traveler**: visible to your whole family and appliable to any bag you can edit; each template is edited only by its owner (kids' templates are managed by the whole family).
 
 ### And more
 
-- 👥 **Multi-user with login**: session cookies with no secrets to configure, per-user theme and language stored in the database, profile page (name, color, photo, password) and an admin area to manage accounts and families. A new account can claim an existing virtual traveler.
+- 👥 **Multi-user with login**: session cookies with no secrets to configure, per-user theme and language stored in the database, and a profile page (name, color, photo, password). The admin-only Travelers page is the single hub for people: travelers grouped by family with everything inline — manage families, move travelers and handle accounts (a new account can claim an existing virtual traveler).
 - 🗺️ **World map**: a per-family journal of visited countries, cities and places that **fills itself in** from finished trips where the family took part, and lets you add everything from before the app by hand.
 - 🌐 **Multi-language UI** ^^(English and Spanish), switchable from Settings.
 - 📱 **Installable PWA** with app-shell precaching and basic offline support.
@@ -92,7 +92,7 @@ docker run -d --name tt \
 
 Or with the repo's `docker-compose.yml` (`docker compose up -d`). All data (SQLite + uploaded files) lives in `/data`: a single directory to back up.
 
-On first run the login screen offers to create the **admin account**; the admin then creates the rest of the users (optionally linking them to existing virtual travelers) and manages families from the Administration page.
+On first run the login screen offers to create the **admin account**; the admin then creates the rest of the accounts and manages families right from the Travelers page (each account is linked to a traveler, new or an existing virtual one).
 
 > [!NOTE]
 > The app now ships with its own login (session cookie, `HttpOnly` + `SameSite=Lax`). A reverse proxy with auth is no longer required, but if you keep one, leave `/api/v1/calendar/*` exempt: the calendar subscription is a public feed with its own token. Set `TT_COOKIE_SECURE=1` when serving over HTTPS.

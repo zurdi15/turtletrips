@@ -17,12 +17,19 @@ defineEmits<{ remove: [event: Event] }>()
   <span
     class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-muted text-ink"
   >
-    <TravelerAvatar
-      :name="member.name"
-      :color="member.color"
-      :avatar-url="member.avatar_url"
-      size="xs"
-    />
+    <!-- caja fija: el dot (8px) y la foto (16px) ocupan lo mismo y los chips
+         quedan todos con la misma altura, tenga o no avatar el viajero.
+         overflow-hidden sintetiza la baseline en el borde inferior de la caja
+         (idéntica con foto o dot): sin él, los chips inline-flex con avatar
+         bailan verticalmente respecto a los de solo dot -->
+    <span class="w-4 h-4 grid place-items-center overflow-hidden shrink-0">
+      <TravelerAvatar
+        :name="member.name"
+        :color="member.color"
+        :avatar-url="member.avatar_url"
+        size="xs"
+      />
+    </span>
     {{ member.name }}
     <button
       v-if="removable"

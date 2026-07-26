@@ -9,6 +9,8 @@ import type { PackingTemplateItem } from '../../api/types'
 const props = defineProps<{
   item: PackingTemplateItem
   categoryOptions: { value: string; label: string }[]
+  /** plantilla de otro viajero: fila de solo consulta */
+  readonly?: boolean
 }>()
 const emit = defineEmits<{
   save: [payload: { name: string; category: string; url: string | null }]
@@ -71,7 +73,7 @@ function save() {
           <i class="pi pi-shopping-cart" />
         </a>
       </span>
-      <RowActions @edit="startEdit" @remove="$emit('remove')" />
+      <RowActions v-if="!readonly" @edit="startEdit" @remove="$emit('remove')" />
     </template>
   </li>
 </template>

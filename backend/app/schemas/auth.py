@@ -25,6 +25,8 @@ class BootstrapRequest(BaseModel):
     username: str = Field(min_length=3, max_length=50)
     password: str = Field(min_length=8)
     traveler_name: str = Field(min_length=1, max_length=100)
+    # idioma activo en la pantalla de login: la cuenta nace con él
+    language: Literal["es", "en"] | None = None
 
     @field_validator("password")
     @classmethod

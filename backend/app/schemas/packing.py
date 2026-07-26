@@ -39,15 +39,19 @@ class PackingSelectionRead(BaseModel):
 class PackingTemplateCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     from_trip_id: int | None = None
-    traveler_id: int | None = None  # maleta de ese viajero (o común) al copiar desde un viaje
+    # dueño de la plantilla y, al copiar desde un viaje, maleta origen
+    # (None = el propio usuario; la maleta común nace como plantilla suya)
+    traveler_id: int | None = None
 
 
 class PackingTemplateUpdate(BaseModel):
-    name: str = Field(min_length=1, max_length=100)
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    traveler_id: int | None = None  # reasignar dueño (solo admin)
 
 
 class PackingTemplateRead(BaseModel):
     id: int
+    traveler_id: int  # dueño
     name: str
     item_count: int
 
@@ -76,6 +80,7 @@ class PackingTemplateItemRead(BaseModel):
 
 class PackingTemplateDetail(BaseModel):
     id: int
+    traveler_id: int  # dueño
     name: str
     items: list[PackingTemplateItemRead]
 

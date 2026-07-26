@@ -76,6 +76,7 @@ def bootstrap(payload: BootstrapRequest, response: Response, db: Session = Depen
         password_hash=hash_password(payload.password),
         is_admin=True,
         traveler_id=traveler.id,
+        language=payload.language or "en",
     )
     db.add(user)
     db.commit()

@@ -24,7 +24,6 @@ export default {
   },
   userMenu: {
     profile: 'Profile',
-    admin: 'Administration',
     settings: 'Settings',
     logout: 'Sign out',
   },

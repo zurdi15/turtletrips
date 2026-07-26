@@ -25,8 +25,12 @@ export const usePackingTemplatesStore = defineStore('packingTemplates', {
       const template = this.templates.find((t) => t.id === this.detail!.id)
       if (template) template.item_count = this.detail.items.length
     },
-    async create(name: string) {
-      const template = await api.post<PackingTemplate>('/packing-templates', { name })
+    /** travelerId = dueño de la plantilla (null = el propio usuario) */
+    async create(name: string, travelerId: number | null = null) {
+      const template = await api.post<PackingTemplate>('/packing-templates', {
+        name,
+        traveler_id: travelerId,
+      })
       this.templates.push(template)
       this.templates.sort((a, b) => a.name.localeCompare(b.name, 'es'))
       return template
@@ -36,6 +40,15 @@ export const usePackingTemplatesStore = defineStore('packingTemplates', {
       const idx = this.templates.findIndex((t) => t.id === id)
       if (idx >= 0) this.templates[idx] = template
       if (this.detail?.id === id) this.detail.name = template.name
+    },
+    /** reasigna la plantilla a otro viajero (solo admin) */
+    async reassign(id: number, travelerId: number) {
+      const template = await api.patch<PackingTemplate>(`/packing-templates/${id}`, {
+        traveler_id: travelerId,
+      })
+      const idx = this.templates.findIndex((t) => t.id === id)
+      if (idx >= 0) this.templates[idx] = template
+      if (this.detail?.id === id) this.detail.traveler_id = template.traveler_id
     },
     async remove(id: number) {
       await api.delete(`/packing-templates/${id}`)

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import StatusTag from '../StatusTag.vue'
 import SettledPill from '../trip/SettledPill.vue'
+import CoverImage from '../ui/CoverImage.vue'
 import type { Trip } from '../../api/types'
 import { tripDateRange } from '../../utils/trips'
 import { flagEmoji } from '../../countries'
@@ -12,12 +13,12 @@ defineProps<{ trip: Trip; image: string | null }>()
   <router-link :to="`/trips/${trip.id}/overview`" class="no-underline">
     <div class="tt-lift bg-surface rounded-card border border-line overflow-hidden h-full group">
       <div class="relative h-32 bg-surface-strong overflow-hidden">
-        <img
+        <CoverImage
           v-if="image"
           :src="image"
-          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          alt=""
-          loading="lazy"
+          lazy
+          class="w-full h-full"
+          img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div
           v-else

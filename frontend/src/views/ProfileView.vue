@@ -79,18 +79,22 @@ async function removeAvatar() {
   <div class="max-w-3xl mx-auto">
     <PageHeader :title="t('profile.title')" class="mb-6" />
 
-    <div v-if="session.me && traveler" class="flex flex-col gap-6">
+    <!-- las secciones entran en cascada -->
+    <div v-if="session.me && traveler" class="tt-stagger flex flex-col gap-6">
       <section class="bg-surface rounded-card border border-line p-5">
         <h2 class="font-semibold text-ink mb-1">{{ t('profile.identity.title') }}</h2>
         <p class="text-xs text-ink-faint mb-4">{{ t('profile.identity.hint') }}</p>
         <div class="flex flex-col sm:flex-row gap-6 items-start">
           <div class="flex flex-col items-center gap-3">
-            <TravelerAvatar
-              :name="traveler.name"
-              :color="traveler.color"
-              :avatar-url="traveler.avatar_url"
-              size="xl"
-            />
+            <!-- el key hace que cambiar la foto entre con un pop -->
+            <div :key="traveler.avatar_url ?? 'none'" class="tt-pop-in">
+              <TravelerAvatar
+                :name="traveler.name"
+                :color="traveler.color"
+                :avatar-url="traveler.avatar_url"
+                size="xl"
+              />
+            </div>
             <div class="flex gap-2">
               <UploadButton
                 :label="t('profile.identity.uploadAvatar')"
@@ -145,7 +149,7 @@ async function removeAvatar() {
             <dt class="text-ink-muted w-24">{{ t('profile.account.username') }}</dt>
             <dd class="text-ink font-medium flex items-center gap-2">
               {{ session.me.user.username }}
-              <Pill v-if="session.me.user.is_admin" color="brand" icon="pi pi-shield">
+              <Pill v-if="session.me.user.is_admin" color="brand" icon="pi pi-shield" pop-in>
                 {{ t('profile.account.admin') }}
               </Pill>
             </dd>

@@ -19,14 +19,29 @@
     </mask>
   </defs>
   <g mask="url(#tt-mark-scutes)">
+    <!-- partes con clase para la animación de nado (tt-swim en style.css):
+         los <g> no llevan transform propio, así el CSS puede rotarlos sin
+         pisar el transform de posición de cada ellipse -->
     <g fill="currentColor">
-      <ellipse cx="0" cy="0" rx="62" ry="23" transform="translate(-94,-62) rotate(40)" />
-      <ellipse cx="0" cy="0" rx="62" ry="23" transform="translate(94,-62) rotate(-40)" />
-      <ellipse cx="0" cy="0" rx="44" ry="18" transform="translate(-72,102) rotate(-45)" />
-      <ellipse cx="0" cy="0" rx="44" ry="18" transform="translate(72,102) rotate(45)" />
-      <path d="M -14 110 Q 0 172 14 110 Z" />
-      <circle cx="0" cy="-140" r="34" />
-      <rect x="-19" y="-140" width="38" height="70" />
+      <g class="tt-turtle-flipper tt-turtle-ffl">
+        <ellipse cx="0" cy="0" rx="62" ry="23" transform="translate(-94,-62) rotate(40)" />
+      </g>
+      <g class="tt-turtle-flipper tt-turtle-ffr">
+        <ellipse cx="0" cy="0" rx="62" ry="23" transform="translate(94,-62) rotate(-40)" />
+      </g>
+      <g class="tt-turtle-flipper tt-turtle-bfl">
+        <ellipse cx="0" cy="0" rx="44" ry="18" transform="translate(-72,102) rotate(-45)" />
+      </g>
+      <g class="tt-turtle-flipper tt-turtle-bfr">
+        <ellipse cx="0" cy="0" rx="44" ry="18" transform="translate(72,102) rotate(45)" />
+      </g>
+      <g class="tt-turtle-tail">
+        <path d="M -14 110 Q 0 172 14 110 Z" />
+      </g>
+      <g class="tt-turtle-head">
+        <circle cx="0" cy="-140" r="34" />
+        <rect x="-19" y="-140" width="38" height="70" />
+      </g>
       <ellipse cx="0" cy="18" rx="94" ry="106" />
     </g>
   </g>

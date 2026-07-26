@@ -32,14 +32,14 @@ const { saving, save } = useFormDialog({
     return pwError ? t(`auth.password.${pwError}`) : null
   },
   submit: () => users.resetPassword((props.user as User).id, password.value),
-  onSaved: () => notify.success(t('admin.users.resetDone')),
+  onSaved: () => notify.success(t('travelers.account.resetDone')),
 })
 </script>
 
 <template>
   <FormDialog
     v-model:visible="visible"
-    :header="`${t('admin.users.resetPassword')} · ${user?.username ?? ''}`"
+    :header="`${t('travelers.account.resetTitle')} · ${user?.username ?? ''}`"
     :saving="saving"
     width="md"
     @save="save"

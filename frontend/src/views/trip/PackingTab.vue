@@ -10,6 +10,7 @@ import TabSkeleton from '../../components/TabSkeleton.vue'
 import FormDialog from '../../components/ui/FormDialog.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import RowActions from '../../components/ui/RowActions.vue'
+import TravelerAvatar from '../../components/ui/TravelerAvatar.vue'
 import BagSelector, { type BagOption } from '../../components/packing/BagSelector.vue'
 import PackingAddBar from '../../components/packing/PackingAddBar.vue'
 import PackingCategoryCard from '../../components/packing/PackingCategoryCard.vue'
@@ -17,6 +18,8 @@ import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useCategoriesStore } from '../../stores/categories'
+import { useSessionStore } from '../../stores/session'
+import { useTravelersStore } from '../../stores/travelers'
 import { useConfirmDelete } from '../../composables/useConfirmDelete'
 import { useNotify } from '../../composables/useNotify'
 import { useTripTabData } from '../../composables/useTripTabData'
@@ -25,11 +28,50 @@ import { groupPackingItems } from '../../utils/packing'
 const props = defineProps<{ trip: Trip }>()
 const store = usePackingStore()
 const categories = useCategoriesStore()
+const session = useSessionStore()
+const travelers = useTravelersStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
 const { t } = useI18n()
 
-// maleta activa: null = común, número = viajero
+// --- matriz familiar (espejo del backend) ---
+// En el viaje, ver = poder editar: la común, tu maleta y las de TU familia
+// (con o sin cuenta); las de otras familias ni aparecen (el servidor tampoco
+// devuelve sus elementos). El admin lo ve todo.
+
+const myFamilyId = computed(() => session.me?.traveler.family_id ?? null)
+
+function bagVisible(traveler: Trip['travelers'][number]): boolean {
+  if (session.isAdmin || traveler.id === session.travelerId) return true
+  return traveler.family_id != null && traveler.family_id === myFamilyId.value
+}
+
+// puede nacer una plantilla de esta maleta (el dueño sería tú o un virtual tuyo)
+function canTemplateBag(travelerId: number | null): boolean {
+  if (travelerId === null || travelerId === session.travelerId || session.isAdmin) return true
+  const traveler = props.trip.travelers.find((trav) => trav.id === travelerId)
+  return (
+    !!traveler &&
+    !traveler.has_user &&
+    traveler.family_id != null &&
+    traveler.family_id === myFamilyId.value
+  )
+}
+
+// puede escribirse esta plantilla (sync): tuya o de un virtual de tu familia
+function canEditTemplate(templateId: number | null): boolean {
+  if (templateId == null) return false
+  const template = store.templates.find((t) => t.id === templateId)
+  if (!template) return false
+  if (session.isAdmin || template.traveler_id === session.travelerId) return true
+  const owner = travelers.items.find((trav) => trav.id === template.traveler_id)
+  return (
+    !!owner && !owner.has_user && owner.family_id != null && owner.family_id === myFamilyId.value
+  )
+}
+
+// maleta activa: null = común, número = viajero. Arranca en la primera del
+// selector (la común, que siempre preside la lista).
 const activeTraveler = ref<number | null>(null)
 const selectedTemplate = ref<number | null>(null)
 
@@ -43,6 +85,7 @@ useTripTabData(() => props.trip, {
   load(tripId) {
     store.load(tripId).then(syncSelectedTemplate)
     categories.load('packing')
+    travelers.load() // para resolver dueños de plantillas que no viajan
   },
 })
 
@@ -58,12 +101,37 @@ function bagProgress(travelerId: number | null): { done: number; total: number }
   return { done: items.filter((i) => i.checked).length, total: items.length }
 }
 
-const bags = computed<BagOption[]>(() =>
-  [
-    { travelerId: null as number | null, label: t('packing.commonBag'), color: null as string | null },
-    ...props.trip.travelers.map((t) => ({ travelerId: t.id, label: t.name, color: t.color })),
-  ].map((b) => ({ ...b, ...bagProgress(b.travelerId) })),
-)
+// orden del selector: la común SIEMPRE primera, luego tu maleta y el resto de
+// tu familia (virtuales primero); las maletas de otras familias no aparecen
+const bags = computed<BagOption[]>(() => {
+  const visible = props.trip.travelers.filter(bagVisible)
+  const mine = visible.filter((trav) => trav.id === session.travelerId)
+  const virtuals = visible.filter((trav) => trav.id !== session.travelerId && !trav.has_user)
+  const others = visible.filter((trav) => trav.id !== session.travelerId && trav.has_user)
+  const toBag = (trav: (typeof visible)[number]): BagOption => ({
+    travelerId: trav.id,
+    label: trav.name,
+    color: trav.color,
+    avatarUrl: trav.avatar_url,
+    ...bagProgress(trav.id),
+  })
+  const common: BagOption = {
+    travelerId: null,
+    label: t('packing.commonBag'),
+    color: null,
+    wide: true,
+    ...bagProgress(null),
+  }
+  return [
+    common,
+    ...mine.map((trav) => ({ ...toBag(trav), wide: true })),
+    ...virtuals.map(toBag),
+    ...others.map(toBag),
+  ]
+})
+
+const canTemplateActive = computed(() => canTemplateBag(activeTraveler.value))
+const canSyncSelected = computed(() => canEditTemplate(selectedTemplate.value))
 
 const activeItems = computed(() => store.itemsFor(activeTraveler.value))
 
@@ -80,17 +148,42 @@ const categoryOptions = computed(() =>
   categories.packing.map((c) => ({ value: c.name, label: c.name })),
 )
 
+// mover elementos: cualquier maleta visible (visible = editable)
 const bagMoveOptions = computed(() =>
   bags.value.map((b) => ({ value: b.travelerId, label: b.label })),
 )
 
+// cada plantilla lleva el chip de su dueño (dot o avatar) para distinguirlas
 const templateOptions = computed(() =>
-  store.templates.map((t) => ({ value: t.id, label: `${t.name} (${t.item_count})` })),
+  store.templates.map((template) => {
+    const owner =
+      template.traveler_id === session.travelerId
+        ? (session.me?.traveler ?? null)
+        : (travelers.items.find((trav) => trav.id === template.traveler_id) ?? null)
+    return {
+      value: template.id,
+      name: template.name,
+      count: template.item_count,
+      owner,
+      // label plano para el filtrado y lectores de pantalla
+      label: `${template.name}${owner ? ` · ${owner.name}` : ''} (${template.item_count})`,
+    }
+  }),
+)
+
+const selectedTemplateOption = computed(
+  () => templateOptions.value.find((o) => o.value === selectedTemplate.value) ?? null,
 )
 
 const activeTemplateName = computed(() => {
   const id = store.selectionFor(activeTraveler.value)
   return store.templates.find((t) => t.id === id)?.name ?? null
+})
+
+// la maleta tiene plantilla asociada pero es de un viajero que no puedes ver
+const foreignSelection = computed(() => {
+  const id = store.selectionFor(activeTraveler.value)
+  return id != null && !store.templates.some((t) => t.id === id)
 })
 
 const grouped = computed(() =>
@@ -121,6 +214,15 @@ function removeItem(item: PackingItem) {
     header: t('packing.confirmRemoveItem.header'),
     accept: () => store.remove(item.id),
   })
+}
+
+// quita la asociación maleta ↔ plantilla (los elementos de la maleta quedan)
+async function unlinkTemplate() {
+  try {
+    await store.clearSelection(activeTraveler.value)
+  } catch (err) {
+    notify.error(t('packing.toast.saveError'), err)
+  }
 }
 
 async function applyTemplate() {
@@ -182,8 +284,34 @@ async function saveTemplate() {
         <span class="text-sm font-semibold text-ink-secondary mr-1">
           {{ $t('packing.bagOf', { bag: activeBagLabel }) }}
         </span>
-        <span v-if="activeTemplateName" class="text-xs px-2 py-0.5 rounded-full bg-info-tint text-info-strong">
+        <span
+          v-if="activeTemplateName"
+          class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-info-tint text-info-strong"
+        >
           <i class="pi pi-briefcase text-3xs" /> {{ $t('packing.templateBadge', { name: activeTemplateName }) }}
+          <button
+            type="button"
+            class="flex items-center opacity-70 hover:opacity-100 cursor-pointer"
+            v-tooltip.bottom="$t('packing.unlinkTemplate')"
+            @click="unlinkTemplate"
+          >
+            <i class="pi pi-times-circle text-xs" />
+          </button>
+        </span>
+        <!-- selección que apunta a una plantilla de otra familia (no legible) -->
+        <span
+          v-else-if="foreignSelection"
+          class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-surface-muted text-ink-muted"
+        >
+          <i class="pi pi-briefcase text-3xs" /> {{ $t('packing.templateForeign') }}
+          <button
+            type="button"
+            class="flex items-center opacity-70 hover:opacity-100 cursor-pointer"
+            v-tooltip.bottom="$t('packing.unlinkTemplate')"
+            @click="unlinkTemplate"
+          >
+            <i class="pi pi-times-circle text-xs" />
+          </button>
         </span>
         <span class="flex-1" />
         <Select
@@ -192,9 +320,41 @@ async function saveTemplate() {
           optionLabel="label"
           optionValue="value"
           :placeholder="$t('packing.chooseTemplate')"
-          class="w-full sm:w-52"
+          class="w-full sm:w-56"
           size="small"
-        />
+        >
+          <!-- chip del dueño (dot o avatar) en cada opción y en el valor -->
+          <template #option="{ option }">
+            <span class="flex items-center gap-2 min-w-0 w-full">
+              <span class="w-4 h-4 grid place-items-center shrink-0">
+                <TravelerAvatar
+                  v-if="option.owner"
+                  :name="option.owner.name"
+                  :color="option.owner.color"
+                  :avatar-url="option.owner.avatar_url"
+                  size="xs"
+                />
+              </span>
+              <span class="flex-1 truncate">{{ option.name }}</span>
+              <span class="text-xs text-ink-faint shrink-0">{{ option.count }}</span>
+            </span>
+          </template>
+          <template #value="{ placeholder }">
+            <span v-if="selectedTemplateOption" class="flex items-center gap-2 min-w-0">
+              <span class="w-4 h-4 grid place-items-center shrink-0">
+                <TravelerAvatar
+                  v-if="selectedTemplateOption.owner"
+                  :name="selectedTemplateOption.owner.name"
+                  :color="selectedTemplateOption.owner.color"
+                  :avatar-url="selectedTemplateOption.owner.avatar_url"
+                  size="xs"
+                />
+              </span>
+              <span class="truncate">{{ selectedTemplateOption.name }}</span>
+            </span>
+            <span v-else>{{ placeholder }}</span>
+          </template>
+        </Select>
         <Button
           v-if="selectedTemplate != null"
           :label="$t('packing.apply')"
@@ -204,8 +364,9 @@ async function saveTemplate() {
           v-tooltip.bottom="$t('packing.applyTooltip')"
           @click="applyTemplate"
         />
+        <!-- sincronizar escribe la plantilla: solo si es tuya o de un virtual tuyo -->
         <Button
-          v-if="selectedTemplate != null && activeItems.length"
+          v-if="selectedTemplate != null && activeItems.length && canSyncSelected"
           icon="pi pi-sync"
           severity="secondary"
           outlined
@@ -214,7 +375,7 @@ async function saveTemplate() {
           @click="syncTemplate"
         />
         <Button
-          v-if="activeItems.length"
+          v-if="activeItems.length && canTemplateActive"
           :label="$t('packing.newTemplate')"
           icon="pi pi-save"
           severity="secondary"

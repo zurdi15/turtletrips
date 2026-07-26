@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { ThemePref } from '../api/types'
 
-const themePref = ref<ThemePref>('system')
+const themePref = ref<ThemePref>('light')
 const isDark = ref(false)
 
 /** Pura (testeable sin DOM): resuelve si toca modo oscuro. */
@@ -25,12 +25,12 @@ export function setThemePref(pref: ThemePref) {
   apply()
 }
 
-/** Llamar antes de montar la app para evitar el destello de tema claro */
+/** Llamar antes de montar la app para evitar el destello de tema equivocado */
 export function initTheme() {
   const stored = localStorage.getItem('tt-theme')
-  // los valores legacy 'light'/'dark' (era pre-'system') siguen valiendo tal cual
+  // sin preferencia guardada el tema por defecto es el claro
   const pref: ThemePref =
-    stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+    stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light'
   themePref.value = pref
   isDark.value = resolveDark(pref, systemDark())
   apply()

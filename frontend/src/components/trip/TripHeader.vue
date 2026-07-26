@@ -3,6 +3,7 @@ import Button from 'primevue/button'
 import StatusTag from '../StatusTag.vue'
 import MemberChip from '../MemberChip.vue'
 import SettledPill from './SettledPill.vue'
+import CoverImage from '../ui/CoverImage.vue'
 import type { Trip } from '../../api/types'
 import { formatDate } from '../../composables/useMoney'
 import { countryName, flagEmoji } from '../../countries'
@@ -17,10 +18,10 @@ defineProps<{ trip: Trip; bannerImage: string | null }>()
       v-if="bannerImage"
       class="relative h-44 sm:h-60 -mt-6 sm:mt-0 -mx-4 sm:mx-0 -mb-16 sm:-mb-20 overflow-hidden sm:rounded-t-2xl"
     >
-      <img
+      <CoverImage
         :src="bannerImage"
-        class="absolute inset-0 w-full h-full object-cover banner-fade-y"
-        alt=""
+        class="absolute inset-0"
+        img-class="w-full h-full object-cover banner-fade-y"
       />
     </div>
 

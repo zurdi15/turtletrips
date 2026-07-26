@@ -107,6 +107,25 @@ def test_families_crud_and_guards(app, client):
     assert client.delete(f"/api/v1/families/{empty['id']}").status_code == 204
 
 
+def test_families_reorder(app, client):
+    b = client.post("/api/v1/families", json={"name": "Beta"}).json()
+    a = client.post("/api/v1/families", json={"name": "Alfa"}).json()
+    base = client.get("/api/v1/auth/me").json()["family"]
+    # orden inicial = orden de creación (bootstrap primero)
+    assert [f["id"] for f in client.get("/api/v1/families").json()] == [base["id"], b["id"], a["id"]]
+    resp = client.post(
+        "/api/v1/families/reorder", json={"ids": [a["id"], base["id"], b["id"]]}
+    )
+    assert resp.status_code == 204
+    assert [f["id"] for f in client.get("/api/v1/families").json()] == [a["id"], base["id"], b["id"]]
+    # reordenar es solo-admin
+    make_user(client, "ana")
+    ana = login(app, "ana")
+    assert ana.post(
+        "/api/v1/families/reorder", json={"ids": [b["id"]]}
+    ).status_code == 403
+
+
 def test_admin_assigns_traveler_family(app, client):
     family = client.post("/api/v1/families", json={"name": "B"}).json()
     make_user(client, "ana")

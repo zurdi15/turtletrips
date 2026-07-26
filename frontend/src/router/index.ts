@@ -27,12 +27,6 @@ export const router = createRouter({
       component: () => import('../views/ProfileView.vue'),
     },
     {
-      path: '/admin',
-      name: 'admin',
-      component: () => import('../views/AdminView.vue'),
-      meta: { admin: true },
-    },
-    {
       path: '/',
       name: 'trips',
       component: () => import('../views/TripListView.vue'),
@@ -51,6 +45,8 @@ export const router = createRouter({
       path: '/travelers',
       name: 'travelers',
       component: () => import('../views/TravelersView.vue'),
+      // hub de gestión de personas (familias, cuentas): solo admin
+      meta: { admin: true },
     },
     {
       path: '/settings',

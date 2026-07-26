@@ -9,6 +9,8 @@ from ..models import TripStatus
 class TravelerCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     color: str | None = None
+    # ausente = familia del creador; un no-admin solo puede elegir la suya o ninguna
+    family_id: int | None = None
 
 
 class TravelerUpdate(BaseModel):

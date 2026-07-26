@@ -16,6 +16,9 @@ def test_status_and_bootstrap_flow(app):
         me = bootstrap(c)
         assert me["user"]["username"] == "admin"
         assert me["user"]["is_admin"] is True
+        # sin idioma en el payload, la cuenta nace con el default
+        assert me["user"]["language"] == "en"
+        assert me["user"]["theme"] == "light"
         assert me["traveler"]["name"] == "Admin"
         assert me["traveler"]["has_user"] is True
         assert me["family"]["name"] == "Familia"
@@ -38,13 +41,20 @@ def test_bootstrap_reuses_existing_traveler_and_family(app, db_session):
     with TestClient(app) as c:
         resp = c.post(
             "/api/v1/auth/bootstrap",
-            json={"username": "zurdi", "password": "secret123", "traveler_name": "zurdi"},
+            json={
+                "username": "zurdi",
+                "password": "secret123",
+                "traveler_name": "zurdi",
+                "language": "es",
+            },
         )
         assert resp.status_code == 201
         me = resp.json()
         # reutiliza el viajero por nombre (case-insensitive) y su familia
         assert me["traveler"]["name"] == "Zurdi"
         assert me["family"]["name"] == "Los Pérez"
+        # la cuenta nace con el idioma elegido en la pantalla de login
+        assert me["user"]["language"] == "es"
 
 
 def test_login_logout(app, client):

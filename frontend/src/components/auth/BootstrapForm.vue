@@ -5,13 +5,14 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import FormField from '../ui/FormField.vue'
+import type { UiLanguage } from '../../api/types'
 import { useNotify } from '../../composables/useNotify'
 import { useSessionStore } from '../../stores/session'
 import { validatePassword } from '../../utils/auth'
 
 const emit = defineEmits<{ success: [] }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const notify = useNotify()
 const session = useSessionStore()
 
@@ -40,6 +41,8 @@ async function submit() {
       username: username.value.trim(),
       password: password.value,
       traveler_name: travelerName.value.trim(),
+      // la cuenta nace con el idioma elegido en esta pantalla
+      language: locale.value as UiLanguage,
     })
     emit('success')
   } catch (err) {
@@ -51,7 +54,8 @@ async function submit() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" @submit.prevent="submit">
+  <!-- los campos entran en cascada al montarse -->
+  <form class="tt-stagger flex flex-col gap-4" @submit.prevent="submit">
     <p class="text-sm text-ink-secondary">{{ t('auth.bootstrap.hint') }}</p>
     <FormField :label="t('auth.login.username')" required>
       <InputText v-model="username" autocomplete="username" autofocus />

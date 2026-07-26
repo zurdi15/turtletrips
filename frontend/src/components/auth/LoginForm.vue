@@ -33,7 +33,8 @@ async function submit() {
 </script>
 
 <template>
-  <form class="flex flex-col gap-4" @submit.prevent="submit">
+  <!-- los campos entran en cascada al montarse -->
+  <form class="tt-stagger flex flex-col gap-4" @submit.prevent="submit">
     <FormField :label="t('auth.login.username')" required>
       <InputText v-model="username" autocomplete="username" autofocus />
     </FormField>

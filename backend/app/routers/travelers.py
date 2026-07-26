@@ -38,11 +38,22 @@ def create_traveler(payload: TravelerCreate, user: CurrentUser, db: Session = De
     existing = _find_by_name(db, payload.name)
     if existing:
         return existing
-    # por defecto entra en la familia del creador (el admin puede reasignarlo)
+    data = payload.model_dump(exclude_unset=True)
+    if "family_id" in data:
+        # familia explícita del formulario: un no-admin solo la suya o ninguna
+        family_id = data["family_id"]
+        if family_id is not None:
+            get_or_404(db, Family, family_id)
+            if not user.is_admin and family_id != user.traveler.family_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Solo el administrador puede asignar otras familias",
+                )
+    else:
+        # sin campo, entra en la familia del creador (alta rápida del TripForm)
+        family_id = user.traveler.family_id
     traveler = Traveler(
-        name=payload.name.strip(),
-        color=payload.color,
-        family_id=user.traveler.family_id,
+        name=payload.name.strip(), color=payload.color, family_id=family_id
     )
     db.add(traveler)
     db.commit()

@@ -117,14 +117,180 @@ def test_guest_sees_trip_family_categories(two_families):
     assert "Buceo" in names
 
 
-def test_packing_templates_scoped_per_family(two_families):
-    bob, ana = two_families["bob"], two_families["ana"]
+def test_packing_templates_family_read_owner_write(app, two_families):
+    """Plantillas: toda tu familia las VE; las EDITA su dueño (o todos si es virtual)."""
+    client, bob, ana = two_families["admin"], two_families["bob"], two_families["ana"]
+    make_user(client, "carl", family_id=two_families["family_a"])
+    carl = login(app, "carl")
+
     template = bob.post("/api/v1/packing-templates", json={"name": "Playa"}).json()
-    assert ana.get("/api/v1/packing-templates").json() == []
+    assert template["traveler_id"] == _me_traveler(bob)["id"]
+    # carl (misma familia): la ve y la consulta, pero no la toca
+    assert template["id"] in [t["id"] for t in carl.get("/api/v1/packing-templates").json()]
+    assert carl.get(f"/api/v1/packing-templates/{template['id']}").status_code == 200
+    assert carl.patch(
+        f"/api/v1/packing-templates/{template['id']}", json={"name": "X"}
+    ).status_code == 403
+    assert carl.delete(f"/api/v1/packing-templates/{template['id']}").status_code == 403
+    assert carl.post(
+        f"/api/v1/packing-templates/{template['id']}/items", json={"name": "Crema"}
+    ).status_code == 403
+    # ana (otra familia): ni la ve ni la consulta
+    assert template["id"] not in [t["id"] for t in ana.get("/api/v1/packing-templates").json()]
     assert ana.get(f"/api/v1/packing-templates/{template['id']}").status_code == 403
-    assert ana.delete(f"/api/v1/packing-templates/{template['id']}").status_code == 403
-    # mismo nombre en otra familia: permitido (unique por familia)
-    assert ana.post("/api/v1/packing-templates", json={"name": "Playa"}).status_code == 201
+    # mismo nombre en otro dueño: permitido (unique por viajero); repetido → 409
+    assert carl.post("/api/v1/packing-templates", json={"name": "Playa"}).status_code == 201
+    assert bob.post("/api/v1/packing-templates", json={"name": "playa"}).status_code == 409
+
+    # la de un virtual de la familia la gestionan todos sus usuarios
+    peque = bob.post("/api/v1/travelers", json={"name": "Peque"}).json()
+    shared = bob.post(
+        "/api/v1/packing-templates", json={"name": "Cole", "traveler_id": peque["id"]}
+    ).json()
+    assert shared["traveler_id"] == peque["id"]
+    assert carl.post(
+        f"/api/v1/packing-templates/{shared['id']}/items", json={"name": "Mochila"}
+    ).status_code == 201
+    # otra familia ni la ve ni puede crear plantillas de ese virtual
+    assert ana.get(f"/api/v1/packing-templates/{shared['id']}").status_code == 403
+    assert ana.post(
+        "/api/v1/packing-templates", json={"name": "X", "traveler_id": peque["id"]}
+    ).status_code == 403
+    # tampoco puedes crear plantillas a nombre de otro usuario de tu familia
+    assert carl.post(
+        "/api/v1/packing-templates",
+        json={"name": "Ajena", "traveler_id": _me_traveler(bob)["id"]},
+    ).status_code == 403
+    # el admin accede a cualquiera por id y su lista las incluye TODAS
+    foreign = ana.post("/api/v1/packing-templates", json={"name": "Suya"}).json()
+    assert client.get(f"/api/v1/packing-templates/{foreign['id']}").status_code == 200
+    admin_list = [t["id"] for t in client.get("/api/v1/packing-templates").json()]
+    assert {template["id"], shared["id"], foreign["id"]} <= set(admin_list)
+
+
+def test_bag_family_visibility_and_edit(app, two_families):
+    """En el viaje: ver = editar. Tu familia entera sí; otras familias ni se ven."""
+    client, bob, ana = two_families["admin"], two_families["bob"], two_families["ana"]
+    make_user(client, "carl", family_id=two_families["family_a"])
+    carl = login(app, "carl")
+    carl_traveler = _me_traveler(carl)
+    bob_traveler = _me_traveler(bob)
+    ana_traveler = _me_traveler(ana)
+
+    trip = bob.post("/api/v1/trips", json={"name": "Nieve"}).json()
+    for traveler_id in (carl_traveler["id"], ana_traveler["id"]):
+        bob.post(f"/api/v1/trips/{trip['id']}/travelers/{traveler_id}")
+    peque = bob.post("/api/v1/travelers", json={"name": "Peque"}).json()
+    bob.post(f"/api/v1/trips/{trip['id']}/travelers/{peque['id']}")
+
+    packing = f"/api/v1/trips/{trip['id']}/packing"
+    # carl edita la suya, la común, la del virtual Y la de bob (misma familia)
+    assert carl.post(packing, json={"name": "Guantes", "traveler_id": carl_traveler["id"]}).status_code == 201
+    assert carl.post(packing, json={"name": "Botiquín"}).status_code == 201
+    assert carl.post(packing, json={"name": "Trineo", "traveler_id": peque["id"]}).status_code == 201
+    assert carl.post(packing, json={"name": "Gorro", "traveler_id": bob_traveler["id"]}).status_code == 201
+    item = next(i for i in carl.get(packing).json() if i["name"] == "Gorro")
+    assert bob.patch(f"/api/v1/packing/{item['id']}", json={"checked": True}).status_code == 200
+
+    # ana (otra familia): la suya y la común sí; las de la familia A no
+    assert ana.post(packing, json={"name": "Esquís", "traveler_id": ana_traveler["id"]}).status_code == 201
+    assert ana.post(packing, json={"name": "Mapa"}).status_code == 201
+    assert ana.post(packing, json={"name": "Nada", "traveler_id": bob_traveler["id"]}).status_code == 403
+    assert ana.post(packing, json={"name": "Nada", "traveler_id": peque["id"]}).status_code == 403
+    assert ana.patch(f"/api/v1/packing/{item['id']}", json={"checked": False}).status_code == 403
+    # ni siquiera las VE: su lista es la común + su familia
+    ana_names = {i["name"] for i in ana.get(packing).json()}
+    assert ana_names == {"Botiquín", "Mapa", "Esquís"}
+    # y la familia A no ve la maleta de ana
+    carl_names = {i["name"] for i in carl.get(packing).json()}
+    assert "Esquís" not in carl_names and "Mapa" in carl_names
+    # mover un elemento propio a una maleta de otra familia tampoco
+    own_item = next(i for i in ana.get(packing).json() if i["name"] == "Esquís")
+    assert ana.patch(
+        f"/api/v1/packing/{own_item['id']}", json={"traveler_id": peque["id"]}
+    ).status_code == 403
+    # el admin lo ve y lo edita todo
+    admin_names = {i["name"] for i in client.get(packing).json()}
+    assert {"Guantes", "Gorro", "Esquís", "Mapa"} <= admin_names
+    assert client.patch(f"/api/v1/packing/{own_item['id']}", json={"checked": True}).status_code == 200
+
+
+def test_template_reassign_admin_only(app, two_families):
+    client, bob, ana = two_families["admin"], two_families["bob"], two_families["ana"]
+    template = bob.post("/api/v1/packing-templates", json={"name": "Playa"}).json()
+    ana_tid = _me_traveler(ana)["id"]
+    # ni el propio dueño puede reasignar: mover maletas entre viajeros es del admin
+    assert bob.patch(
+        f"/api/v1/packing-templates/{template['id']}", json={"traveler_id": ana_tid}
+    ).status_code == 403
+    resp = client.patch(
+        f"/api/v1/packing-templates/{template['id']}", json={"traveler_id": ana_tid}
+    )
+    assert resp.status_code == 200 and resp.json()["traveler_id"] == ana_tid
+    # la plantilla cambia de familia: ana la ve, bob ya no
+    assert template["id"] in [t["id"] for t in ana.get("/api/v1/packing-templates").json()]
+    assert bob.get(f"/api/v1/packing-templates/{template['id']}").status_code == 403
+    # renombrar sin tocar el dueño sigue funcionando (payload solo con name)
+    assert ana.patch(
+        f"/api/v1/packing-templates/{template['id']}", json={"name": "Costa"}
+    ).status_code == 200
+    # choque de nombre en el dueño destino → 409
+    other = bob.post("/api/v1/packing-templates", json={"name": "Costa"}).json()
+    assert client.patch(
+        f"/api/v1/packing-templates/{other['id']}", json={"traveler_id": ana_tid}
+    ).status_code == 409
+
+
+def test_template_apply_and_sync_permissions(app, two_families):
+    client, bob, ana = two_families["admin"], two_families["bob"], two_families["ana"]
+    make_user(client, "carl", family_id=two_families["family_a"])
+    carl = login(app, "carl")
+    carl_traveler = _me_traveler(carl)
+    bob_traveler = _me_traveler(bob)
+
+    trip = bob.post("/api/v1/trips", json={"name": "Costa"}).json()
+    bob.post(f"/api/v1/trips/{trip['id']}/travelers/{carl_traveler['id']}")
+    bob.post(f"/api/v1/trips/{trip['id']}/travelers/{_me_traveler(ana)['id']}")
+    template = carl.post("/api/v1/packing-templates", json={"name": "Base"}).json()
+    carl.post(f"/api/v1/packing-templates/{template['id']}/items", json={"name": "Toalla"})
+
+    apply_url = f"/api/v1/trips/{trip['id']}/packing/apply/{template['id']}"
+    # carl aplica sobre la suya, la común Y la de bob (familia = editable)
+    assert carl.post(f"{apply_url}?traveler_id={carl_traveler['id']}").status_code == 200
+    assert carl.post(apply_url).status_code == 200
+    assert carl.post(f"{apply_url}?traveler_id={bob_traveler['id']}").status_code == 200
+    # bob puede APLICAR la plantilla de carl (lectura familiar)…
+    assert bob.post(f"{apply_url}?traveler_id={bob_traveler['id']}").status_code == 200
+    # …pero no sincronizarla (escritura solo del dueño)
+    assert bob.post(
+        f"/api/v1/packing-templates/{template['id']}/sync-from-trip/{trip['id']}"
+    ).status_code == 403
+    # ana (otra familia) ni la lee ni la aplica, ni siquiera sobre su propia maleta
+    assert ana.post(f"{apply_url}?traveler_id={_me_traveler(ana)['id']}").status_code == 403
+    # guardar la maleta de OTRO usuario como plantilla → el dueño sería él: 403
+    assert carl.post(
+        "/api/v1/packing-templates",
+        json={"name": "Robada", "from_trip_id": trip["id"], "traveler_id": bob_traveler["id"]},
+    ).status_code == 403
+    # la común guardada como plantilla nace del propio usuario
+    saved = carl.post(
+        "/api/v1/packing-templates", json={"name": "Común", "from_trip_id": trip["id"]}
+    ).json()
+    assert saved["traveler_id"] == carl_traveler["id"]
+    # sync de su plantilla desde la común: OK
+    assert carl.post(
+        f"/api/v1/packing-templates/{template['id']}/sync-from-trip/{trip['id']}"
+    ).status_code == 200
+    # desvincular la plantilla de la común: la selección se va, los items quedan
+    items_before = len(carl.get(f"/api/v1/trips/{trip['id']}/packing").json())
+    assert carl.delete(f"/api/v1/trips/{trip['id']}/packing/selection").status_code == 204
+    selections = carl.get(f"/api/v1/trips/{trip['id']}/packing/selections").json()
+    assert all(s["traveler_id"] is not None for s in selections)
+    assert len(carl.get(f"/api/v1/trips/{trip['id']}/packing").json()) == items_before
+    # ana no puede desvincular maletas de otra familia
+    assert ana.delete(
+        f"/api/v1/trips/{trip['id']}/packing/selection?traveler_id={bob_traveler['id']}"
+    ).status_code == 403
 
 
 def test_world_map_per_family_with_shared_trip(two_families):
@@ -158,6 +324,26 @@ def test_user_without_family_cannot_create_trip(app, client):
     assert "familia" in resp.json()["detail"]
     # el mapa devuelve vacío en vez de error
     assert solo.get("/api/v1/world-places").json() == []
+
+
+def test_traveler_create_family_permissions(two_families):
+    admin, ana = two_families["admin"], two_families["ana"]
+    fam_a, fam_b = two_families["family_a"], two_families["family_b"]
+    # sin campo → familia del creador
+    implicit = ana.post("/api/v1/travelers", json={"name": "Implícito"}).json()
+    assert implicit["family_id"] == fam_b
+    # explícita: la suya o ninguna sí; la de otros no (el admin sí)
+    own = ana.post("/api/v1/travelers", json={"name": "Propio", "family_id": fam_b}).json()
+    assert own["family_id"] == fam_b
+    none = ana.post("/api/v1/travelers", json={"name": "Libre", "family_id": None}).json()
+    assert none["family_id"] is None
+    assert ana.post(
+        "/api/v1/travelers", json={"name": "Intruso", "family_id": fam_a}
+    ).status_code == 403
+    cross = admin.post(
+        "/api/v1/travelers", json={"name": "DeOtra", "family_id": fam_b}
+    ).json()
+    assert cross["family_id"] == fam_b
 
 
 def test_traveler_with_account_cannot_be_deleted(client):

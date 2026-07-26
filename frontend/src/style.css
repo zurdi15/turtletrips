@@ -322,6 +322,191 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   animation: tt-pop-in var(--tt-dur-350) var(--tt-ease-spring) both;
 }
 
+/* transiciones de vistas top-level (App.vue, out-in). El root de las vistas
+   NO lleva tt-anim-rise: la entrada la pone SIEMPRE el Transition. Si la
+   clase viviera en el elemento, cualquier override temporal (p. ej. durante
+   el splash) la reiniciaría al retirarse — un flash al acabar la transición. */
+.tt-view-enter-active {
+  animation: tt-rise-in var(--tt-dur-300) var(--tt-ease-spring) both;
+}
+
+/* login ⇄ app: la vista saliente se hunde con un fade corto y la entrante
+   emerge con un rise amplio con muelle */
+@keyframes tt-splash-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.tt-splash-enter-active {
+  animation: tt-splash-in var(--tt-dur-350) var(--tt-ease-spring) both;
+}
+.tt-splash-leave-active {
+  transition:
+    opacity var(--tt-dur-180) ease,
+    transform var(--tt-dur-180) ease;
+}
+.tt-splash-leave-to {
+  opacity: 0;
+  transform: scale(1.04);
+}
+
+/* la tortuga (BrandMark) nada DE VERDAD: las partes del SVG llevan clase
+   (assets/brandmark.svg, inline vía ?raw) y reman por separado — brazada de
+   las aletas delanteras desde el hombro, patada trasera, coleteo y cabecita
+   impulsándose. Los keyframes están siempre definidos pero EN PAUSA en la
+   pose neutra (todos parten de 0); .tt-swim (login, idle perpetuo) o el
+   hover del logo (.tt-swim-hover) los arrancan, y --tt-swim-cycle marca el
+   ritmo de la brazada. Solo transform, como todo el sistema. */
+.tt-turtle-flipper,
+.tt-turtle-tail,
+.tt-turtle-head {
+  transform-box: fill-box;
+  animation-duration: var(--tt-swim-cycle, 1.8s);
+  animation-iteration-count: infinite;
+  /* sin animation-name por defecto: quieta en pose neutra; al dejar de nadar
+     vuelve a la pose al instante (la salida siempre es instantánea) */
+}
+/* el origen de giro es el "hombro": la esquina de la aleta pegada al caparazón */
+.tt-turtle-ffl {
+  --tt-dir: 1;
+  transform-origin: 100% 100%;
+}
+.tt-turtle-ffr {
+  --tt-dir: -1;
+  transform-origin: 0% 100%;
+}
+.tt-turtle-bfl {
+  --tt-dir: 1;
+  transform-origin: 100% 0%;
+}
+.tt-turtle-bfr {
+  --tt-dir: -1;
+  transform-origin: 0% 0%;
+}
+.tt-turtle-tail {
+  transform-origin: 50% 0%;
+}
+
+/* Oscilación de péndulo SIN parones: cada tramo lleva su curva (ease-out al
+   salir del centro = rápido, ease-in al llegar al extremo = frena), así el
+   bucle cruza el 0%/100% a velocidad máxima y encadena sin costura. Los
+   extremos de cada parte caen en porcentajes distintos para desfasar la
+   patada, el coleteo y la cabeza respecto a la brazada. */
+@keyframes tt-paddle {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  25% {
+    transform: rotate(calc(var(--tt-dir) * -16deg));
+    animation-timing-function: ease-in;
+  }
+  50% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  75% {
+    transform: rotate(calc(var(--tt-dir) * 7deg));
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes tt-kick {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  30% {
+    transform: rotate(calc(var(--tt-dir) * 12deg));
+    animation-timing-function: ease-in;
+  }
+  60% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  82% {
+    transform: rotate(calc(var(--tt-dir) * -5deg));
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes tt-tailwag {
+  0% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  30% {
+    transform: rotate(-9deg);
+    animation-timing-function: ease-in;
+  }
+  62% {
+    transform: rotate(0deg);
+    animation-timing-function: ease-out;
+  }
+  84% {
+    transform: rotate(9deg);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes tt-headbob {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: ease-out;
+  }
+  35% {
+    transform: translateY(-5px);
+    animation-timing-function: ease-in;
+  }
+  68% {
+    transform: translateY(0);
+    animation-timing-function: ease-out;
+  }
+  86% {
+    transform: translateY(1.5px);
+    animation-timing-function: ease-in;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* login: el conjunto entra con un pop y las partes nadan en idle */
+.tt-swim {
+  animation: tt-pop-in var(--tt-dur-350) var(--tt-ease-spring) both;
+}
+/* cabecera: quieta hasta pasar el ratón/foco por el logo — brazada rápida */
+.tt-swim-hover:hover .tt-swim-target,
+.tt-swim-hover:focus-visible .tt-swim-target {
+  --tt-swim-cycle: 0.9s;
+}
+/* arranque del nado por contexto (una regla por parte) */
+:is(.tt-swim, .tt-swim-hover:hover, .tt-swim-hover:focus-visible) .tt-turtle-ffl,
+:is(.tt-swim, .tt-swim-hover:hover, .tt-swim-hover:focus-visible) .tt-turtle-ffr {
+  animation-name: tt-paddle;
+}
+:is(.tt-swim, .tt-swim-hover:hover, .tt-swim-hover:focus-visible) .tt-turtle-bfl,
+:is(.tt-swim, .tt-swim-hover:hover, .tt-swim-hover:focus-visible) .tt-turtle-bfr {
+  animation-name: tt-kick;
+}
+:is(.tt-swim, .tt-swim-hover:hover, .tt-swim-hover:focus-visible) .tt-turtle-tail {
+  animation-name: tt-tailwag;
+}
+:is(.tt-swim, .tt-swim-hover:hover, .tt-swim-hover:focus-visible) .tt-turtle-head {
+  animation-name: tt-headbob;
+}
+
 /* transiciones Vue nombradas (solo entrada) */
 .tt-fade-enter-active {
   transition: opacity var(--tt-dur-200) ease;
@@ -466,6 +651,12 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 @media (prefers-reduced-motion: reduce) {
   .tt-anim-rise,
   .tt-pop-in,
+  .tt-swim,
+  .tt-turtle-flipper,
+  .tt-turtle-tail,
+  .tt-turtle-head,
+  .tt-view-enter-active,
+  .tt-splash-enter-active,
   .tt-stagger > *,
   .tt-empty,
   .tt-empty-icon,
@@ -474,9 +665,11 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   }
   .tt-fade-enter-active,
   .tt-rise-enter-active,
+  .tt-splash-leave-active,
   .tt-collapse,
   .tt-collapse-clip,
   .tt-cluster-pill,
+  .tt-nav-dash,
   .tt-list-move,
   .tt-list-enter-active,
   .tt-list-leave-active,

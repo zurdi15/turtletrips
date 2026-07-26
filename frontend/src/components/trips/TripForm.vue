@@ -10,12 +10,12 @@ import Button from 'primevue/button'
 import DateRangePicker from '../DateRangePicker.vue'
 import MemberChip from '../MemberChip.vue'
 import FormField from '../ui/FormField.vue'
+import TravelerAvatar from '../ui/TravelerAvatar.vue'
 import type { Traveler, Trip, TripStatus } from '../../api/types'
 import { api } from '../../api/client'
 import { CURRENCIES, TRIP_STATUS_KEYS, toSelectOptions } from '../../constants'
 import { intlLocale } from '../../i18n'
 import { MEMBER_COLORS } from '../../theme'
-import { FALLBACK_CATEGORY_COLOR } from '../../stores/categories'
 import { countryName, countryOptions as buildCountryOptions } from '../../countries'
 import { useSessionStore } from '../../stores/session'
 import { useTripsStore } from '../../stores/trips'
@@ -213,10 +213,14 @@ defineExpose({ validate, submit })
       >
         <template #option="{ option }">
           <span class="flex items-center gap-2">
-            <span
-              class="w-3 h-3 rounded-full shrink-0"
-              :style="{ background: option.color ?? FALLBACK_CATEGORY_COLOR }"
-            />
+            <span class="w-4 h-4 grid place-items-center overflow-hidden shrink-0">
+              <TravelerAvatar
+                :name="option.name"
+                :color="option.color"
+                :avatar-url="option.avatar_url"
+                size="xs"
+              />
+            </span>
             {{ option.name }}
           </span>
         </template>

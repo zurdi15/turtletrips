@@ -173,6 +173,8 @@ class Family(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
+    # orden manual (drag & drop en /travelers)
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
 
 class Traveler(TimestampMixin, Base):
@@ -222,7 +224,7 @@ class User(TimestampMixin, Base):
         ForeignKey("travelers.id", ondelete="RESTRICT"), unique=True
     )
     # preferencias de UI por usuario (viven en DB, no en localStorage)
-    theme: Mapped[str] = mapped_column(String(10), default="system")  # light|dark|system
+    theme: Mapped[str] = mapped_column(String(10), default="light")  # light|dark|system
     language: Mapped[str] = mapped_column(String(5), default="en")  # es|en
 
     traveler: Mapped[Traveler] = relationship(back_populates="user")
@@ -526,18 +528,24 @@ class PackingSelection(Base):
 
 
 class PackingTemplate(TimestampMixin, Base):
-    """Maleta guardada como plantilla reutilizable entre viajes (por familia)."""
+    """Maleta guardada como plantilla reutilizable entre viajes (por viajero).
+
+    El dueño puede ser un viajero con cuenta (sus plantillas) o un virtual
+    (la maleta recurrente de un niño, gestionada por los usuarios de su familia).
+    """
 
     __tablename__ = "packing_templates"
     __table_args__ = (
-        UniqueConstraint("family_id", "name", name="uq_packing_templates_family_name"),
+        UniqueConstraint("traveler_id", "name", name="uq_packing_templates_traveler_name"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    family_id: Mapped[int] = mapped_column(
-        ForeignKey("families.id", ondelete="CASCADE")
+    traveler_id: Mapped[int] = mapped_column(
+        ForeignKey("travelers.id", ondelete="CASCADE")
     )
     name: Mapped[str] = mapped_column(String(100))
+
+    traveler: Mapped[Traveler] = relationship()
 
     items: Mapped[list["PackingTemplateItem"]] = relationship(
         back_populates="template", cascade="all, delete-orphan", passive_deletes=True

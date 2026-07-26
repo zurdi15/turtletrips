@@ -61,3 +61,7 @@ class FamilyCreate(BaseModel):
 
 class FamilyUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+
+
+class FamilyReorder(BaseModel):
+    ids: list[int]
