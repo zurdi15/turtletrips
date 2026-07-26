@@ -181,21 +181,27 @@ body {
   z-index: 0;
 }
 
-/* Diálogos: sin scroll lateral y con los controles ocupando todo el ancho */
+/* Diálogos y campos de FormField (también fuera de diálogo, p. ej. los ajustes
+   del viaje): sin scroll lateral y con los controles ocupando todo el ancho.
+   min-width: 0 es lo crítico — un <input> nativo no baja de su ancho
+   intrínseco (~20ch) y desborda su celda en móvil (presupuesto en grid-cols-2). */
 .p-dialog-content {
   overflow-x: hidden;
 }
-.p-dialog .p-inputtext,
-.p-dialog .p-select,
-.p-dialog .p-multiselect,
-.p-dialog .p-datepicker,
-.p-dialog .p-inputnumber,
-.p-dialog .p-autocomplete,
-.p-dialog .p-textarea {
+:is(.p-dialog, .tt-field)
+  :is(
+    .p-inputtext,
+    .p-select,
+    .p-multiselect,
+    .p-datepicker,
+    .p-inputnumber,
+    .p-autocomplete,
+    .p-textarea
+  ) {
   width: 100%;
   min-width: 0;
 }
-.p-dialog .p-autocomplete .p-autocomplete-input {
+:is(.p-dialog, .tt-field) .p-autocomplete .p-autocomplete-input {
   width: 100%;
 }
 
