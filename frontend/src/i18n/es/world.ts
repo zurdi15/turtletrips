@@ -23,9 +23,15 @@ export default {
     years: 'Años',
     timeline: 'Cronología',
   },
+  sort: {
+    newestFirst: 'Lo más reciente primero',
+    oldestFirst: 'Lo más antiguo primero',
+  },
   timeline: {
     emptyTitle: 'Sin historia todavía',
     emptySubtitle: 'Pon año de visita a tus países y sitios para construir tu historia viajera',
+    hiddenInYear: '· sin coincidencias | · +{n} filtrado | · +{n} filtrados',
+    hiddenGap: 'nada | {n} lugar filtrado | {n} lugares filtrados',
   },
   continents: {
     title: 'Por continente',
@@ -46,11 +52,12 @@ export default {
     metricSpent: 'Gasto',
     newCountries: 'Estrenados',
     repeatCountries: 'Repetidos',
+    noMatch: 'Ningún año coincide con los filtros',
     emptyTitle: 'Sin viajes con fechas todavía',
     emptySubtitle: 'Cuando tus viajes tengan fechas, aquí saldrá tu resumen anual',
   },
   filters: {
-    all: 'Todo',
+    all: 'Todos los tipos',
     countries: 'Países',
     cities: 'Ciudades',
     places: 'Sitios',

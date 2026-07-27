@@ -27,25 +27,37 @@ export function visitedLabel(place: WorldPlace): string | null {
   return `${month} ${place.visited_year}`
 }
 
+/** Filtros del diario: multiselección, con lista vacía = sin filtrar. */
 export interface WorldFilterState {
   searchText: string
-  kind: 'all' | WorldPlaceKind
-  source: 'all' | 'auto' | 'manual'
-  country: string // 'all' o código ISO
-  year: 'all' | number // año de visita
+  kinds: WorldPlaceKind[]
+  sources: ('auto' | 'manual')[]
+  countries: string[] // códigos ISO
+  years: number[] // años de visita
 }
 
 export function emptyWorldFilters(): WorldFilterState {
-  return { searchText: '', kind: 'all', source: 'all', country: 'all', year: 'all' }
+  return { searchText: '', kinds: [], sources: [], countries: [], years: [] }
+}
+
+export function countWorldFilters(f: WorldFilterState): number {
+  return (
+    (f.searchText.trim() ? 1 : 0) +
+    (f.kinds.length ? 1 : 0) +
+    (f.sources.length ? 1 : 0) +
+    (f.countries.length ? 1 : 0) +
+    (f.years.length ? 1 : 0)
+  )
 }
 
 export function filterWorldPlaces(items: WorldPlace[], f: WorldFilterState): WorldPlace[] {
   return items.filter((p) => {
-    if (f.kind !== 'all' && p.kind !== f.kind) return false
-    if (f.source === 'auto' && !p.auto) return false
-    if (f.source === 'manual' && p.auto) return false
-    if (f.country !== 'all' && p.country_code !== f.country) return false
-    if (f.year !== 'all' && p.visited_year !== f.year) return false
+    if (f.kinds.length && !f.kinds.includes(p.kind)) return false
+    if (f.sources.length && !f.sources.includes(p.auto ? 'auto' : 'manual')) return false
+    if (f.countries.length && !(p.country_code && f.countries.includes(p.country_code)))
+      return false
+    if (f.years.length && !(p.visited_year != null && f.years.includes(p.visited_year)))
+      return false
     if (f.searchText) {
       const q = f.searchText.toLowerCase()
       if (
@@ -133,6 +145,53 @@ export function buildTimeline(items: WorldPlace[]): TimelineYear[] {
           displayName(a).localeCompare(displayName(b), 'es'),
       ),
     }))
+}
+
+/**
+ * Reordena los grupos de país por fecha de visita del país (los que no la
+ * tienen quedan al final conservando el alfabético de groupByCountry, porque
+ * Array.sort es estable).
+ */
+export function sortCountryGroups(groups: CountryGroup[], desc: boolean): CountryGroup[] {
+  const stamp = (group: CountryGroup): number | null => {
+    const year = group.entry?.visited_year
+    if (year == null) return null
+    return year * 100 + (group.entry?.visited_month ?? 0)
+  }
+  return [...groups].sort((a, b) => {
+    const sa = stamp(a)
+    const sb = stamp(b)
+    if (sa == null && sb == null) return 0
+    if (sa == null) return 1
+    if (sb == null) return -1
+    return desc ? sb - sa : sa - sb
+  })
+}
+
+// la cronología con filtros: años visibles y "huecos" donde los filtros
+// ocultan entradas (años enteros consecutivos se funden en un solo hueco)
+export type TimelineSegment =
+  | { type: 'year'; year: number; entries: WorldPlace[]; hidden: number }
+  | { type: 'gap'; hidden: number }
+
+export function buildTimelineSegments(
+  all: WorldPlace[],
+  visible: WorldPlace[],
+): TimelineSegment[] {
+  const visibleIds = new Set(visible.map((p) => p.id))
+  const segments: TimelineSegment[] = []
+  for (const yearGroup of buildTimeline(all)) {
+    const entries = yearGroup.entries.filter((e) => visibleIds.has(e.id))
+    const hidden = yearGroup.entries.length - entries.length
+    if (!entries.length) {
+      const last = segments[segments.length - 1]
+      if (last?.type === 'gap') last.hidden += hidden
+      else segments.push({ type: 'gap', hidden })
+    } else {
+      segments.push({ type: 'year', year: yearGroup.year, entries, hidden })
+    }
+  }
+  return segments
 }
 
 export interface WorldStats {

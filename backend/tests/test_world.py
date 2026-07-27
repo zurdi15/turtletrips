@@ -134,6 +134,57 @@ def test_city_implies_country_entry(client):
     assert not any(p["kind"] == "country" for p in listed)
 
 
+def test_country_inherits_earliest_city_date(client):
+    # ciudad con fecha: arrastra el país, que hereda esa fecha
+    client.post(
+        "/api/v1/world-places",
+        json={
+            "name": "Kioto", "kind": "city", "country_code": "JP",
+            "visited_year": 2019, "visited_month": 4,
+        },
+    )
+    listed = {p["name"]: p for p in client.get("/api/v1/world-places").json()}
+    assert listed["JP"]["visited_year"] == 2019
+    assert listed["JP"]["visited_month"] == 4
+
+    # una ciudad ANTERIOR manda: el país pasa a la visita más antigua
+    client.post(
+        "/api/v1/world-places",
+        json={
+            "name": "Tokio", "kind": "city", "country_code": "JP",
+            "visited_year": 2015, "visited_month": 11,
+        },
+    )
+    listed = {p["name"]: p for p in client.get("/api/v1/world-places").json()}
+    assert (listed["JP"]["visited_year"], listed["JP"]["visited_month"]) == (2015, 11)
+
+    # el año a secas es menos preciso: gana como "lo más antiguo conocido"
+    client.post(
+        "/api/v1/world-places",
+        json={"name": "Osaka", "kind": "city", "country_code": "JP", "visited_year": 2015},
+    )
+    listed = {p["name"]: p for p in client.get("/api/v1/world-places").json()}
+    assert (listed["JP"]["visited_year"], listed["JP"]["visited_month"]) == (2015, None)
+
+    # la fecha PROPIA del país manda sobre la heredada
+    client.patch(
+        f"/api/v1/world-places/{listed['JP']['id']}",
+        json={"visited_year": 2012, "visited_month": 1},
+    )
+    listed = {p["name"]: p for p in client.get("/api/v1/world-places").json()}
+    assert (listed["JP"]["visited_year"], listed["JP"]["visited_month"]) == (2012, 1)
+
+
+def test_stats_use_inherited_country_date(client):
+    client.post(
+        "/api/v1/world-places",
+        json={"name": "Hanói", "kind": "city", "country_code": "VN", "visited_year": 2017},
+    )
+    years = {y["year"]: y for y in client.get("/api/v1/stats/yearly").json()}
+    # el país sin fecha propia cuenta en el año de su ciudad más antigua
+    assert years[2017]["countries"] == ["VN"]
+
+
 def test_world_photo_upload_and_delete(client):
     import io
 

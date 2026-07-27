@@ -8,7 +8,11 @@ from ..db import get_db
 from ..models import User, WorldPlace
 from ..schemas.worldmap import WorldPlaceCreate, WorldPlaceRead, WorldPlaceUpdate
 from ..services import files
-from ..services.worldmap import ensure_country_entry, sync_world_places
+from ..services.worldmap import (
+    derive_country_visits,
+    ensure_country_entry,
+    sync_world_places,
+)
 from .common import get_or_404, require_family, save_new, save_updates
 
 router = APIRouter(tags=["world"])
@@ -26,11 +30,23 @@ def list_world_places(user: CurrentUser, db: Session = Depends(get_db)):
         # sin familia no hay diario: mapa vacío en vez de error
         return []
     sync_world_places(db, family_id)
-    return db.scalars(
+    places = db.scalars(
         select(WorldPlace)
         .where(WorldPlace.family_id == family_id, WorldPlace.hidden.is_(False))
         .order_by(WorldPlace.name)
     ).all()
+    # los países sin fecha propia heredan la visita más antigua de sus ciudades
+    derived = derive_country_visits(places)
+    result = []
+    for place in places:
+        read = WorldPlaceRead.model_validate(place)
+        inherited = derived.get(place.id)
+        if inherited:
+            read = read.model_copy(
+                update={"visited_year": inherited[0], "visited_month": inherited[1]}
+            )
+        result.append(read)
+    return result
 
 
 @router.post("/world-places", response_model=WorldPlaceRead, status_code=201)
@@ -42,16 +58,10 @@ def create_world_place(
     data["family_id"] = family_id
     if data.get("country_code"):
         data["country_code"] = data["country_code"].upper()
-    # una ciudad/sitio nuevo arrastra su país al diario, fecha incluida
-    # (save_new hace commit)
+    # una ciudad/sitio nuevo arrastra su país al diario; la fecha del país la
+    # deriva la lectura a partir de sus ciudades (save_new hace commit)
     if data.get("kind") != "country":
-        ensure_country_entry(
-            db,
-            family_id,
-            data.get("country_code"),
-            visited_year=data.get("visited_year"),
-            visited_month=data.get("visited_month"),
-        )
+        ensure_country_entry(db, family_id, data.get("country_code"))
     return save_new(db, WorldPlace(), data)
 
 

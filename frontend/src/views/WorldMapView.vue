@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import MultiSelect from 'primevue/multiselect'
 import AutoComplete from 'primevue/autocomplete'
 import ClusterBtn from '../components/ui/ClusterBtn.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
@@ -25,12 +26,14 @@ import { intlLocale } from '../i18n'
 import { useWorldPlacesStore } from '../stores/worldPlaces'
 import { useGeocodeSearch } from '../composables/useGeocode'
 import {
-  buildTimeline,
+  buildTimelineSegments,
+  countWorldFilters,
   displayName,
   emptyWorldFilters,
   filterWorldPlaces,
   groupByCountry,
   inferCountryCode,
+  sortCountryGroups,
   worldStats,
 } from '../utils/worldGrouping'
 
@@ -54,33 +57,25 @@ const viewOptions = computed(
       { value: 'timeline', label: t('world.view.timeline'), icon: 'pi pi-history' },
     ] as const,
 )
-// los filtros solo aplican a mapa y lista
-const filterableView = computed(() => viewMode.value === 'map' || viewMode.value === 'list')
+// orden cronológico compartido por lista, años y cronología (el mapa no ordena)
+const sortDesc = ref(true)
+const sortableView = computed(() => viewMode.value !== 'map')
 
 // filtros (colapsados bajo el botón "Filtros", como en el home)
 const filters = reactive(emptyWorldFilters())
 const showFilters = ref(false)
-const activeFilterCount = computed(
-  () =>
-    (filters.searchText.trim() ? 1 : 0) +
-    (filters.kind !== 'all' ? 1 : 0) +
-    (filters.country !== 'all' ? 1 : 0) +
-    (filters.source !== 'all' ? 1 : 0) +
-    (filters.year !== 'all' ? 1 : 0),
-)
+const activeFilterCount = computed(() => countWorldFilters(filters))
 
 function clearFilters() {
   Object.assign(filters, emptyWorldFilters())
 }
 
 const kindFilterOptions = computed(() => [
-  { value: 'all', label: t('world.filters.all') },
   { value: 'country', label: t('world.filters.countries') },
   { value: 'city', label: t('world.filters.cities') },
   { value: 'place', label: t('world.filters.places') },
 ])
 const sourceFilterOptions = computed(() => [
-  { value: 'all', label: t('world.filters.anySource') },
   { value: 'auto', label: t('world.filters.fromTrips') },
   { value: 'manual', label: t('world.filters.manual') },
 ])
@@ -90,10 +85,7 @@ const yearFilterOptions = computed(() => {
   const years = new Set(
     store.items.map((p) => p.visited_year).filter((y): y is number => y != null),
   )
-  return [
-    { value: 'all' as 'all' | number, label: t('world.filters.anyYear') },
-    ...[...years].sort((a, b) => b - a).map((y) => ({ value: y as 'all' | number, label: String(y) })),
-  ]
+  return [...years].sort((a, b) => b - a).map((y) => ({ value: y, label: String(y) }))
 })
 
 // alta
@@ -109,22 +101,28 @@ const showDialog = ref(false)
 onMounted(() => store.load().then(() => mapPanel.value?.fitAll()))
 
 const filtered = computed(() => filterWorldPlaces(store.items, filters))
-const groups = computed(() => groupByCountry(filtered.value))
+const groups = computed(() => sortCountryGroups(groupByCountry(filtered.value), sortDesc.value))
 const stats = computed(() => worldStats(store.items))
-const timeline = computed(() => buildTimeline(store.items))
-// países visitados (códigos) para el desglose por continentes de las stats
+// la cronología muestra los años con lo que pasa el filtro y marca con un hueco
+// lo que se queda fuera (así la línea no miente sobre lo que hubo)
+const timelineSegments = computed(() => {
+  const segments = buildTimelineSegments(store.items, filtered.value)
+  return sortDesc.value ? [...segments].reverse() : segments
+})
+// países visitados (códigos) para el desglose por continentes de las stats:
+// salen del diario YA filtrado, así los filtros también dicen algo aquí
 const visitedCountryCodes = computed(() =>
-  store.countries.map((c) => c.country_code).filter((code): code is string => !!code),
+  filtered.value
+    .filter((p) => p.kind === 'country')
+    .map((p) => p.country_code)
+    .filter((code): code is string => !!code),
 )
 
 const countryFilterOptions = computed(() => {
   const codes = new Set(store.items.map((p) => p.country_code).filter((c): c is string => !!c))
-  return [
-    { value: 'all', label: t('world.filters.allCountries') },
-    ...[...codes]
-      .map((code) => ({ value: code, label: `${flagEmoji(code)} ${countryName(code)}` }))
-      .sort((a, b) => a.label.localeCompare(b.label, intlLocale())),
-  ]
+  return [...codes]
+    .map((code) => ({ value: code, label: `${flagEmoji(code)} ${countryName(code)}` }))
+    .sort((a, b) => a.label.localeCompare(b.label, intlLocale()))
 })
 
 function flyTo(place: WorldPlace) {
@@ -301,12 +299,21 @@ function bulkDelete() {
     <!-- filtros + vista -->
     <div class="flex flex-col gap-3 mb-4">
       <div class="flex items-center gap-2">
-        <FilterToggleButton v-if="filterableView" v-model="showFilters" :count="activeFilterCount" />
+        <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
         <ClusterBtn v-model="viewMode" :options="viewOptions" class="flex-1" />
+        <!-- orden cronológico: de lo más reciente a lo más antiguo o al revés -->
+        <Button
+          v-if="sortableView"
+          :icon="sortDesc ? 'pi pi-sort-amount-down' : 'pi pi-sort-amount-up'"
+          severity="secondary"
+          outlined
+          v-tooltip.bottom="sortDesc ? t('world.sort.newestFirst') : t('world.sort.oldestFirst')"
+          @click="sortDesc = !sortDesc"
+        />
       </div>
 
       <!-- -mt-3 anula el gap del padre con el panel cerrado; el pt-3 interno lo repone animado -->
-      <CollapsePanel :open="showFilters && filterableView" class="-mt-3">
+      <CollapsePanel :open="showFilters" class="-mt-3">
       <div class="pt-3">
       <div
         class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3"
@@ -316,34 +323,42 @@ function bulkDelete() {
           :placeholder="t('world.filters.searchPlaceholder')"
           class="w-full sm:w-auto sm:flex-1"
         />
-        <Select
-          v-model="filters.kind"
+        <MultiSelect
+          v-model="filters.kinds"
           :options="kindFilterOptions"
           optionLabel="label"
           optionValue="value"
-          class="flex-1 min-w-[7rem] sm:flex-none sm:w-36"
+          :placeholder="t('world.filters.all')"
+          :maxSelectedLabels="2"
+          class="flex-1 min-w-menu sm:flex-none sm:w-40"
         />
-        <Select
-          v-model="filters.country"
+        <MultiSelect
+          v-model="filters.countries"
           :options="countryFilterOptions"
           optionLabel="label"
           optionValue="value"
           filter
+          :placeholder="t('world.filters.allCountries')"
+          :maxSelectedLabels="1"
           class="flex-1 min-w-menu sm:flex-none sm:w-52"
         />
-        <Select
-          v-model="filters.source"
+        <MultiSelect
+          v-model="filters.sources"
           :options="sourceFilterOptions"
           optionLabel="label"
           optionValue="value"
+          :placeholder="t('world.filters.anySource')"
+          :maxSelectedLabels="1"
           class="flex-1 min-w-menu sm:flex-none sm:w-48"
         />
-        <Select
-          v-model="filters.year"
+        <MultiSelect
+          v-model="filters.years"
           :options="yearFilterOptions"
           optionLabel="label"
           optionValue="value"
-          class="flex-1 min-w-[7rem] sm:flex-none sm:w-36"
+          :placeholder="t('world.filters.anyYear')"
+          :maxSelectedLabels="2"
+          class="flex-1 min-w-menu sm:flex-none sm:w-40"
         />
         <Button
           v-if="activeFilterCount"
@@ -368,9 +383,19 @@ function bulkDelete() {
       @edit="openEdit"
     />
 
-    <WorldYearStats v-else-if="viewMode === 'stats'" :countryCodes="visitedCountryCodes" />
+    <WorldYearStats
+      v-else-if="viewMode === 'stats'"
+      :countryCodes="visitedCountryCodes"
+      :yearsFilter="filters.years"
+      :countriesFilter="filters.countries"
+      :sortDesc="sortDesc"
+    />
 
-    <WorldTimeline v-else-if="viewMode === 'timeline'" :years="timeline" @fly-to="flyTo" />
+    <WorldTimeline
+      v-else-if="viewMode === 'timeline'"
+      :segments="timelineSegments"
+      @fly-to="flyTo"
+    />
 
     <template v-else>
       <!-- barra de acciones en bloque: aparece con la primera selección -->

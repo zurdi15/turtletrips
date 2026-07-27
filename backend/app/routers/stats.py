@@ -7,6 +7,7 @@ from ..db import get_db
 from ..models import Expense, Trip, WorldPlace, trip_travelers
 from ..schemas.misc import YearStats
 from ..services.stats import yearly_stats
+from ..services.worldmap import derive_country_visits
 
 router = APIRouter(tags=["stats"])
 
@@ -35,10 +36,15 @@ def yearly(user: CurrentUser, db: Session = Depends(get_db)):
             select(WorldPlace).where(
                 WorldPlace.family_id == family_id,
                 WorldPlace.hidden.is_(False),
-                WorldPlace.visited_year.is_not(None),
                 WorldPlace.country_code.is_not(None),
             )
         ).all()
-        world_countries = [(e.visited_year, e.country_code) for e in entries]
+        # misma regla que el diario: el país sin fecha propia hereda la visita
+        # más antigua de sus ciudades
+        derived = derive_country_visits(entries)
+        for entry in entries:
+            year = entry.visited_year or (derived.get(entry.id) or (None,))[0]
+            if year is not None and entry.country_code:
+                world_countries.append((year, entry.country_code))
 
     return yearly_stats(trips, expenses, world_countries)

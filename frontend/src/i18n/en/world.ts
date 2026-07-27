@@ -23,9 +23,15 @@ export default {
     years: 'Years',
     timeline: 'Timeline',
   },
+  sort: {
+    newestFirst: 'Newest first',
+    oldestFirst: 'Oldest first',
+  },
   timeline: {
     emptyTitle: 'No history yet',
     emptySubtitle: 'Add a visit year to your countries and places to build your travel story',
+    hiddenInYear: '· no matches | · +{n} filtered out | · +{n} filtered out',
+    hiddenGap: 'nothing | {n} place filtered out | {n} places filtered out',
   },
   continents: {
     title: 'By continent',
@@ -46,11 +52,12 @@ export default {
     metricSpent: 'Spending',
     newCountries: 'First visits',
     repeatCountries: 'Repeats',
+    noMatch: 'No year matches the filters',
     emptyTitle: 'No dated trips yet',
     emptySubtitle: 'Once your trips have dates, your yearly recap will show up here',
   },
   filters: {
-    all: 'Everything',
+    all: 'All types',
     countries: 'Countries',
     cities: 'Cities',
     places: 'Places',

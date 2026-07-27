@@ -17,8 +17,14 @@ import { CATEGORY_PALETTE, CHART_LINE_COLOR, FALLBACK_COLOR, STATS_NEW_COLOR } f
 
 // "Tu año viajero": resumen anual de los viajes en los que participas
 const props = defineProps<{
-  /** códigos ISO de los países visitados del diario (para el desglose por continente) */
+  /** códigos ISO de los países visitados del diario YA filtrado (desglose por continente) */
   countryCodes: string[]
+  /** años seleccionados en los filtros (vacío = todos) */
+  yearsFilter: number[]
+  /** países seleccionados en los filtros (vacío = todos) */
+  countriesFilter: string[]
+  /** true = tarjetas de lo más reciente a lo más antiguo */
+  sortDesc: boolean
 }>()
 
 const { t } = useI18n()
@@ -36,9 +42,22 @@ onMounted(async () => {
   }
 })
 
-// tarjetas: más reciente primero; la barra de días se escala al año más viajado
-const sorted = computed(() => [...years.value].sort((a, b) => b.year - a.year))
-const maxDays = computed(() => Math.max(1, ...years.value.map((y) => y.days)))
+// los filtros de año y país del diario también recortan estas tarjetas
+// (tipo/origen/búsqueda solo tienen sentido sobre el diario, no sobre los años)
+const visibleYears = computed(() => {
+  let list = years.value
+  if (props.yearsFilter.length) list = list.filter((y) => props.yearsFilter.includes(y.year))
+  if (props.countriesFilter.length) {
+    list = list.filter((y) => y.countries.some((code) => props.countriesFilter.includes(code)))
+  }
+  return list
+})
+
+// tarjetas en el orden elegido; la barra de días se escala al año más viajado
+const sorted = computed(() =>
+  [...visibleYears.value].sort((a, b) => (props.sortDesc ? b.year - a.year : a.year - b.year)),
+)
+const maxDays = computed(() => Math.max(1, ...visibleYears.value.map((y) => y.days)))
 
 // ---- gráfico por métrica (mismo esquema que el panel de gastos) ----
 
@@ -54,8 +73,8 @@ const metricOptions = computed(
     ] as const,
 )
 
-// cronológico para el eje X
-const chronological = computed(() => [...years.value].sort((a, b) => a.year - b.year))
+// cronológico para el eje X (el gráfico se lee siempre de izquierda a derecha)
+const chronological = computed(() => [...visibleYears.value].sort((a, b) => a.year - b.year))
 
 const chartData = computed(() => {
   const labels = chronological.value.map((y) => String(y.year))
@@ -174,7 +193,7 @@ const chartOptions = computed(() => {
       </div>
     </div>
     <!-- gráfico por métrica -->
-    <div v-if="years.length" class="bg-surface rounded-card border border-line p-4 sm:p-5">
+    <div v-if="visibleYears.length" class="bg-surface rounded-card border border-line p-4 sm:p-5">
       <ClusterBtn v-model="metric" :options="metricOptions" size="small" class="mb-4" />
       <div class="h-64 sm:h-72">
         <Chart
@@ -187,8 +206,13 @@ const chartOptions = computed(() => {
       </div>
     </div>
 
+    <!-- los filtros del diario pueden dejar la parte anual sin nada que enseñar -->
+    <p v-if="years.length && !visibleYears.length" class="text-center text-sm text-ink-faint py-6">
+      {{ t('world.years.noMatch') }}
+    </p>
+
     <!-- tarjetas por año -->
-    <div v-if="years.length" class="tt-stagger flex flex-col gap-3">
+    <div v-if="visibleYears.length" class="tt-stagger flex flex-col gap-3">
       <div v-for="y in sorted" :key="y.year" class="bg-surface rounded-card border border-line p-4">
         <div class="flex items-baseline gap-x-3 gap-y-1 flex-wrap">
           <span class="text-2xl font-bold text-ink-heading tabular-nums">{{ y.year }}</span>
