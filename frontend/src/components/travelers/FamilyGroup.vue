@@ -96,7 +96,7 @@ function canEdit(traveler: Traveler): boolean {
           {{ family?.name ?? t('travelers.families.none') }}
         </h2>
         <span class="text-2xs text-ink-faint">{{ travelers.length }}</span>
-        <div v-if="family && session.isAdmin" class="flex gap-1 hover-actions">
+        <div v-if="family && session.isAdmin" class="flex gap-1">
           <Button icon="pi pi-pencil" text size="small" severity="secondary" @click="startEdit" />
           <Button icon="pi pi-trash" text size="small" severity="danger" @click="removeFamily" />
         </div>

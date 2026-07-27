@@ -138,6 +138,9 @@ class Trip(TimestampMixin, Base):
     day_journals: Mapped[list["DayJournal"]] = relationship(
         back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
     )
+    checklist_items: Mapped[list["ChecklistItem"]] = relationship(
+        back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     @property
     def debts_settled(self) -> bool:
@@ -431,6 +434,10 @@ class Attachment(TimestampMixin, Base):
     booking_id: Mapped[int | None] = mapped_column(
         ForeignKey("bookings.id", ondelete="SET NULL")
     )
+    # recibo de un gasto; al borrar el gasto queda como fichero del viaje
+    expense_id: Mapped[int | None] = mapped_column(
+        ForeignKey("expenses.id", ondelete="SET NULL")
+    )
     original_name: Mapped[str] = mapped_column(String(300))
     stored_name: Mapped[str] = mapped_column(String(100))
     content_type: Mapped[str] = mapped_column(String(100))
@@ -469,6 +476,24 @@ class DayJournal(TimestampMixin, Base):
             f"/api/v1/trips/{self.trip_id}/journal/"
             f"{self.day.isoformat()}/photo?v={self.photo_image}"
         )
+
+
+class ChecklistItem(TimestampMixin, Base):
+    """Tarea pre-viaje (visados, seguro, check-in…), aparte de la maleta."""
+
+    __tablename__ = "checklist_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trip_id: Mapped[int] = mapped_column(
+        ForeignKey("trips.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(300))
+    done: Mapped[bool] = mapped_column(Boolean, default=False)
+    due_date: Mapped[date | None] = mapped_column(Date)
+    url: Mapped[str | None] = mapped_column(String(500))  # enlace (web del visado, seguro…)
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    trip: Mapped[Trip] = relationship(back_populates="checklist_items")
 
 
 class Category(TimestampMixin, Base):
@@ -581,12 +606,23 @@ class WorldPlace(TimestampMixin, Base):
     lat: Mapped[float | None] = mapped_column()
     lon: Mapped[float | None] = mapped_column()
     note: Mapped[str | None] = mapped_column(Text)
+    # cuándo se visitó (retroactivo o heredado del viaje): alimenta las stats anuales
+    visited_year: Mapped[int | None] = mapped_column(Integer)
+    visited_month: Mapped[int | None] = mapped_column(Integer)  # 1-12
+    # postal (una foto), como la del diario de viaje; ficheros en uploads/world/
+    photo_image: Mapped[str | None] = mapped_column(String(100))
     auto: Mapped[bool] = mapped_column(Boolean, default=False)  # derivado de un viaje
     hidden: Mapped[bool] = mapped_column(Boolean, default=False)  # auto "borrado" por el usuario
     origin: Mapped[str | None] = mapped_column(String(200))  # nombre del viaje de origen
     trip_place_id: Mapped[int | None] = mapped_column(
         ForeignKey("places.id", ondelete="SET NULL")
     )
+
+    @property
+    def photo_url(self) -> str | None:
+        if not self.photo_image:
+            return None
+        return f"/api/v1/world-places/{self.id}/photo?v={self.photo_image}"
 
 
 class ExchangeRateCache(Base):

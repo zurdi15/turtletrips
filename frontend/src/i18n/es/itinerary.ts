@@ -17,6 +17,7 @@ export default {
   agenda: {
     dayN: 'Día {n}',
     addToDay: 'Añadir a este día',
+    rainProb: 'Probabilidad de lluvia: {pct}%',
     transport: 'Transporte',
     bookings: 'Reservas',
     lodging: 'Alojamiento',

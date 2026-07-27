@@ -21,6 +21,7 @@ NOT_FOUND_LABELS = {
     "Attachment": "Adjunto",
     "Category": "Categoría",
     "PackingItem": "Elemento de maleta",
+    "ChecklistItem": "Tarea",
     "PackingTemplate": "Plantilla de maleta",
     "PackingTemplateItem": "Elemento de plantilla",
     "WorldPlace": "Lugar del mapa",

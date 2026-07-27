@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
-import type { ItineraryItem } from '../../api/types'
+import type { DayForecast, ItineraryItem } from '../../api/types'
 import { fmtDayShort, fmtTime, rangeNights } from '../../utils/itinerary'
+import { weatherIcon } from '../../utils/weather'
 
 // contenido de una fila arrastrable de la agenda; el bucle <draggable> vive en
 // el padre (el drag entre días no puede cruzar un boundary de componente)
@@ -12,6 +13,8 @@ defineProps<{
   placeName: string | null
   bookingTitle: string | null
   expenseId: number | null
+  /** previsión del sitio de ESTA actividad (puede diferir de la del día) */
+  forecast?: DayForecast | null
 }>()
 defineEmits<{ edit: []; remove: [] }>()
 </script>
@@ -59,6 +62,23 @@ defineEmits<{ edit: []; remove: [] }>()
       </div>
       <p v-if="item.notes" class="text-xs text-ink-faint whitespace-pre-line break-words">{{ item.notes }}</p>
     </div>
+    <!-- previsión del sitio de la actividad: máx/mín y lluvia si amenaza -->
+    <span
+      v-if="forecast"
+      class="flex items-center gap-1.5 text-xs text-ink-faint whitespace-nowrap shrink-0"
+    >
+      <i :class="weatherIcon(forecast.weather_code)" class="text-sm" />
+      <span class="tabular-nums">
+        {{ Math.round(forecast.t_max) }}° / {{ Math.round(forecast.t_min) }}°
+      </span>
+      <span
+        v-if="(forecast.precip_prob ?? 0) >= 30"
+        class="text-info"
+        v-tooltip.top="$t('itinerary.agenda.rainProb', { pct: forecast.precip_prob })"
+      >
+        <i class="mdi mdi-water text-2xs" />{{ forecast.precip_prob }}%
+      </span>
+    </span>
     <RowActions @edit="$emit('edit')" @remove="$emit('remove')" />
   </div>
 </template>

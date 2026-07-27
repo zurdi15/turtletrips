@@ -38,5 +38,21 @@ export const useWorldPlacesStore = defineStore('worldPlaces', {
       await api.delete(`/world-places/${id}`)
       this.items = this.items.filter((p) => p.id !== id)
     },
+    async removeMany(ids: number[]) {
+      await Promise.all(ids.map((id) => api.delete(`/world-places/${id}`)))
+      // recargar: las entradas auto se ocultan en vez de borrarse
+      await this.load()
+    },
+    async uploadPhoto(id: number, file: File): Promise<WorldPlace> {
+      const form = new FormData()
+      form.append('file', file)
+      const place = await api.upload<WorldPlace>(`/world-places/${id}/photo`, form)
+      await this.load()
+      return place
+    },
+    async removePhoto(id: number) {
+      await api.delete(`/world-places/${id}/photo`)
+      await this.load()
+    },
   },
 })

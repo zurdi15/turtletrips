@@ -41,6 +41,7 @@ export default {
     bookings: 'Bookings',
     expenses: 'Expenses',
     packing: 'Packing',
+    checklist: 'Checklist',
     files: 'Files',
     settings: 'Settings',
   },

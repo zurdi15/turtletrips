@@ -23,7 +23,9 @@ import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
 import { useCrudView } from '../../composables/useCrudView'
 import { useTripTabData } from '../../composables/useTripTabData'
+import { useWeather } from '../../composables/useWeather'
 import { expenseIdByBooking } from '../../utils/expenses'
+import { itemCoord, pickDayCoords, weatherIcon, type Coord } from '../../utils/weather'
 import {
   agendaDayLabel,
   agendaDays,
@@ -89,6 +91,31 @@ const days = computed(() =>
 )
 
 const continuations = computed(() => buildContinuations(store.items))
+
+// ---- previsión meteo: cabecera = alojamiento de la noche (multi-día
+// incluido); cada actividad lleva la de SU sitio (un día puede tocar varias
+// zonas si vas en coche) ----
+
+const placeById = computed(() => new Map(places.items.map((p) => [p.id, p])))
+const dayCoords = computed(() =>
+  pickDayCoords(days.value, lodgingByDay.value, placeById.value),
+)
+const weatherRequests = computed(() => {
+  const requests: { day: string; coord: Coord }[] = []
+  for (const [day, coord] of dayCoords.value) requests.push({ day, coord })
+  for (const day of days.value) {
+    for (const item of store.byDay.get(day) ?? []) {
+      const coord = itemCoord(item, placeById.value)
+      if (coord) requests.push({ day, coord })
+    }
+  }
+  return requests
+})
+const { forecastAt } = useWeather(() => weatherRequests.value)
+
+function headerForecast(day: string) {
+  return forecastAt(day, dayCoords.value.get(day))
+}
 
 const lists = reactive<Record<string, ItineraryItem[]>>({})
 
@@ -235,18 +262,37 @@ function openNew(day?: string) {
         class="bg-surface rounded-card border border-line overflow-hidden"
       >
         <div class="flex items-center justify-between px-4 py-2.5 bg-surface-muted border-b border-line-subtle">
-          <div class="flex items-baseline gap-2">
-            <span class="font-semibold text-ink">{{ dayLabel(day).title }}</span>
-            <span class="text-sm text-ink-faint capitalize">{{ dayLabel(day).sub }}</span>
+          <div class="flex items-baseline gap-2 min-w-0">
+            <span class="font-semibold text-ink capitalize">{{ dayLabel(day).title }}</span>
+            <span class="text-sm text-ink-faint truncate">{{ dayLabel(day).sub }}</span>
           </div>
-          <Button
-            icon="pi pi-plus"
-            text
-            size="small"
-            severity="secondary"
-            v-tooltip.left="t('itinerary.agenda.addToDay')"
-            @click="openNew(day)"
-          />
+          <div class="flex items-center gap-2 shrink-0">
+            <!-- previsión del alojamiento de la noche (días dentro del horizonte) -->
+            <span
+              v-if="headerForecast(day)"
+              class="flex items-center gap-1.5 text-xs text-ink-muted whitespace-nowrap"
+            >
+              <i :class="weatherIcon(headerForecast(day)!.weather_code)" class="text-sm" />
+              <span class="tabular-nums">
+                {{ Math.round(headerForecast(day)!.t_max) }}° / {{ Math.round(headerForecast(day)!.t_min) }}°
+              </span>
+              <span
+                v-if="(headerForecast(day)!.precip_prob ?? 0) >= 30"
+                class="text-info"
+                v-tooltip.top="t('itinerary.agenda.rainProb', { pct: headerForecast(day)!.precip_prob })"
+              >
+                <i class="mdi mdi-water text-2xs" />{{ headerForecast(day)!.precip_prob }}%
+              </span>
+            </span>
+            <Button
+              icon="pi pi-plus"
+              text
+              size="small"
+              severity="secondary"
+              v-tooltip.left="t('itinerary.agenda.addToDay')"
+              @click="openNew(day)"
+            />
+          </div>
         </div>
         <!-- transportes del día: sección propia con cabecera -->
         <AgendaBookingSection
@@ -285,6 +331,7 @@ function openNew(day?: string) {
               :placeName="placeName(element.place_id)"
               :bookingTitle="bookingTitle(element.booking_id)"
               :expenseId="element.booking_id ? (expenseByBooking.get(element.booking_id) ?? null) : null"
+              :forecast="forecastAt(day, itemCoord(element, placeById))"
               @edit="openEdit(element)"
               @remove="removeItem(element)"
             />

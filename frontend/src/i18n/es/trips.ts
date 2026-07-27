@@ -41,6 +41,7 @@ export default {
     bookings: 'Reservas',
     expenses: 'Gastos',
     packing: 'Maleta',
+    checklist: 'Checklist',
     files: 'Ficheros',
     settings: 'Ajustes',
   },

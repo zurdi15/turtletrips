@@ -9,6 +9,7 @@ class AttachmentRead(BaseModel):
     id: int
     trip_id: int
     booking_id: int | None
+    expense_id: int | None
     original_name: str
     content_type: str
     size_bytes: int

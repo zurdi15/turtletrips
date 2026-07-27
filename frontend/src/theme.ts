@@ -74,5 +74,11 @@ export const BOOKING_MARKER_COLORS: Partial<Record<BookingType, string>> & {
 /** eventos all-day de items multi-día en el calendario */
 export const ALLDAY_EVENT_COLOR = colors.teal[700]
 
+/** línea de ruta del itinerario en el mapa del viaje */
+export const ROUTE_COLOR = colors.emerald[500]
+
+/** países estrenados en las estadísticas anuales (vs. repetidos = FALLBACK_COLOR) */
+export const STATS_NEW_COLOR = colors.emerald[500]
+
 /** serie temporal de la vista de gráficos de gastos */
 export const CHART_LINE_COLOR = colors.sky[500]

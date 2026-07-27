@@ -83,6 +83,35 @@ def delete_avatar(stored_name: str) -> None:
         pass
 
 
+def _world_dir() -> Path:
+    # plano y compartido: las postales del mapa mundial no pertenecen a ningún viaje
+    return get_settings().uploads_dir / "world"
+
+
+async def save_world_photo(upload: UploadFile) -> str:
+    """Guarda una postal del mapa mundial (solo imágenes); devuelve stored_name."""
+    if not (upload.content_type or "").startswith("image/"):
+        raise FileValidationError("La postal debe ser una imagen")
+    stored_name, _size = await _write_upload(_world_dir(), upload)
+    return stored_name
+
+
+def resolve_world_photo(stored_name: str) -> Path:
+    """Ruta absoluta de una postal, a prueba de path traversal."""
+    base = _world_dir().resolve()
+    path = (base / stored_name).resolve()
+    if not path.is_relative_to(base):
+        raise FileValidationError("Ruta de fichero inválida")
+    return path
+
+
+def delete_world_photo(stored_name: str) -> None:
+    try:
+        resolve_world_photo(stored_name).unlink(missing_ok=True)
+    except FileValidationError:
+        pass
+
+
 def save_bytes(trip_id: int, content: bytes, suffix: str) -> str:
     """Guarda contenido ya descargado (p. ej. portada desde URL); devuelve stored_name."""
     if len(content) > MAX_SIZE_BYTES:

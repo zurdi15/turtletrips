@@ -91,6 +91,11 @@ export const router = createRouter({
           component: () => import('../views/trip/PackingTab.vue'),
         },
         {
+          path: 'checklist',
+          name: 'trip-checklist',
+          component: () => import('../views/trip/ChecklistTab.vue'),
+        },
+        {
           path: 'files',
           name: 'trip-files',
           component: () => import('../views/trip/FilesTab.vue'),

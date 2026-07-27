@@ -8,6 +8,8 @@ class WorldPlaceCreate(BaseModel):
     lat: float | None = None
     lon: float | None = None
     note: str | None = None
+    visited_year: int | None = Field(default=None, ge=1900, le=2100)
+    visited_month: int | None = Field(default=None, ge=1, le=12)
 
 
 class WorldPlaceUpdate(BaseModel):
@@ -17,6 +19,8 @@ class WorldPlaceUpdate(BaseModel):
     lat: float | None = None
     lon: float | None = None
     note: str | None = None
+    visited_year: int | None = Field(default=None, ge=1900, le=2100)
+    visited_month: int | None = Field(default=None, ge=1, le=12)
 
 
 class WorldPlaceRead(BaseModel):
@@ -29,5 +33,8 @@ class WorldPlaceRead(BaseModel):
     lat: float | None
     lon: float | None
     note: str | None
+    visited_year: int | None
+    visited_month: int | None
+    photo_url: str | None
     auto: bool
     origin: str | None

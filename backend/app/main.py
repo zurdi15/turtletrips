@@ -16,6 +16,7 @@ from .routers import (
     backup,
     bookings,
     categories,
+    checklist,
     countries,
     expenses,
     families,
@@ -25,8 +26,10 @@ from .routers import (
     packing,
     places,
     rates,
+    stats,
     travelers,
     trips,
+    weather,
     world,
 )
 from .services.categories import ensure_default_categories_all
@@ -63,10 +66,13 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         attachments.router,
         journal.router,
         packing.router,
+        checklist.router,
         categories.router,
         countries.router,
         geocode.router,
         rates.router,
+        stats.router,
+        weather.router,
         world.router,
         families.router,  # GET para todos; mutaciones con candado admin por endpoint
     ):

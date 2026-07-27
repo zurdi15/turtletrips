@@ -5,6 +5,7 @@ import itinerary from './itinerary'
 import bookings from './bookings'
 import expenses from './expenses'
 import packing from './packing'
+import checklist from './checklist'
 import world from './world'
 import settings from './settings'
 import travelers from './travelers'
@@ -19,6 +20,7 @@ export default {
   bookings,
   expenses,
   packing,
+  checklist,
   world,
   settings,
   travelers,

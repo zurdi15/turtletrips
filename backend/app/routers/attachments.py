@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import CurrentUser
 from ..db import get_db
-from ..models import Attachment, Booking
+from ..models import Attachment, Booking, Expense
 from ..schemas.attachment import AttachmentRead
 from ..services import files
 from .common import ensure_in_trip, ensure_trip_member, get_trip_scoped
@@ -18,12 +18,15 @@ def list_attachments(
     trip_id: int,
     user: CurrentUser,
     booking_id: int | None = None,
+    expense_id: int | None = None,
     db: Session = Depends(get_db),
 ):
     ensure_trip_member(db, user, trip_id)
     query = select(Attachment).where(Attachment.trip_id == trip_id)
     if booking_id is not None:
         query = query.where(Attachment.booking_id == booking_id)
+    if expense_id is not None:
+        query = query.where(Attachment.expense_id == expense_id)
     return db.scalars(query.order_by(Attachment.id.desc())).all()
 
 
@@ -33,11 +36,15 @@ async def upload_attachment(
     file: UploadFile,
     user: CurrentUser,
     booking_id: int | None = Form(default=None),
+    expense_id: int | None = Form(default=None),
     db: Session = Depends(get_db),
 ):
     ensure_trip_member(db, user, trip_id)
     ensure_in_trip(
         db, Booking, booking_id, trip_id, message="La reserva no pertenece a este viaje"
+    )
+    ensure_in_trip(
+        db, Expense, expense_id, trip_id, message="El gasto no pertenece a este viaje"
     )
 
     try:
@@ -48,6 +55,7 @@ async def upload_attachment(
     attachment = Attachment(
         trip_id=trip_id,
         booking_id=booking_id,
+        expense_id=expense_id,
         original_name=file.filename or stored_name,
         stored_name=stored_name,
         content_type=file.content_type or "application/octet-stream",

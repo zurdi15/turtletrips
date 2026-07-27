@@ -16,6 +16,8 @@ import { PLACE_CATEGORY_KEYS, toSelectOptions } from '../../constants'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
+import { useItineraryStore } from '../../stores/itinerary'
+import { buildRoute } from '../../utils/itinerary'
 import { useCrudView } from '../../composables/useCrudView'
 import { useMediaQuery } from '../../composables/useMediaQuery'
 import { useTripTabData } from '../../composables/useTripTabData'
@@ -25,6 +27,7 @@ const { t } = useI18n()
 const store = usePlacesStore()
 const bookings = useBookingsStore()
 const expenses = useExpensesStore()
+const itinerary = useItineraryStore()
 
 const selectedId = ref<number | null>(null)
 const searchText = ref('')
@@ -62,6 +65,7 @@ useTripTabData(() => props.trip, {
   load(tripId) {
     bookings.load(tripId)
     expenses.load(tripId)
+    itinerary.load(tripId)
     return store.load(tripId)
   },
   // llegar desde un gasto enlazado (?place=id) selecciona y centra ese sitio
@@ -102,6 +106,11 @@ const expensesByPlace = computed(() => {
   }
   return map
 })
+
+// ruta del itinerario sobre TODOS los sitios (filtrar no debe romper la línea)
+const itineraryRoute = computed(() =>
+  buildRoute(itinerary.items, new Map(store.items.map((p) => [p.id, p]))),
+)
 
 const filtered = computed(() =>
   store.items.filter((p) => {
@@ -225,6 +234,7 @@ const {
           :bookings="bookings.items"
           :selectedId="selectedId"
           :countryCode="trip.countries[0]"
+          :route="itineraryRoute"
           @select="(id) => (selectedId = id)"
         />
       </div>

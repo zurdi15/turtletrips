@@ -5,12 +5,18 @@ from ..models import Expense, Traveler, Trip, WorldPlace, trip_travelers
 
 
 def ensure_country_entry(
-    db: Session, family_id: int, country_code: str | None, origin: str | None = None
+    db: Session,
+    family_id: int,
+    country_code: str | None,
+    origin: str | None = None,
+    visited_year: int | None = None,
+    visited_month: int | None = None,
 ) -> bool:
     """Añade la entrada de país al diario de la familia si no existe (ni oculta).
 
-    Una ciudad/sitio en el diario implica haber estado en su país. Respeta los
-    borrados del usuario (hidden cuenta como existente). No hace commit.
+    Una ciudad/sitio en el diario implica haber estado en su país (y hereda su
+    fecha de visita si la trae). Respeta los borrados del usuario (hidden
+    cuenta como existente). No hace commit.
     """
     if not country_code:
         return False
@@ -28,6 +34,7 @@ def ensure_country_entry(
         WorldPlace(
             family_id=family_id, name=country_code, kind="country",
             country_code=country_code, auto=True, origin=origin,
+            visited_year=visited_year, visited_month=visited_month,
         )
     )
     return True
@@ -69,6 +76,11 @@ def sync_world_places(db: Session, family_id: int) -> None:
 
     changed = False
     for trip in db.scalars(family_trips):
+        # fecha de visita heredada del viaje: alimenta las estadísticas anuales
+        trip_date = trip.end_date or trip.start_date
+        visited_year = trip_date.year if trip_date else None
+        visited_month = trip_date.month if trip_date else None
+
         if trip.status == "done":
             for code in trip.countries or []:
                 if code in known_codes:
@@ -78,6 +90,7 @@ def sync_world_places(db: Session, family_id: int) -> None:
                     WorldPlace(
                         family_id=family_id, name=code, kind="country",
                         country_code=code, auto=True, origin=trip.name,
+                        visited_year=visited_year, visited_month=visited_month,
                     )
                 )
                 known_codes.add(code)
@@ -96,6 +109,7 @@ def sync_world_places(db: Session, family_id: int) -> None:
                     family_id=family_id, name=place.name, kind=kind,
                     country_code=place_country, lat=place.lat, lon=place.lon,
                     auto=True, origin=trip.name, trip_place_id=place.id,
+                    visited_year=visited_year, visited_month=visited_month,
                 )
             )
             known_trip_place_ids.add(place.id)
@@ -106,6 +120,7 @@ def sync_world_places(db: Session, family_id: int) -> None:
                     WorldPlace(
                         family_id=family_id, name=place_country, kind="country",
                         country_code=place_country, auto=True, origin=trip.name,
+                        visited_year=visited_year, visited_month=visited_month,
                     )
                 )
                 known_codes.add(place_country)

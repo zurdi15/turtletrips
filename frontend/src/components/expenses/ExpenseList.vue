@@ -30,6 +30,8 @@ const props = defineProps<{
   trip: Trip
   catColor: (name: string) => string
   highlightId?: number | null
+  /** primer recibo de cada gasto: paperclip que lleva a Ficheros con highlight */
+  receiptIds?: Map<number, number>
 }>()
 
 defineEmits<{ edit: [expense: Expense]; remove: [expense: Expense] }>()
@@ -121,6 +123,13 @@ const { rowClass } = useRowFlash({
           <div class="min-w-0 self-center">
             <div class="flex items-center gap-2 min-w-0">
               <span class="text-sm text-ink break-words min-w-0">{{ entry.row.description }}</span>
+              <EntityLink
+                v-if="receiptIds?.has(entry.row.id)"
+                type="attachment"
+                :tripId="trip.id"
+                :targetId="receiptIds.get(entry.row.id)!"
+                :tooltip="$t('expenses.table.viewReceipt')"
+              />
               <EntityLink
                 v-if="entry.row.booking_id"
                 type="booking"

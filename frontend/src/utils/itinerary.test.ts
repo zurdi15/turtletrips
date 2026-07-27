@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Booking, ItineraryItem } from '../api/types'
+import type { Booking, ItineraryItem, Place } from '../api/types'
 
 // el módulo i18n real toca localStorage/navigator al importarse; aquí solo se
 // usa intlLocale, así el test sigue siendo puro (sin DOM) y determinista
@@ -11,6 +11,7 @@ import {
   buildContinuations,
   buildLodgingByDay,
   buildOtherBookingsByDay,
+  buildRoute,
   buildTransportsByDay,
   fmtTime,
   lodgingHead,
@@ -235,7 +236,10 @@ describe('rangeNights y dayLabel', () => {
   })
 
   it('dayLabel: "Día N" dentro del viaje, fecha larga fuera', () => {
-    expect(agendaDayLabel('2026-08-02', '2026-08-01', t).title).toBe('Día 2')
+    // la fecha es el título; el ordinal acompaña en el sub
+    const day2 = agendaDayLabel('2026-08-02', '2026-08-01', t)
+    expect(day2.sub).toBe('Día 2')
+    expect(day2.title).not.toContain('Día')
     const before = agendaDayLabel('2026-07-30', '2026-08-01', t)
     expect(before.title).not.toContain('Día')
     expect(before.sub).toBe('')
@@ -244,5 +248,51 @@ describe('rangeNights y dayLabel', () => {
   it('fmtTime recorta segundos', () => {
     expect(fmtTime('16:30:00')).toBe('16:30')
     expect(fmtTime(null)).toBe('')
+  })
+})
+
+describe('buildRoute', () => {
+  function routeItem(
+    id: number,
+    day: string,
+    order: number,
+    placeId: number | null,
+    endDay: string | null = null,
+  ): ItineraryItem {
+    return {
+      id, trip_id: 1, day, end_day: endDay, start_time: null, end_time: null,
+      order_index: order, title: 'x', notes: null, place_id: placeId, booking_id: null,
+    } as ItineraryItem
+  }
+  function routePlace(id: number, lat: number | null, lon: number | null): [number, Place] {
+    return [id, { id, name: `P${id}`, lat, lon } as Place]
+  }
+
+  it('ordena por día y posición, salta sitios sin coords y funde consecutivos acumulando días', () => {
+    const placeById = new Map([
+      routePlace(1, 40, -3),
+      routePlace(2, null, null),
+      routePlace(3, 41, 2),
+    ])
+    const items = [
+      routeItem(4, '2026-08-03', 0, 3),
+      routeItem(1, '2026-08-01', 0, 1),
+      routeItem(2, '2026-08-01', 1, 2), // sin coords: fuera
+      routeItem(3, '2026-08-02', 0, 1), // mismo sitio consecutivo: se funde
+      routeItem(5, '2026-08-03', 1, null),
+    ]
+    const route = buildRoute(items, placeById)
+    expect(route.map((s) => [s.lat, s.lon])).toEqual([
+      [40, -3],
+      [41, 2],
+    ])
+    expect(route[0].days).toEqual(['2026-08-01', '2026-08-02'])
+    expect(route[0].name).toBe('P1')
+  })
+
+  it('las estancias multi-día aportan el rango completo de días', () => {
+    const placeById = new Map([routePlace(1, 40, -3)])
+    const route = buildRoute([routeItem(1, '2026-08-01', 0, 1, '2026-08-03')], placeById)
+    expect(route[0].days).toEqual(['2026-08-01', '2026-08-02', '2026-08-03'])
   })
 })

@@ -90,6 +90,7 @@ export default {
     commonPill: 'Common',
     commonTooltip: 'Paid from the common fund: not included in the balances',
     placeTooltip: 'Place: {name}',
+    viewReceipt: 'View receipt',
   },
   charts: {
     dim: {
@@ -122,6 +123,7 @@ export default {
     commonNote:
       'Paid from the common fund: it counts towards the totals but creates no debts between travelers.',
     notesPlaceholder: 'Optional',
+    receipt: 'Receipt (photo or PDF)',
     missingFields: 'Description or amount missing',
     missingRate: 'Exchange rate missing',
     missingRateDetail: 'It could not be fetched automatically; enter it manually',

@@ -84,9 +84,14 @@ export default {
     columns: {
       file: 'File',
       booking: 'Booking',
+      expense: 'Expense',
       size: 'Size',
       uploaded: 'Uploaded',
     },
     tripLevel: 'Trip level',
+    sections: {
+      trip: 'Trip files',
+      receipts: 'Expense receipts',
+    },
   },
 }

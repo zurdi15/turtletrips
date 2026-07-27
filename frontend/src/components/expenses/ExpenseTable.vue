@@ -28,6 +28,8 @@ const props = defineProps<{
   trip: Trip
   catColor: (name: string) => string
   highlightId?: number | null
+  /** primer recibo de cada gasto: paperclip que lleva a Ficheros con highlight */
+  receiptIds?: Map<number, number>
 }>()
 
 defineEmits<{ edit: [expense: Expense]; remove: [expense: Expense] }>()
@@ -116,9 +118,16 @@ const { rowClass } = useRowFlash({
         <!-- reserva y sitio como iconos agrupados: fila propia en móvil
              (como en las tarjetas de reserva), en línea desde sm -->
         <span
-          v-if="data.booking_id || (data.place_id && placeById.get(data.place_id))"
+          v-if="data.booking_id || (data.place_id && placeById.get(data.place_id)) || receiptIds?.has(data.id)"
           class="mt-1.5 flex items-center gap-2 sm:mt-0 sm:ml-2 sm:inline-flex sm:align-middle"
         >
+          <EntityLink
+            v-if="receiptIds?.has(data.id)"
+            type="attachment"
+            :tripId="trip.id"
+            :targetId="receiptIds.get(data.id)!"
+            :tooltip="$t('expenses.table.viewReceipt')"
+          />
           <EntityLink v-if="data.booking_id" type="booking" :tripId="trip.id" :targetId="data.booking_id" />
           <EntityLink
             v-if="data.place_id && placeById.get(data.place_id)"

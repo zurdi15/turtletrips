@@ -1,5 +1,6 @@
 import type { WorldPlace, WorldPlaceKind } from '../api/types'
 import { COUNTRIES, countryName, flagEmoji } from '../countries'
+import { intlLocale } from '../i18n'
 
 export const KIND_KEYS: Record<WorldPlaceKind, string> = {
   country: 'world.kind.country',
@@ -15,15 +16,27 @@ export function displayName(place: WorldPlace): string {
   return place.name
 }
 
+/** "may 2018" o "2018" según haya mes; null sin fecha de visita */
+export function visitedLabel(place: WorldPlace): string | null {
+  if (place.visited_year == null) return null
+  if (place.visited_month == null) return String(place.visited_year)
+  const month = new Date(place.visited_year, place.visited_month - 1, 1).toLocaleDateString(
+    intlLocale(),
+    { month: 'short' },
+  )
+  return `${month} ${place.visited_year}`
+}
+
 export interface WorldFilterState {
   searchText: string
   kind: 'all' | WorldPlaceKind
   source: 'all' | 'auto' | 'manual'
   country: string // 'all' o código ISO
+  year: 'all' | number // año de visita
 }
 
 export function emptyWorldFilters(): WorldFilterState {
-  return { searchText: '', kind: 'all', source: 'all', country: 'all' }
+  return { searchText: '', kind: 'all', source: 'all', country: 'all', year: 'all' }
 }
 
 export function filterWorldPlaces(items: WorldPlace[], f: WorldFilterState): WorldPlace[] {
@@ -32,6 +45,7 @@ export function filterWorldPlaces(items: WorldPlace[], f: WorldFilterState): Wor
     if (f.source === 'auto' && !p.auto) return false
     if (f.source === 'manual' && p.auto) return false
     if (f.country !== 'all' && p.country_code !== f.country) return false
+    if (f.year !== 'all' && p.visited_year !== f.year) return false
     if (f.searchText) {
       const q = f.searchText.toLowerCase()
       if (
@@ -89,6 +103,36 @@ export function groupByCountry(filtered: WorldPlace[]): CountryGroup[] {
     if (b.code === null) return -1
     return (a.title ?? '').localeCompare(b.title ?? '', 'es')
   })
+}
+
+export interface TimelineYear {
+  year: number
+  entries: WorldPlace[]
+}
+
+/**
+ * Historia viajera: entradas del diario con fecha agrupadas por año (ascendente,
+ * la historia se lee desde el principio). Dentro del año: por mes (sin mes al
+ * final), países antes que ciudades/sitios, y alfabético de desempate.
+ */
+export function buildTimeline(items: WorldPlace[]): TimelineYear[] {
+  const kindOrder: Record<string, number> = { country: 0, city: 1, place: 2 }
+  const byYear = new Map<number, WorldPlace[]>()
+  for (const place of items) {
+    if (place.visited_year == null) continue
+    byYear.set(place.visited_year, [...(byYear.get(place.visited_year) ?? []), place])
+  }
+  return [...byYear.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, entries]) => ({
+      year,
+      entries: entries.sort(
+        (a, b) =>
+          (a.visited_month ?? 13) - (b.visited_month ?? 13) ||
+          (kindOrder[a.kind] ?? 3) - (kindOrder[b.kind] ?? 3) ||
+          displayName(a).localeCompare(displayName(b), 'es'),
+      ),
+    }))
 }
 
 export interface WorldStats {

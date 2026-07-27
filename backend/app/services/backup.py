@@ -31,7 +31,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 BACKUP_FORMAT = 2
 MAX_RESTORE_BYTES = 1024**3  # 1 GiB comprimido
 MAX_EXTRACTED_BYTES = 4 * 1024**3  # 4 GiB descomprimido (anti zip-bomb)
-_UPLOAD_ENTRY = re.compile(r"^uploads/(\d+|avatars)/[^/\\]+$")
+_UPLOAD_ENTRY = re.compile(r"^uploads/(\d+|avatars|world)/[^/\\]+$")
 
 
 class BackupValidationError(Exception):

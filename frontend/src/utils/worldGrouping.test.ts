@@ -2,11 +2,13 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { WorldPlace } from '../api/types'
 import { i18n } from '../i18n'
 import {
+  buildTimeline,
   displayName,
   emptyWorldFilters,
   filterWorldPlaces,
   groupByCountry,
   inferCountryCode,
+  visitedLabel,
   worldStats,
 } from './worldGrouping'
 
@@ -26,6 +28,9 @@ function makePlace(overrides: Partial<WorldPlace> = {}): WorldPlace {
     lat: null,
     lon: null,
     note: null,
+    visited_year: null,
+    visited_month: null,
+    photo_url: null,
     auto: false,
     origin: null,
     ...overrides,
@@ -116,5 +121,40 @@ describe('inferCountryCode / displayName', () => {
       'España',
     )
     expect(displayName(makePlace({ kind: 'city', name: 'Tokio' }))).toBe('Tokio')
+  })
+})
+
+describe('fecha de visita', () => {
+  it('visitedLabel: año solo, mes + año, o null sin fecha', () => {
+    expect(visitedLabel(makePlace())).toBeNull()
+    expect(visitedLabel(makePlace({ visited_year: 2018 }))).toBe('2018')
+    const withMonth = visitedLabel(makePlace({ visited_year: 2018, visited_month: 5 }))
+    // el nombre del mes depende del ICU del entorno: basta con que preceda al año
+    expect(withMonth).toMatch(/^\S+ 2018$/)
+  })
+
+  it('filtra por año de visita', () => {
+    const filters = emptyWorldFilters()
+    filters.year = 2018
+    const items = [
+      makePlace({ visited_year: 2018 }),
+      makePlace({ visited_year: 2020 }),
+      makePlace(),
+    ]
+    expect(filterWorldPlaces(items, filters)).toHaveLength(1)
+    expect(filterWorldPlaces(items, filters)[0].visited_year).toBe(2018)
+  })
+
+  it('buildTimeline agrupa por año ascendente y ordena mes → tipo → nombre', () => {
+    const timeline = buildTimeline([
+      makePlace({ name: 'Sin fecha' }),
+      makePlace({ name: 'Kioto', kind: 'city', visited_year: 2020, visited_month: 4 }),
+      makePlace({ name: 'JP', kind: 'country', country_code: 'JP', visited_year: 2020, visited_month: 4 }),
+      makePlace({ name: 'Anual', kind: 'place', visited_year: 2020 }),
+      makePlace({ name: 'FR', kind: 'country', country_code: 'FR', visited_year: 2015 }),
+    ])
+    expect(timeline.map((y) => y.year)).toEqual([2015, 2020])
+    // mismo mes: país antes que ciudad; sin mes al final
+    expect(timeline[1].entries.map((e) => e.name)).toEqual(['JP', 'Kioto', 'Anual'])
   })
 })

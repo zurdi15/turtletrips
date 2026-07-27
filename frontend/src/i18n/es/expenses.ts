@@ -90,6 +90,7 @@ export default {
     commonPill: 'Común',
     commonTooltip: 'Pagado del fondo común: no entra en los saldos',
     placeTooltip: 'Sitio: {name}',
+    viewReceipt: 'Ver recibo',
   },
   charts: {
     dim: {
@@ -122,6 +123,7 @@ export default {
     commonNote:
       'Pagado del fondo común: cuenta en los totales pero no genera deudas entre viajeros.',
     notesPlaceholder: 'Opcional',
+    receipt: 'Recibo (foto o PDF)',
     missingFields: 'Faltan descripción o importe',
     missingRate: 'Falta el tipo de cambio',
     missingRateDetail: 'No se pudo obtener automáticamente; introdúcelo a mano',

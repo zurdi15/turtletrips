@@ -1,19 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
+import { LMap, LTileLayer, LCircleMarker, LMarker, LPolyline, LPopup, LTooltip } from '@vue-leaflet/vue-leaflet'
 import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
 import type { Booking, BookingType, Place } from '../api/types'
-import { BOOKING_MARKER_COLORS, PLACE_CATEGORY_COLORS, WHITE } from '../theme'
+import { BOOKING_MARKER_COLORS, PLACE_CATEGORY_COLORS, ROUTE_COLOR, WHITE } from '../theme'
 import { BOOKING_TYPE_KEYS, PLACE_CATEGORY_KEYS } from '../constants'
 import { useCountryCenter } from '../composables/useCountryCenter'
 import { useMapTiles } from '../composables/useMapTiles'
 import { formatDate } from '../composables/useMoney'
+import { fmtDayShort, type RouteStop } from '../utils/itinerary'
 
 const props = defineProps<{
   places: Place[]
   bookings?: Booking[]
   selectedId?: number | null
   countryCode?: string | null
+  /** paradas del itinerario en orden de agenda; con <2 no se pinta la línea */
+  route?: RouteStop[]
 }>()
 const emit = defineEmits<{ select: [id: number] }>()
 
@@ -53,6 +56,31 @@ function bookingIcon(booking: Booking): Icon {
 
 function leafletMap(): LeafletMap | undefined {
   return (mapRef.value as unknown as { leafletObject?: LeafletMap } | null)?.leafletObject
+}
+
+// ---- paradas de la ruta del itinerario ----
+
+const routePoints = computed(() => (props.route ?? []).map((s) => [s.lat, s.lon] as [number, number]))
+
+/** badge numerado de la parada, desplazado arriba-derecha para no tapar el marcador */
+function stopIcon(index: number): Icon {
+  return divIcon({
+    html:
+      `<span style="display:flex;align-items:center;justify-content:center;` +
+      `width:18px;height:18px;border-radius:9999px;background:${ROUTE_COLOR};` +
+      `color:${WHITE};font-size:11px;font-weight:700;` +
+      `box-shadow:var(--tt-shadow-marker)">${index + 1}</span>`,
+    className: 'tt-route-stop',
+    iconSize: [18, 18],
+    iconAnchor: [-4, 22],
+  }) as unknown as Icon
+}
+
+/** "12 may → 15 may" (o un solo día) para el tooltip de la parada */
+function stopDates(stop: RouteStop): string {
+  const first = stop.days[0]
+  const last = stop.days[stop.days.length - 1]
+  return first === last ? fmtDayShort(first) : `${fmtDayShort(first)} → ${fmtDayShort(last)}`
 }
 
 function fitAll() {
@@ -121,6 +149,31 @@ defineExpose({ refresh })
       layer-type="base"
       name="Base"
     />
+    <!-- ruta del itinerario: discontinua bajo los marcadores, con paradas
+         numeradas que cuentan cuándo se pasó y cuánto se estuvo -->
+    <template v-if="route && route.length > 1">
+      <LPolyline
+        :lat-lngs="routePoints"
+        :color="ROUTE_COLOR"
+        :weight="2.5"
+        :opacity="0.75"
+        dash-array="6 8"
+      />
+      <LMarker
+        v-for="(stop, index) in route"
+        :key="`stop-${stop.placeId}-${index}`"
+        :lat-lng="[stop.lat, stop.lon]"
+        :icon="stopIcon(index)"
+      >
+        <LTooltip>
+          <div class="font-medium">{{ index + 1 }}. {{ stop.name }}</div>
+          <div class="text-xs text-ink-muted">
+            {{ stopDates(stop) }}
+            · {{ $t('common.map.stopDays', { n: stop.days.length }, stop.days.length) }}
+          </div>
+        </LTooltip>
+      </LMarker>
+    </template>
     <LCircleMarker
       v-for="place in located"
       :key="place.id"

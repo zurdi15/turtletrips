@@ -9,7 +9,7 @@ import { useNotify } from '../composables/useNotify'
 import { fileIcon, formatSize } from '../utils/files'
 
 const props = withDefaults(
-  defineProps<{ bookingId?: number | null; showList?: boolean }>(),
+  defineProps<{ bookingId?: number | null; expenseId?: number | null; showList?: boolean }>(),
   { showList: true },
 )
 const store = useAttachmentsStore()
@@ -18,16 +18,16 @@ const notify = useNotify()
 const { t } = useI18n()
 const uploading = ref(false)
 
-const items = computed(() =>
-  props.bookingId != null
-    ? store.items.filter((a) => a.booking_id === props.bookingId)
-    : store.items,
-)
+const items = computed(() => {
+  if (props.bookingId != null) return store.items.filter((a) => a.booking_id === props.bookingId)
+  if (props.expenseId != null) return store.items.filter((a) => a.expense_id === props.expenseId)
+  return store.items
+})
 
 async function onFileChosen(file: File) {
   uploading.value = true
   try {
-    await store.upload(file, props.bookingId)
+    await store.upload(file, props.bookingId, props.expenseId)
   } catch (err) {
     notify.error(t('common.attachments.uploadError'), err)
   } finally {

@@ -55,10 +55,12 @@ export default {
     viewPlace: 'Ver sitio',
     viewBooking: 'Ver reserva',
     viewExpense: 'Ver gasto',
+    viewAttachment: 'Ver adjunto',
   },
   // popups del mapa (PlaceMap)
   map: {
     visited: 'visitado',
+    stopDays: 'sin fechas | {n} día | {n} días',
   },
   // diálogos de formulario (useFormDialog)
   form: {

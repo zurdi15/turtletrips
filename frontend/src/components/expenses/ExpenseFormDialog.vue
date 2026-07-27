@@ -8,15 +8,18 @@ import Select from 'primevue/select'
 import AutoComplete from 'primevue/autocomplete'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import AttachmentList from '../AttachmentList.vue'
 import ExpenseSplitEditor, { type SplitState } from '../ExpenseSplitEditor.vue'
 import PayerSelect from '../PayerSelect.vue'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
+import UploadButton from '../ui/UploadButton.vue'
 import { api } from '../../api/client'
 import type { Expense, Place, RateRead, Trip } from '../../api/types'
 import { CURRENCIES } from '../../constants'
 import { intlLocale } from '../../i18n'
 import { useExpensesStore } from '../../stores/expenses'
+import { useAttachmentsStore } from '../../stores/attachments'
 import { useCategoriesStore } from '../../stores/categories'
 import { usePlacesStore } from '../../stores/places'
 import { validateSplit } from '../../composables/useSplit'
@@ -31,6 +34,7 @@ const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const notify = useNotify()
 const store = useExpensesStore()
+const attachmentsStore = useAttachmentsStore()
 const categoriesStore = useCategoriesStore()
 const places = usePlacesStore()
 
@@ -52,6 +56,8 @@ const notes = ref('')
 const split = ref<SplitState>({ split_mode: 'equal', shares: [] })
 const fetchingRate = ref(false)
 const rateSource = ref<string | null>(null)
+// recibo elegido ANTES de crear el gasto: se sube justo después del create
+const pendingReceipt = ref<File | null>(null)
 
 function searchPlaces(query: string) {
   const q = query.trim().toLowerCase()
@@ -117,6 +123,7 @@ const { saving, save } = useFormDialog({
       shares: e?.shares.map((s) => ({ ...s })) ?? [],
     }
     rateSource.value = null
+    pendingReceipt.value = null
   },
   validate() {
     if (!description.value.trim() || amount.value == null || amount.value <= 0) {
@@ -173,7 +180,17 @@ const { saving, save } = useFormDialog({
       shares: paidById.value === 'common' ? [] : split.value.shares,
       notes: notes.value || null,
     }
-    return props.expense ? store.update(props.expense.id, payload) : store.create(payload)
+    if (props.expense) return store.update(props.expense.id, payload)
+    const created = await store.create(payload)
+    // recibo elegido durante la creación: se sube ya con el gasto recién nacido
+    if (pendingReceipt.value) {
+      try {
+        await attachmentsStore.upload(pendingReceipt.value, null, created.id)
+      } catch (err) {
+        notify.error(t('common.attachments.uploadError'), err)
+      }
+    }
+    return created
   },
   onSaved: () => emit('saved'),
 })
@@ -279,5 +296,37 @@ const { saving, save } = useFormDialog({
     <FormField :label="$t('expenses.fields.notes')">
       <InputText v-model="notes" :placeholder="$t('expenses.form.notesPlaceholder')" />
     </FormField>
+
+    <!-- recibo (foto o PDF): al editar gestiona los adjuntos del gasto; al
+         crear se deja elegido y se sube nada más guardar -->
+    <div class="pt-3 border-t border-line-subtle">
+      <p class="text-sm font-medium mb-2">{{ $t('expenses.form.receipt') }}</p>
+      <AttachmentList v-if="expense" :expense-id="expense.id" />
+      <template v-else>
+        <div
+          v-if="pendingReceipt"
+          class="flex items-center gap-2 bg-surface-soft border border-line rounded-lg px-2.5 py-1.5 text-sm mb-2"
+        >
+          <i class="pi pi-paperclip shrink-0" />
+          <span class="flex-1 min-w-0 truncate">{{ pendingReceipt.name }}</span>
+          <button
+            type="button"
+            class="flex items-center text-ink-faint hover:text-ink cursor-pointer"
+            @click="pendingReceipt = null"
+          >
+            <i class="pi pi-times-circle text-xs" />
+          </button>
+        </div>
+        <UploadButton
+          :label="$t('common.attachments.attach')"
+          icon="pi pi-paperclip"
+          severity="secondary"
+          outlined
+          size="small"
+          accept="application/pdf,image/*"
+          @file="(f) => (pendingReceipt = f)"
+        />
+      </template>
+    </div>
   </FormDialog>
 </template>

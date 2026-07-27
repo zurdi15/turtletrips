@@ -1,4 +1,4 @@
-import type { Booking, ItineraryItem } from '../api/types'
+import type { Booking, ItineraryItem, Place } from '../api/types'
 import { BOOKING_TYPE_KEYS, isTransport } from '../constants'
 import { intlLocale } from '../i18n'
 import { parseIsoDate } from '../composables/useMoney'
@@ -183,16 +183,17 @@ export function agendaDayLabel(
   tripStart: string | null,
   t: TranslateFn,
 ): { title: string; sub: string } {
-  const sub = parseIsoDate(iso).toLocaleDateString(intlLocale(), {
+  // la fecha manda (título); el ordinal "Día N" acompaña en pequeño
+  const dateLabel = parseIsoDate(iso).toLocaleDateString(intlLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   })
   if (tripStart) {
     const diff = daysBetween(tripStart, iso) + 1
-    if (diff >= 1) return { title: t('itinerary.agenda.dayN', { n: diff }), sub }
+    if (diff >= 1) return { title: dateLabel, sub: t('itinerary.agenda.dayN', { n: diff }) }
   }
-  return { title: sub, sub: '' }
+  return { title: dateLabel, sub: '' }
 }
 
 export function fmtTime(t: string | null): string {
@@ -201,4 +202,41 @@ export function fmtTime(t: string | null): string {
 
 export function fmtDayShort(iso: string): string {
   return parseIsoDate(iso).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
+}
+
+export interface RouteStop {
+  placeId: number
+  name: string
+  lat: number
+  lon: number
+  /** días ISO en los que el itinerario pasa por la parada (ordenados) */
+  days: string[]
+}
+
+/**
+ * Ruta del viaje: sitios de la agenda en orden (día, posición). Las visitas
+ * consecutivas al mismo sitio se funden en UNA parada acumulando sus días
+ * (las estancias multi-día aportan el rango completo) — así cada parada sabe
+ * cuándo se fue y cuánto se estuvo.
+ */
+export function buildRoute(items: ItineraryItem[], placeById: Map<number, Place>): RouteStop[] {
+  const ordered = [...items].sort(
+    (a, b) => a.day.localeCompare(b.day) || a.order_index - b.order_index || a.id - b.id,
+  )
+  const route: RouteStop[] = []
+  for (const item of ordered) {
+    const place = item.place_id != null ? placeById.get(item.place_id) : undefined
+    if (place?.lat == null || place.lon == null) continue
+    const days =
+      item.end_day && item.end_day > item.day
+        ? eachDayInclusive(item.day, item.end_day)
+        : [item.day]
+    const prev = route[route.length - 1]
+    if (prev && prev.placeId === place.id) {
+      prev.days = [...new Set([...prev.days, ...days])].sort()
+      continue
+    }
+    route.push({ placeId: place.id, name: place.name, lat: place.lat, lon: place.lon, days })
+  }
+  return route
 }

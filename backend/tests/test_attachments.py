@@ -3,10 +3,12 @@ import io
 PDF_BYTES = b"%PDF-1.4 fake pdf content"
 
 
-def _upload(client, trip_id, booking_id=None, content_type="application/pdf"):
+def _upload(client, trip_id, booking_id=None, expense_id=None, content_type="application/pdf"):
     data = {}
     if booking_id is not None:
         data["booking_id"] = str(booking_id)
+    if expense_id is not None:
+        data["expense_id"] = str(expense_id)
     return client.post(
         f"/api/v1/trips/{trip_id}/attachments",
         files={"file": ("reserva.pdf", io.BytesIO(PDF_BYTES), content_type)},
@@ -58,3 +60,30 @@ def test_upload_linked_to_booking(client, trip):
     other = client.post("/api/v1/trips", json={"name": "Otro", "destination": "Y"}).json()
     resp = _upload(client, other["id"], booking_id=booking["id"])
     assert resp.status_code == 400
+
+
+def test_upload_receipt_linked_to_expense(client, trip):
+    trip_id = trip["id"]
+    expense = client.post(
+        f"/api/v1/trips/{trip_id}/expenses",
+        json={"day": "2026-02-05", "description": "Cena", "amount": "40"},
+    ).json()
+
+    resp = _upload(client, trip_id, expense_id=expense["id"])
+    assert resp.status_code == 201
+    assert resp.json()["expense_id"] == expense["id"]
+
+    listed = client.get(
+        f"/api/v1/trips/{trip_id}/attachments", params={"expense_id": expense["id"]}
+    ).json()
+    assert len(listed) == 1
+
+    # expense_id de otro viaje -> 400
+    other = client.post("/api/v1/trips", json={"name": "Otro"}).json()
+    assert _upload(client, other["id"], expense_id=expense["id"]).status_code == 400
+
+    # borrar el gasto desliga el recibo (queda como fichero del viaje)
+    client.delete(f"/api/v1/expenses/{expense['id']}")
+    listed = client.get(f"/api/v1/trips/{trip_id}/attachments").json()
+    assert len(listed) == 1
+    assert listed[0]["expense_id"] is None

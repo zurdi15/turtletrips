@@ -84,9 +84,14 @@ export default {
     columns: {
       file: 'Fichero',
       booking: 'Reserva',
+      expense: 'Gasto',
       size: 'Tamaño',
       uploaded: 'Subido',
     },
     tripLevel: 'Nivel de viaje',
+    sections: {
+      trip: 'Ficheros del viaje',
+      receipts: 'Recibos de gastos',
+    },
   },
 }

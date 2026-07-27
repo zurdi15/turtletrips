@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type EntityType = 'place' | 'booking' | 'expense'
+type EntityType = 'place' | 'booking' | 'expense' | 'attachment'
 
 const props = withDefaults(
   defineProps<{
@@ -43,6 +43,13 @@ const META: Record<EntityType, { route: string; query: string; icon: string; col
     icon: 'pi pi-wallet',
     color: 'text-warn',
     tooltipKey: 'common.entityLink.viewExpense',
+  },
+  attachment: {
+    route: 'trip-files',
+    query: 'attachment',
+    icon: 'pi pi-paperclip',
+    color: 'text-ink-muted',
+    tooltipKey: 'common.entityLink.viewAttachment',
   },
 }
 

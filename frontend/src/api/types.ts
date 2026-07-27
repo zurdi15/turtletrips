@@ -119,6 +119,16 @@ export interface PackingItem {
   checked: boolean
 }
 
+export interface ChecklistItem {
+  id: number
+  trip_id: number
+  title: string
+  done: boolean
+  due_date: string | null
+  url: string | null
+  notes: string | null
+}
+
 export interface PackingSelection {
   traveler_id: number | null
   template_id: number
@@ -238,10 +248,28 @@ export interface Attachment {
   id: number
   trip_id: number
   booking_id: number | null
+  expense_id: number | null
   original_name: string
   content_type: string
   size_bytes: number
   created_at: string
+}
+
+export interface DayForecast {
+  day: string
+  weather_code: number // código WMO de Open-Meteo
+  t_max: number
+  t_min: number
+  precip_prob: number | null
+}
+
+export interface YearStats {
+  year: number
+  trips: number
+  days: number
+  countries: string[] // códigos ISO tocados ese año
+  new_countries: string[] // estrenados ese año
+  spent: { currency: string; amount: number }[]
 }
 
 export interface CategoryTotal { category: string; total: number }
@@ -310,6 +338,9 @@ export interface WorldPlace {
   lat: number | null
   lon: number | null
   note: string | null
+  visited_year: number | null
+  visited_month: number | null // 1-12
+  photo_url: string | null
   auto: boolean
   origin: string | null
 }
@@ -343,6 +374,7 @@ export type ExpenseInput = Partial<
 > & { amount?: number | string; exchange_rate?: number | string | null }
 export type ItineraryInput = Partial<Omit<ItineraryItem, 'id' | 'trip_id'>>
 export type PackingInput = Partial<Omit<PackingItem, 'id' | 'trip_id'>>
+export type ChecklistInput = Partial<Omit<ChecklistItem, 'id' | 'trip_id'>>
 export type WorldPlaceInput = Partial<Omit<WorldPlace, 'id' | 'auto' | 'origin'>>
 
 export interface ImportRowError { row: number; error: string }

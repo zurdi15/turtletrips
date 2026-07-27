@@ -20,6 +20,7 @@ import CollapsePanel from '../../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../../components/ui/FilterToggleButton.vue'
 import type { Expense, Trip } from '../../api/types'
 import { useExpensesStore } from '../../stores/expenses'
+import { useAttachmentsStore } from '../../stores/attachments'
 import { useCategoriesStore } from '../../stores/categories'
 import { usePlacesStore } from '../../stores/places'
 import { useExpenseFilters } from '../../composables/useExpenseFilters'
@@ -44,6 +45,7 @@ import {
 const props = defineProps<{ trip: Trip }>()
 const { t } = useI18n()
 const store = useExpensesStore()
+const attachments = useAttachmentsStore()
 const categoriesStore = useCategoriesStore()
 const places = usePlacesStore()
 const confirmAction = useConfirmDelete()
@@ -91,6 +93,7 @@ useTripTabData(() => props.trip, {
     store.load(tripId)
     categoriesStore.load('expense')
     places.load(tripId)
+    attachments.load(tripId)
   },
   afterFirstLoad() {
     const fromQuery = Number(route.query.expense)
@@ -102,6 +105,15 @@ useTripTabData(() => props.trip, {
 })
 
 const placeById = computed(() => new Map(places.items.map((p) => [p.id, p])))
+
+// primer recibo de cada gasto → id del adjunto (enlace cruzado a Ficheros)
+const receiptIds = computed(() => {
+  const map = new Map<number, number>()
+  for (const a of [...attachments.items].reverse()) {
+    if (a.expense_id != null) map.set(a.expense_id, a.id)
+  }
+  return map
+})
 
 // primera carga (sin datos aún): skeleton en vez de métricas a cero
 const initialLoading = computed(() => store.loading && !store.items.length)
@@ -331,6 +343,7 @@ const {
           :trip="trip"
           :catColor="catColor"
           :highlightId="highlightId"
+          :receiptIds="receiptIds"
           @edit="openEdit"
           @remove="removeExpense"
         />

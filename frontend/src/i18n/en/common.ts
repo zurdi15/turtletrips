@@ -48,9 +48,11 @@ export default {
     viewPlace: 'View place',
     viewBooking: 'View booking',
     viewExpense: 'View expense',
+    viewAttachment: 'View attachment',
   },
   map: {
     visited: 'visited',
+    stopDays: 'no dates | {n} day | {n} days',
   },
   form: {
     saveError: 'Save failed',

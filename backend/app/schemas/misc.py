@@ -10,6 +10,14 @@ class GeocodeResult(BaseModel):
     lon: float
 
 
+class DayForecast(BaseModel):
+    day: date
+    weather_code: int  # código WMO de Open-Meteo
+    t_max: float
+    t_min: float
+    precip_prob: int | None  # probabilidad máx. de precipitación (%)
+
+
 class RateRead(BaseModel):
     base: str
     quote: str
@@ -37,6 +45,15 @@ class PayerTotal(BaseModel):
 class CurrencyTotal(BaseModel):
     currency: str
     amount: float
+
+
+class YearStats(BaseModel):
+    year: int
+    trips: int
+    days: int
+    countries: list[str]  # códigos ISO tocados ese año
+    new_countries: list[str]  # estrenados ese año
+    spent: list[CurrencyTotal]  # por moneda base de cada viaje
 
 
 class TripSummary(BaseModel):

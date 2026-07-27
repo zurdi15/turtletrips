@@ -15,6 +15,7 @@ const tabs = computed(() => [
   { name: 'trip-bookings', label: t('trips.tabs.bookings'), icon: 'pi pi-ticket' },
   { name: 'trip-expenses', label: t('trips.tabs.expenses'), icon: 'pi pi-wallet' },
   { name: 'trip-packing', label: t('trips.tabs.packing'), icon: 'pi pi-briefcase' },
+  { name: 'trip-checklist', label: t('trips.tabs.checklist'), icon: 'pi pi-check-square' },
   { name: 'trip-files', label: t('trips.tabs.files'), icon: 'pi pi-paperclip' },
   { name: 'trip-settings', label: t('trips.tabs.settings'), icon: 'pi pi-cog' },
 ])

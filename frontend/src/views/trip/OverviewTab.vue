@@ -9,6 +9,8 @@ import { BOOKING_TYPE_ICONS, BOOKING_TYPE_KEYS } from '../../constants'
 import { useExpensesStore } from '../../stores/expenses'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
+import { useItineraryStore } from '../../stores/itinerary'
+import { buildRoute } from '../../utils/itinerary'
 import { formatDateTime, formatMoney } from '../../composables/useMoney'
 import { useTripTabData } from '../../composables/useTripTabData'
 import { DAY_MS, daysBetween, daysUntil } from '../../utils/dates'
@@ -18,14 +20,21 @@ const props = defineProps<{ trip: Trip }>()
 const expenses = useExpensesStore()
 const places = usePlacesStore()
 const bookings = useBookingsStore()
+const itinerary = useItineraryStore()
 
 useTripTabData(() => props.trip, {
   load(tripId) {
     expenses.load(tripId)
     places.load(tripId)
     bookings.load(tripId)
+    itinerary.load(tripId)
   },
 })
+
+// ruta del itinerario sobre el mapa del resumen
+const route = computed(() =>
+  buildRoute(itinerary.items, new Map(places.items.map((p) => [p.id, p]))),
+)
 
 const daysToStart = computed(() => daysUntil(props.trip.start_date))
 
@@ -168,6 +177,7 @@ const initialLoading = computed(
           :places="places.items"
           :bookings="bookings.items"
           :countryCode="trip.countries[0]"
+          :route="route"
         />
       </div>
     </div>

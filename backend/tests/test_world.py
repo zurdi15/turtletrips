@@ -64,6 +64,10 @@ def test_world_auto_sync_from_trips(client):
     assert by_name["VN"]["kind"] == "country"
     assert by_name["VN"]["auto"] is True
     assert by_name["VN"]["origin"] == "Vietnam 2024"
+    # la fecha de visita se hereda del final del viaje
+    assert by_name["VN"]["visited_year"] == 2024
+    assert by_name["VN"]["visited_month"] == 2
+    assert by_name["Hanói"]["visited_year"] == 2024
     # sitio visitado (ciudad) y sitio con gasto, agrupables por país
     assert by_name["Hanói"]["kind"] == "city"
     assert by_name["Hanói"]["country_code"] == "VN"
@@ -74,17 +78,22 @@ def test_world_auto_sync_from_trips(client):
     # el sync es idempotente
     assert len(client.get("/api/v1/world-places").json()) == len(world)
 
-    # borrar una entrada auto la oculta y NO reaparece
-    client.delete(f"/api/v1/world-places/{by_name['VN']['id']}")
-    names = [w["name"] for w in client.get("/api/v1/world-places").json()]
-    assert "VN" not in names
-
     # editar la nota de una entrada auto sí se conserva
     resp = client.patch(
         f"/api/v1/world-places/{by_name['Hanói']['id']}", json={"note": "Pho increíble"}
     )
     assert resp.json()["note"] == "Pho increíble"
     assert visited["id"] is not None
+
+    # un país con ciudades/sitios visibles no se puede borrar
+    assert client.delete(f"/api/v1/world-places/{by_name['VN']['id']}").status_code == 409
+    # sin ellos sí: borrar una entrada auto la oculta y NO reaparece
+    for name in ("Hanói", "Bahía de Halong"):
+        assert client.delete(f"/api/v1/world-places/{by_name[name]['id']}").status_code == 204
+    assert client.delete(f"/api/v1/world-places/{by_name['VN']['id']}").status_code == 204
+    names = [w["name"] for w in client.get("/api/v1/world-places").json()]
+    assert "VN" not in names
+    assert "Hanói" not in names
 
 
 def test_world_upcoming_trip_does_not_add_country(client):
@@ -111,14 +120,49 @@ def test_city_implies_country_entry(client):
     assert country["country_code"] == "PT"
     assert country["auto"] is True
 
-    # borrar el país (auto → hidden) y añadir otra ciudad: NO debe revivir
-    client.delete(f"/api/v1/world-places/{country['id']}")
+    # con la ciudad viva el país no se puede borrar
+    assert client.delete(f"/api/v1/world-places/{country['id']}").status_code == 409
+
+    # sin ciudades sí (auto → hidden); añadir otra ciudad NO debe revivirlo
+    assert client.delete(f"/api/v1/world-places/{city['id']}").status_code == 204
+    assert client.delete(f"/api/v1/world-places/{country['id']}").status_code == 204
     client.post(
         "/api/v1/world-places",
         json={"name": "Oporto", "kind": "city", "country_code": "PT"},
     )
     listed = client.get("/api/v1/world-places").json()
     assert not any(p["kind"] == "country" for p in listed)
+
+
+def test_world_photo_upload_and_delete(client):
+    import io
+
+    country = client.post(
+        "/api/v1/world-places",
+        json={"name": "Japón", "kind": "country", "country_code": "JP"},
+    ).json()
+
+    resp = client.post(
+        f"/api/v1/world-places/{country['id']}/photo",
+        files={"file": ("fuji.jpg", io.BytesIO(b"fake image bytes"), "image/jpeg")},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["photo_url"] is not None
+
+    photo = client.get(f"/api/v1/world-places/{country['id']}/photo")
+    assert photo.status_code == 200
+    assert photo.content == b"fake image bytes"
+
+    # solo imágenes
+    resp = client.post(
+        f"/api/v1/world-places/{country['id']}/photo",
+        files={"file": ("doc.pdf", io.BytesIO(b"%PDF"), "application/pdf")},
+    )
+    assert resp.status_code == 415
+
+    resp = client.delete(f"/api/v1/world-places/{country['id']}/photo")
+    assert resp.json()["photo_url"] is None
+    assert client.get(f"/api/v1/world-places/{country['id']}/photo").status_code == 404
 
 
 def test_sync_visited_place_pulls_country(client):

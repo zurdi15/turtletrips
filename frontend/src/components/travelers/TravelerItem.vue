@@ -87,7 +87,7 @@ function confirmEdit() {
       >
         {{ $t('travelers.badges.account') }}
       </Pill>
-      <div class="flex gap-1 hover-actions">
+      <div class="flex gap-1">
         <Button
           v-if="canEdit"
           icon="pi pi-pencil"

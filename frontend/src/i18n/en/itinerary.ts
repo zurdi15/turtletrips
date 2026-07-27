@@ -17,6 +17,7 @@ export default {
   agenda: {
     dayN: 'Day {n}',
     addToDay: 'Add to this day',
+    rainProb: 'Chance of rain: {pct}%',
     transport: 'Transport',
     bookings: 'Bookings',
     lodging: 'Lodging',

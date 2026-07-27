@@ -4,7 +4,7 @@ import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/v
 import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
 import type { WorldPlace } from '../../api/types'
 import { countryName, flagEmoji } from '../../countries'
-import { KIND_COLORS, KIND_KEYS, displayName } from '../../utils/worldGrouping'
+import { KIND_COLORS, KIND_KEYS, displayName, visitedLabel } from '../../utils/worldGrouping'
 import { WHITE } from '../../theme'
 import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useMapTiles } from '../../composables/useMapTiles'
@@ -63,11 +63,20 @@ function flyTo(place: WorldPlace) {
   }, 80)
 }
 
-function flagIcon(code: string | null, selected: boolean): Icon {
+function flagIcon(place: WorldPlace, selected: boolean): Icon {
+  const code = place.country_code
+  const flag = code
+    ? `<span style="font-size:${selected ? 30 : 24}px; filter:var(--tt-shadow-flag)">${flagEmoji(code)}</span>`
+    : `<i class="mdi mdi-map-marker" style="font-size:${selected ? 30 : 24}px;color:${KIND_COLORS.place};filter:var(--tt-shadow-flag)"></i>`
+  // el año de visita acompaña a la bandera (tokens: sigue el tema claro/oscuro)
+  const year =
+    place.visited_year != null
+      ? `<span style="font-size:10px;font-weight:600;line-height:1;padding:2px 6px;` +
+        `border-radius:9999px;background:var(--tt-surface);color:var(--tt-ink-secondary);` +
+        `border:1px solid var(--tt-line);white-space:nowrap">${place.visited_year}</span>`
+      : ''
   return divIcon({
-    html: code
-      ? `<span style="font-size:${selected ? 30 : 24}px; filter:var(--tt-shadow-flag)">${flagEmoji(code)}</span>`
-      : `<i class="mdi mdi-map-marker" style="font-size:${selected ? 30 : 24}px;color:${KIND_COLORS.place};filter:var(--tt-shadow-flag)"></i>`,
+    html: `<span style="display:flex;flex-direction:column;align-items:center;gap:1px">${flag}${year}</span>`,
     className: 'tt-flag-marker',
     iconSize: [30, 30],
     iconAnchor: [15, 15],
@@ -98,11 +107,21 @@ defineExpose({ flyTo, fitAll })
         <LMarker
           v-if="place.kind === 'country'"
           :lat-lng="pos"
-          :icon="flagIcon(place.country_code, selectedId === place.id)"
+          :icon="flagIcon(place, selectedId === place.id)"
           @click="selectedId = place.id"
         >
           <LPopup>
+            <!-- postal del país -->
+            <img
+              v-if="place.photo_url"
+              :src="place.photo_url"
+              class="w-52 h-28 object-cover rounded-lg mb-1.5"
+              alt=""
+            />
             <div class="font-medium">{{ displayName(place) }}</div>
+            <div v-if="visitedLabel(place)" class="text-xs text-ink-muted">
+              <i class="pi pi-calendar text-2xs" /> {{ visitedLabel(place) }}
+            </div>
             <div v-if="place.origin" class="text-xs text-ink-faint">
               {{ $t('world.map.tripOrigin', { origin: place.origin }) }}
             </div>
@@ -129,6 +148,7 @@ defineExpose({ flyTo, fitAll })
             <div class="text-xs text-ink-muted">
               {{ $t(KIND_KEYS[place.kind]) }}
               <template v-if="place.country_code"> · {{ countryName(place.country_code) }}</template>
+              <template v-if="visitedLabel(place)"> · {{ visitedLabel(place) }}</template>
             </div>
             <div v-if="place.origin" class="text-xs text-ink-faint">
               {{ $t('world.map.tripOrigin', { origin: place.origin }) }}
