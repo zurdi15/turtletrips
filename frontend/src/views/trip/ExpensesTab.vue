@@ -12,6 +12,7 @@ import ExpenseStatsCards from '../../components/expenses/ExpenseStatsCards.vue'
 import ExpenseFilterPanel from '../../components/expenses/ExpenseFilterPanel.vue'
 import ExpenseBulkBar from '../../components/expenses/ExpenseBulkBar.vue'
 import ExpenseTable from '../../components/expenses/ExpenseTable.vue'
+import ExpenseList from '../../components/expenses/ExpenseList.vue'
 import ExpenseChartsPanel from '../../components/expenses/ExpenseChartsPanel.vue'
 import BalancesPanel from '../../components/expenses/BalancesPanel.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
@@ -24,6 +25,7 @@ import { usePlacesStore } from '../../stores/places'
 import { useExpenseFilters } from '../../composables/useExpenseFilters'
 import { useConfirmDelete } from '../../composables/useConfirmDelete'
 import { useCrudView } from '../../composables/useCrudView'
+import { useMediaQuery } from '../../composables/useMediaQuery'
 import { useNotify } from '../../composables/useNotify'
 import { useRafDeferred } from '../../composables/useRafDeferred'
 import { useTripTabData } from '../../composables/useTripTabData'
@@ -52,6 +54,9 @@ function catColor(name: string): string {
 }
 
 const showImport = ref(false)
+
+// bajo `sm` la tabla se sustituye por la lista apilada (sin scroll lateral)
+const isDesktop = useMediaQuery('(min-width: 640px)')
 
 const tableGroup = ref<ExpenseGroupBy>('none')
 const tableGroupOptions = computed(() => [
@@ -315,7 +320,8 @@ const {
           @clear="selected = []"
         />
 
-        <ExpenseTable
+        <component
+          :is="isDesktop ? ExpenseTable : ExpenseList"
           v-model:selection="selected"
           :rows="rows"
           :groupBy="tableGroup"

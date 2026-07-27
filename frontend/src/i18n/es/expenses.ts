@@ -65,6 +65,8 @@ export default {
     perDayPerson: 'Por día y persona',
     filtered: 'con filtros aplicados',
     originalCurrency: 'En moneda original:',
+    showMore: 'Más métricas',
+    showLess: 'Menos métricas',
   },
   filters: {
     searchPlaceholder: 'Buscar en descripción, notas o categoría…',

@@ -42,6 +42,19 @@ function remove(id: number, name: string) {
 
 <template>
   <div>
+    <TabSkeleton v-if="store.loading && !store.items.length" variant="table" :rows="4" />
+
+    <!-- vacío: un único mensaje con el botón de adjuntar como acción -->
+    <EmptyState
+      v-else-if="!store.items.length"
+      icon="pi pi-paperclip"
+      :title="$t('bookings.files.empty.title')"
+      :subtitle="$t('bookings.files.empty.subtitle')"
+    >
+      <AttachmentList :show-list="false" />
+    </EmptyState>
+
+    <template v-else>
     <div class="mb-4">
       <p class="text-sm text-ink-muted mb-3">
         {{ $t('bookings.files.intro') }}
@@ -49,17 +62,7 @@ function remove(id: number, name: string) {
       <AttachmentList :show-list="false" />
     </div>
 
-    <TabSkeleton v-if="store.loading && !store.items.length" variant="table" :rows="4" />
-
-    <EmptyState
-      v-else-if="!store.items.length"
-      icon="pi pi-paperclip"
-      :title="$t('bookings.files.empty.title')"
-      :subtitle="$t('bookings.files.empty.subtitle')"
-    />
-
     <DataTable
-      v-else
       :value="store.items"
       size="small"
       stripedRows
@@ -118,5 +121,6 @@ function remove(id: number, name: string) {
         </template>
       </Column>
     </DataTable>
+    </template>
   </div>
 </template>

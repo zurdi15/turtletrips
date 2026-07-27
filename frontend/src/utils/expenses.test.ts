@@ -10,7 +10,10 @@ import {
   emptyFilters,
   filterExpenses,
   groupTotals,
+  isGroupSelected,
   sortRows,
+  toggleGroupSelection,
+  toggleRowSelection,
   tripDayCount,
 } from './expenses'
 
@@ -216,5 +219,39 @@ describe('sortRows / groupTotals', () => {
     expect(totals.get('A')).toEqual({ total: 25, count: 2 })
     expect(totals.get('B')).toEqual({ total: 10, count: 1 })
     expect(groupTotals(rows, 'none').size).toBe(0)
+  })
+})
+
+describe('selección por grupo y por fila', () => {
+  const rows = buildRows(
+    [
+      makeExpense({ category: 'A', amount_base: 10 }),
+      makeExpense({ category: 'A', amount_base: 15 }),
+      makeExpense({ category: 'B', amount_base: 20 }),
+    ],
+    () => 'Ana',
+    noPlace,
+  )
+  const [a1, a2, b1] = rows
+
+  it('isGroupSelected solo con el grupo completo', () => {
+    expect(isGroupSelected(rows, [], a1, 'category')).toBe(false)
+    expect(isGroupSelected(rows, [a1], a1, 'category')).toBe(false)
+    expect(isGroupSelected(rows, [a1, a2], a1, 'category')).toBe(true)
+    // otras filas seleccionadas no afectan al grupo
+    expect(isGroupSelected(rows, [a1, a2, b1], b1, 'category')).toBe(true)
+  })
+
+  it('toggleGroupSelection completa el grupo sin duplicar y lo vacía si estaba entero', () => {
+    const withGroup = toggleGroupSelection(rows, [a1, b1], a1, 'category')
+    expect(withGroup.map((r) => r.id)).toEqual([a1.id, b1.id, a2.id])
+    // quitar el grupo A deja intacta la selección de B
+    expect(toggleGroupSelection(rows, withGroup, a1, 'category').map((r) => r.id)).toEqual([b1.id])
+  })
+
+  it('toggleRowSelection alterna una fila suelta', () => {
+    const on = toggleRowSelection([], a1)
+    expect(on).toEqual([a1])
+    expect(toggleRowSelection(on, a1)).toEqual([])
   })
 })

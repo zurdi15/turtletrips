@@ -122,12 +122,7 @@ const bags = computed<BagOption[]>(() => {
     wide: true,
     ...bagProgress(null),
   }
-  return [
-    common,
-    ...mine.map((trav) => ({ ...toBag(trav), wide: true })),
-    ...virtuals.map(toBag),
-    ...others.map(toBag),
-  ]
+  return [common, ...mine.map(toBag), ...virtuals.map(toBag), ...others.map(toBag)]
 })
 
 const canTemplateActive = computed(() => canTemplateBag(activeTraveler.value))

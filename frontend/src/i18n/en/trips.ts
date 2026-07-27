@@ -62,7 +62,6 @@ export default {
     countriesPlaceholder: 'Search countries…',
     travelers: 'Travelers',
     travelersPlaceholder: 'Select travelers…',
-    newTravelerPlaceholder: 'Create a new traveler…',
     travelersHint: 'Global and reusable: pick who is travelling so you can split expenses',
     dates: 'Dates',
     baseCurrency: 'Base currency',
@@ -90,7 +89,6 @@ export default {
     coverUpdated: 'Cover updated',
     coverSaveError: 'Could not save the cover',
     coverUploadError: 'Could not upload the cover',
-    travelerAddError: 'Could not add traveler',
   },
   overview: {
     budget: 'Budget',
@@ -101,7 +99,6 @@ export default {
     viewBookings: 'View bookings',
     noUpcoming: 'Nothing coming up.',
     notes: 'Notes',
-    viewAllPlaces: 'View all places',
   },
   settings: {
     dataTitle: 'Trip details',

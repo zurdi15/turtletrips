@@ -194,6 +194,55 @@ export function sortRows(rows: ExpenseRow[], groupBy: ExpenseGroupBy): ExpenseRo
   return sorted.sort(byDayDesc)
 }
 
+/** clave de agrupación de una fila (día, categoría, pagador o sitio) */
+export function rowGroupKey(row: ExpenseRow, groupBy: ExpenseGroupBy): string {
+  return String(row[groupBy as keyof ExpenseRow])
+}
+
+/** filas que comparten grupo con `row` */
+export function rowsInGroup(
+  rows: ExpenseRow[],
+  row: ExpenseRow,
+  groupBy: ExpenseGroupBy,
+): ExpenseRow[] {
+  const key = rowGroupKey(row, groupBy)
+  return rows.filter((r) => rowGroupKey(r, groupBy) === key)
+}
+
+/** true si TODAS las filas del grupo de `row` están en la selección */
+export function isGroupSelected(
+  rows: ExpenseRow[],
+  selected: ExpenseRow[],
+  row: ExpenseRow,
+  groupBy: ExpenseGroupBy,
+): boolean {
+  const group = rowsInGroup(rows, row, groupBy)
+  return group.length > 0 && group.every((r) => selected.some((s) => s.id === r.id))
+}
+
+/** alterna el grupo entero: lo quita si estaba completo, lo completa si no */
+export function toggleGroupSelection(
+  rows: ExpenseRow[],
+  selected: ExpenseRow[],
+  row: ExpenseRow,
+  groupBy: ExpenseGroupBy,
+): ExpenseRow[] {
+  const group = rowsInGroup(rows, row, groupBy)
+  if (isGroupSelected(rows, selected, row, groupBy)) {
+    const ids = new Set(group.map((r) => r.id))
+    return selected.filter((s) => !ids.has(s.id))
+  }
+  const have = new Set(selected.map((s) => s.id))
+  return [...selected, ...group.filter((r) => !have.has(r.id))]
+}
+
+/** alterna una fila suelta en la selección */
+export function toggleRowSelection(selected: ExpenseRow[], row: ExpenseRow): ExpenseRow[] {
+  return selected.some((s) => s.id === row.id)
+    ? selected.filter((s) => s.id !== row.id)
+    : [...selected, row]
+}
+
 export function groupTotals(
   rows: ExpenseRow[],
   groupBy: ExpenseGroupBy,

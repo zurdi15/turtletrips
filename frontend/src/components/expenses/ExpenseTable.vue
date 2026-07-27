@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { ref } from 'vue'
 import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
@@ -9,8 +9,15 @@ import Pill from '../ui/Pill.vue'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
-import type { ExpenseGroupBy, ExpenseRow } from '../../utils/expenses'
+import {
+  isGroupSelected,
+  rowGroupKey,
+  toggleGroupSelection,
+  type ExpenseGroupBy,
+  type ExpenseRow,
+} from '../../utils/expenses'
 import { formatDate, formatMoney } from '../../composables/useMoney'
+import { useRowFlash } from '../../composables/useRowFlash'
 
 const props = defineProps<{
   rows: ExpenseRow[]
@@ -33,66 +40,20 @@ function groupLabel(row: ExpenseRow): string {
   if (props.groupBy === 'place_name') return row.place_name
   return row.payer_name
 }
-function groupKey(row: ExpenseRow): string {
-  return String(row[props.groupBy as keyof ExpenseRow])
-}
-
-// --- selección por grupo (todos los gastos de un día/pagador/categoría/sitio) ---
-
-function groupRows(row: ExpenseRow): ExpenseRow[] {
-  return props.rows.filter((r) => groupKey(r) === groupKey(row))
-}
-
-function isGroupSelected(row: ExpenseRow): boolean {
-  const rows = groupRows(row)
-  return rows.length > 0 && rows.every((r) => selected.value.some((s) => s.id === r.id))
-}
-
-function toggleGroup(row: ExpenseRow) {
-  const rows = groupRows(row)
-  if (isGroupSelected(row)) {
-    const ids = new Set(rows.map((r) => r.id))
-    selected.value = selected.value.filter((s) => !ids.has(s.id))
-  } else {
-    const have = new Set(selected.value.map((s) => s.id))
-    selected.value = [...selected.value, ...rows.filter((r) => !have.has(r.id))]
-  }
-}
 
 // --- resaltar un gasto al llegar enlazado (?expense=id desde reserva/sitio/itinerario) ---
 
 const tableRef = ref<{ $el?: HTMLElement } | null>(null)
 const first = ref(0)
 const pageRows = ref(50)
-// las filas se recargan varias veces al montar: un solo scroll por gasto,
-// o el smooth-scroll se reinicia a mitad y "bota"
-let scrolledFor: number | null = null
 
-function rowClass(data: ExpenseRow): string {
-  return data.id === props.highlightId ? 'tt-row-flash' : ''
-}
-
-watch(
-  [() => props.highlightId, () => props.rows],
-  async () => {
-    const id = props.highlightId
-    if (id == null) {
-      scrolledFor = null
-      return
-    }
-    if (scrolledFor === id) return
-    const idx = props.rows.findIndex((r) => r.id === id)
-    if (idx < 0) return
-    scrolledFor = id
-    // saltar a la página donde vive el gasto y centrarlo
-    first.value = Math.floor(idx / pageRows.value) * pageRows.value
-    await nextTick()
-    tableRef.value?.$el
-      ?.querySelector('.tt-row-flash')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  },
-  { immediate: true },
-)
+const { rowClass } = useRowFlash({
+  rows: () => props.rows,
+  highlightId: () => props.highlightId,
+  first,
+  pageRows,
+  root: () => tableRef.value?.$el,
+})
 </script>
 
 <template>
@@ -120,18 +81,18 @@ watch(
     <template v-if="groupBy !== 'none'" #groupheader="{ data }">
       <div class="flex items-center gap-3 py-0.5">
         <Checkbox
-          :modelValue="isGroupSelected(data)"
+          :modelValue="isGroupSelected(rows, selected, data, groupBy)"
           binary
           v-tooltip.right="$t('expenses.table.selectGroup')"
-          @update:modelValue="toggleGroup(data)"
+          @update:modelValue="selected = toggleGroupSelection(rows, selected, data, groupBy)"
           @click.stop
         />
         <span class="font-semibold text-ink">{{ groupLabel(data) }}</span>
         <span class="text-xs text-ink-faint">
-          {{ $t('expenses.table.groupCount', { n: groupTotals.get(groupKey(data))?.count ?? 0 }) }}
+          {{ $t('expenses.table.groupCount', { n: groupTotals.get(rowGroupKey(data, groupBy))?.count ?? 0 }) }}
         </span>
         <span class="ml-auto font-semibold text-ink">
-          {{ formatMoney(groupTotals.get(groupKey(data))?.total ?? 0, trip.base_currency) }}
+          {{ formatMoney(groupTotals.get(rowGroupKey(data, groupBy))?.total ?? 0, trip.base_currency) }}
         </span>
       </div>
     </template>

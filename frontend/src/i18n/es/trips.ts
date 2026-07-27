@@ -62,7 +62,6 @@ export default {
     countriesPlaceholder: 'Busca países…',
     travelers: 'Viajeros',
     travelersPlaceholder: 'Selecciona viajeros…',
-    newTravelerPlaceholder: 'Crear un viajero nuevo…',
     travelersHint: 'Globales y reutilizables: marca quién viaja para poder repartir gastos',
     dates: 'Fechas',
     baseCurrency: 'Moneda base',
@@ -90,7 +89,6 @@ export default {
     coverUpdated: 'Portada actualizada',
     coverSaveError: 'Error al guardar la portada',
     coverUploadError: 'Error al subir la portada',
-    travelerAddError: 'Error al añadir',
   },
   overview: {
     budget: 'Presupuesto',
@@ -101,7 +99,6 @@ export default {
     viewBookings: 'Ver reservas',
     noUpcoming: 'Nada próximo en la agenda.',
     notes: 'Notas',
-    viewAllPlaces: 'Ver todos los sitios',
   },
   settings: {
     dataTitle: 'Datos del viaje',

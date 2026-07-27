@@ -15,7 +15,6 @@ import type { Traveler, Trip, TripStatus } from '../../api/types'
 import { api } from '../../api/client'
 import { CURRENCIES, TRIP_STATUS_KEYS, toSelectOptions } from '../../constants'
 import { intlLocale } from '../../i18n'
-import { MEMBER_COLORS } from '../../theme'
 import { countryName, countryOptions as buildCountryOptions } from '../../countries'
 import { useSessionStore } from '../../stores/session'
 import { useTripsStore } from '../../stores/trips'
@@ -46,7 +45,6 @@ const travelerIds = ref<number[]>(
   props.trip?.travelers?.map((tr) => tr.id) ??
     (session.travelerId !== null ? [session.travelerId] : []),
 )
-const newTravelerName = ref('')
 const startDate = ref<Date | null>(props.trip?.start_date ? parseIsoDate(props.trip.start_date) : null)
 const endDate = ref<Date | null>(props.trip?.end_date ? parseIsoDate(props.trip.end_date) : null)
 const baseCurrency = ref(props.trip?.base_currency ?? 'EUR')
@@ -120,19 +118,6 @@ async function applyPhoto(result: ImageResult) {
 
 function travelerById(id: number): Traveler | undefined {
   return travelersStore.items.find((t) => t.id === id)
-}
-
-async function addNewTraveler() {
-  const nm = newTravelerName.value.trim()
-  if (!nm) return
-  try {
-    const color = MEMBER_COLORS[travelersStore.items.length % MEMBER_COLORS.length]
-    const traveler = await travelersStore.create(nm, color)
-    if (!travelerIds.value.includes(traveler.id)) travelerIds.value.push(traveler.id)
-    newTravelerName.value = ''
-  } catch (err) {
-    notify.error(t('trips.toast.travelerAddError'), err)
-  }
 }
 
 async function onCoverChosen(event: Event) {
@@ -234,22 +219,6 @@ defineExpose({ validate, submit })
           />
         </template>
       </MultiSelect>
-      <div class="flex gap-2">
-        <InputText
-          v-model="newTravelerName"
-          :placeholder="t('trips.form.newTravelerPlaceholder')"
-          class="flex-1 min-w-0"
-          @keyup.enter="addNewTraveler"
-        />
-        <Button
-          :label="t('common.actions.add')"
-          icon="pi pi-plus"
-          severity="secondary"
-          outlined
-          class="shrink-0 max-sm:[&_.p-button-label]:hidden"
-          @click="addNewTraveler"
-        />
-      </div>
       <template #hint>
         <span class="text-xs text-ink-faint">
           {{ t('trips.form.travelersHint') }}

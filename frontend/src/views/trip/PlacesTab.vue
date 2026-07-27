@@ -17,6 +17,7 @@ import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
 import { useCrudView } from '../../composables/useCrudView'
+import { useMediaQuery } from '../../composables/useMediaQuery'
 import { useTripTabData } from '../../composables/useTripTabData'
 
 const props = defineProps<{ trip: Trip }>()
@@ -31,17 +32,22 @@ const filterCategory = ref<string>('all')
 const filterVisited = ref<'all' | 'pending' | 'visited'>('all')
 
 // vista de la tab: lista, mapa a todo el ancho, o ambos lado a lado.
-// En móvil arranca en lista (no cabe todo); en escritorio en ambos.
-const panel = ref<'list' | 'both' | 'map'>('both')
+// "Ambos" solo existe donde caben las dos columnas (lg): en pantallas
+// estrechas apilaba lista y mapa — ahí es lista O mapa, y arranca en lista.
+const isWide = useMediaQuery('(min-width: 1024px)')
+const panel = ref<'list' | 'both' | 'map'>(isWide.value ? 'both' : 'list')
 const mapRef = ref<InstanceType<typeof PlaceMap> | null>(null)
-const panelOptions = computed(
-  () =>
-    [
-      { value: 'list', label: t('places.view.list'), icon: 'pi pi-list' },
-      { value: 'both', label: t('places.view.both'), icon: 'pi pi-objects-column' },
-      { value: 'map', label: t('places.view.map'), icon: 'pi pi-map' },
-    ] as const,
-)
+const panelOptions = computed(() => [
+  { value: 'list', label: t('places.view.list'), icon: 'pi pi-list' },
+  ...(isWide.value
+    ? [{ value: 'both', label: t('places.view.both'), icon: 'pi pi-objects-column' }]
+    : []),
+  { value: 'map', label: t('places.view.map'), icon: 'pi pi-map' },
+])
+
+watch(isWide, (wide) => {
+  if (!wide && panel.value === 'both') panel.value = 'list'
+})
 
 watch(panel, async (value) => {
   if (value === 'list') return

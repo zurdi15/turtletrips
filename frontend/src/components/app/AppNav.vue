@@ -13,7 +13,9 @@ const { t, locale } = useI18n()
 const session = useSessionStore()
 
 const navItems = computed(() => [
-  { to: '/', label: t('common.nav.trips'), icon: 'pi pi-compass', match: (p: string) => p === '/' || p.startsWith('/trips') },
+  // solo la lista: dentro del detalle de un viaje (/trips/:id) ninguna
+  // sección de la nav queda marcada como activa
+  { to: '/', label: t('common.nav.trips'), icon: 'pi pi-compass', match: (p: string) => p === '/' },
   { to: '/map', label: t('common.nav.map'), icon: 'pi pi-globe', match: (p: string) => p.startsWith('/map') },
   { to: '/packing', label: t('common.nav.packing'), icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/packing') },
   // el hub de viajeros/familias/cuentas es gestión: solo lo ve el admin

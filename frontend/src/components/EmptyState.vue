@@ -3,7 +3,7 @@ defineProps<{ icon: string; title: string; subtitle?: string }>()
 </script>
 
 <template>
-  <div class="tt-empty flex flex-col items-center justify-center py-14 text-center">
+  <div class="tt-empty flex flex-col items-center justify-center px-6 py-14 text-center">
     <i :class="icon" class="tt-empty-icon text-4xl text-ink-disabled mb-3" />
     <p class="font-medium text-ink-secondary">{{ title }}</p>
     <p v-if="subtitle" class="text-sm text-ink-faint mt-1">{{ subtitle }}</p>

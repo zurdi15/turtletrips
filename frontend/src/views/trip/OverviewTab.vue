@@ -170,15 +170,6 @@ const initialLoading = computed(
           :countryCode="trip.countries[0]"
         />
       </div>
-      <router-link :to="{ name: 'trip-places', params: { id: trip.id } }" class="no-underline">
-        <Button
-          :label="$t('trips.overview.viewAllPlaces')"
-          icon="pi pi-map"
-          outlined
-          severity="secondary"
-          fluid
-        />
-      </router-link>
     </div>
   </div>
 </template>

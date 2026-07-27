@@ -8,7 +8,7 @@ export interface BagOption {
   avatarUrl?: string | null
   done: number
   total: number
-  /** ocupa su propia fila en móvil (la tuya y la común presiden) */
+  /** ocupa su propia fila en móvil (la común preside) */
   wide?: boolean
 }
 
