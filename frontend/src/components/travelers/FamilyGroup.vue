@@ -77,8 +77,7 @@ function canEdit(traveler: Traveler): boolean {
         v-tooltip.top="t('travelers.families.dragHint')"
       />
       <i
-        class="text-sm"
-        :class="family ? 'pi pi-home text-ink-faint' : 'pi pi-user text-ink-faint'"
+        class="text-sm pi pi-users"
       />
       <template v-if="editing">
         <InputText

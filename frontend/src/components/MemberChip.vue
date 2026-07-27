@@ -14,14 +14,16 @@ defineEmits<{ remove: [event: Event] }>()
 </script>
 
 <template>
+  <!-- align-middle: en flujo inline (chips del MultiSelect) el chip se ancla
+       al centro del line box y no a la baseline — la baseline de un
+       inline-flex sale de su primer hijo y aquí depende del contenido (borde
+       inferior de la foto 16px vs. dot 8px centrado), lo que subía 4px los
+       chips con avatar respecto a los de dot; en contextos flex se ignora -->
   <span
-    class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-muted text-ink"
+    class="inline-flex items-center align-middle gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-muted text-ink"
   >
     <!-- caja fija: el dot (8px) y la foto (16px) ocupan lo mismo y los chips
-         quedan todos con la misma altura, tenga o no avatar el viajero.
-         overflow-hidden sintetiza la baseline en el borde inferior de la caja
-         (idéntica con foto o dot): sin él, los chips inline-flex con avatar
-         bailan verticalmente respecto a los de solo dot -->
+         quedan todos con la misma altura, tenga o no avatar el viajero -->
     <span class="w-4 h-4 grid place-items-center overflow-hidden shrink-0">
       <TravelerAvatar
         :name="member.name"

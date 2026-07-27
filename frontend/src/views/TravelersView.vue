@@ -243,7 +243,7 @@ async function moveFamily(familyId: number | null) {
           />
           <Button
             :label="t('common.actions.add')"
-            icon="pi pi-home"
+            icon="pi pi-plus"
             severity="secondary"
             outlined
             class="shrink-0 max-sm:[&_.p-button-label]:hidden"
