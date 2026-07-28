@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import Button from 'primevue/button'
 import PlaceMap from '../../components/PlaceMap.vue'
+import LodgingGapsCard from '../../components/trip/LodgingGapsCard.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import type { Trip } from '../../api/types'
@@ -91,6 +92,8 @@ const initialLoading = computed(
           <p class="text-xs text-ink-faint mt-1">{{ $t('trips.stats.bookings') }}</p>
         </div>
       </div>
+
+      <LodgingGapsCard :trip="trip" :bookings="bookings.items" />
 
       <div class="bg-surface rounded-card border border-line p-4">
         <div class="flex items-center justify-between mb-2">

@@ -3,12 +3,14 @@ export default {
   info: 'El diario de vuestros viajes: países, ciudades y sitios visitados, con notas. Se rellena solo con los viajes terminados, los sitios marcados como visitados y los sitios con gastos — y puedes añadir lo que quieras a mano.',
   kind: {
     country: 'País',
+    region: 'Región',
     city: 'Ciudad',
     place: 'Sitio',
   },
   noCountry: 'Sin país asignado',
   stats: {
     countries: 'países',
+    regions: 'regiones',
     worldPct: '({pct}% del mundo)',
     cities: 'ciudades',
     places: 'sitios',
@@ -60,6 +62,7 @@ export default {
   filters: {
     all: 'Todos los tipos',
     countries: 'Países',
+    regions: 'Regiones',
     cities: 'Ciudades',
     places: 'Sitios',
     allCountries: 'Todos los países',
@@ -95,6 +98,12 @@ export default {
   map: {
     tripOrigin: 'Viaje: {origin}',
     editNote: 'Editar nota',
+    cityCount: 'ninguna ciudad | 1 ciudad dentro | {n} ciudades dentro',
+    regionCount: 'ninguna región | 1 región marcada | {n} regiones marcadas',
+    viewRegions: 'Ver regiones',
+    hideRegions: 'Ocultar regiones',
+    noRegions: 'Todavía no hay regiones de este país en el mapa',
+    regionsOf: 'Regiones de {name}',
   },
   form: {
     addTitle: 'Añadir al mapa',
@@ -122,6 +131,10 @@ export default {
   },
   toast: {
     countryAdded: '{flag} {name} añadido',
+    countryRemoved: '{flag} {name} quitado del mapa',
+    regionAdded: '{name} añadida',
+    regionRemoved: '{name} quitada del mapa',
+    removeError: 'Error al quitar del mapa',
     countriesAdded: '{n} países añadidos',
     addError: 'Error al añadir',
     bulkDeleted: '{n} sitios eliminados',

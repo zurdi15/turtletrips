@@ -10,7 +10,12 @@
    por lo que los modificadores de opacidad de Tailwind (bg-surface/50) no
    aplican; los casos translúcidos reales tienen token propio.
 --------------------------------------------------------------------------- */
-:root {
+/* `.tt-print-light` reusa ESTOS mismos valores para su subárbol: el documento
+   imprimible va siempre en claro (el papel no tiene modo oscuro) sin duplicar
+   la lista de tokens. Funciona aunque html.tt-dark tenga más especificidad
+   porque las custom properties se heredan desde el elemento que las declara. */
+:root,
+.tt-print-light {
   /* superficies */
   --tt-page-bg: theme('colors.slate.50');
   --tt-surface: theme('colors.white');
@@ -182,6 +187,14 @@ body {
 
 .leaflet-container {
   z-index: 0;
+}
+
+/* Al pinchar un país o un marcador, el navegador pinta su anillo de foco
+   alrededor de la CAJA del elemento — en un polígono es un rectángulo enorme
+   que no tiene nada que ver con su forma. Se quita solo para el puntero: con
+   teclado (:focus-visible) el anillo sigue saliendo. */
+.leaflet-container :is(.leaflet-interactive, .leaflet-marker-icon):focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* Diálogos y campos de FormField (también fuera de diálogo, p. ej. los ajustes
@@ -779,4 +792,39 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   background: var(--tt-range-inrange-bg);
   color: var(--tt-range-inrange-text);
   border-radius: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Impresión / "Guardar como PDF". Solo la vista imprimible está pensada para
+   papel, pero estas reglas valen para cualquier Ctrl+P: fondo blanco, colores
+   que no se pierden y nada de cromo de la app.
+--------------------------------------------------------------------------- */
+@page {
+  size: A4;
+  margin: 14mm;
+}
+
+@media print {
+  /* sin esto los navegadores tiran los fondos de color: las bandas de la
+     agenda (transporte azul, alojamiento violeta) saldrían en blanco */
+  *,
+  *::before,
+  *::after {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  html,
+  body {
+    background: theme('colors.white');
+  }
+  /* el mapa es una imagen: nunca debe partirse ni desbordar la caja */
+  .leaflet-container {
+    break-inside: avoid;
+  }
+  .tt-print-break {
+    break-before: page;
+  }
+  .tt-print-avoid-break {
+    break-inside: avoid;
+  }
 }

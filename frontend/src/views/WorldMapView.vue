@@ -2,14 +2,12 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import MultiSelect from 'primevue/multiselect'
-import AutoComplete from 'primevue/autocomplete'
 import ClusterBtn from '../components/ui/ClusterBtn.vue'
-import CountrySelect from '../components/ui/CountrySelect.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import CollapsePanel from '../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../components/ui/FilterToggleButton.vue'
+import WorldAddBar from '../components/world/WorldAddBar.vue'
+import WorldFilterPanel from '../components/world/WorldFilterPanel.vue'
 import WorldMapPanel from '../components/world/WorldMapPanel.vue'
 import WorldCountryList from '../components/world/WorldCountryList.vue'
 import WorldTimeline from '../components/world/WorldTimeline.vue'
@@ -20,10 +18,9 @@ import WorldPlaceDialog, {
 import { api } from '../api/client'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
-import type { GeocodeResult, WorldPlace, WorldPlaceKind } from '../api/types'
+import type { GeocodeResult, WorldPlace } from '../api/types'
 import { COUNTRY_BY_CODE, countryName, flagEmoji } from '../countries'
 import { useWorldPlacesStore } from '../stores/worldPlaces'
-import { useGeocodeSearch } from '../composables/useGeocode'
 import {
   buildTimelineSegments,
   countWorldFilters,
@@ -40,7 +37,6 @@ const { t } = useI18n()
 const store = useWorldPlacesStore()
 const confirmAction = useConfirmDelete()
 const notify = useNotify()
-const { results: geoResults, search: geoSearch } = useGeocodeSearch()
 
 const mapPanel = ref<InstanceType<typeof WorldMapPanel> | null>(null)
 const selectedId = ref<number | null>(null)
@@ -69,15 +65,6 @@ function clearFilters() {
   Object.assign(filters, emptyWorldFilters())
 }
 
-const kindFilterOptions = computed(() => [
-  { value: 'country', label: t('world.filters.countries') },
-  { value: 'city', label: t('world.filters.cities') },
-  { value: 'place', label: t('world.filters.places') },
-])
-const sourceFilterOptions = computed(() => [
-  { value: 'auto', label: t('world.filters.fromTrips') },
-  { value: 'manual', label: t('world.filters.manual') },
-])
 
 // años de visita presentes en el diario, del más reciente al más antiguo
 const yearFilterOptions = computed(() => {
@@ -130,8 +117,8 @@ function flyTo(place: WorldPlace) {
 
 // ---- alta desde el buscador ----
 
-function onGeocodeSelect(event: { value: GeocodeResult }) {
-  const r = event.value
+function onGeocodeSelect(result: GeocodeResult) {
+  const r = result
   editing.value = null
   prefill.value = {
     name: r.display_name.split(',')[0].trim(),
@@ -141,7 +128,6 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
     country_code: inferCountryCode(r.display_name),
   }
   showDialog.value = true
-  searchValue.value = ''
 }
 
 // ---- alta rápida de países ----
@@ -282,6 +268,10 @@ function bulkDelete() {
         <span class="font-semibold text-ink">{{ stats.countries }}</span> {{ t('world.stats.countries') }}
         <span class="text-ink-faint">{{ t('world.stats.worldPct', { pct: stats.worldPct }) }}</span>
       </span>
+      <span v-if="stats.regions">
+        <i class="mdi mdi-map-outline mr-1" />
+        <span class="font-semibold text-ink">{{ stats.regions }}</span> {{ t('world.stats.regions') }}
+      </span>
       <span>
         <i class="mdi mdi-city-variant-outline mr-1" />
         <span class="font-semibold text-ink">{{ stats.cities }}</span> {{ t('world.stats.cities') }}
@@ -292,36 +282,14 @@ function bulkDelete() {
       </span>
     </div>
 
-    <!-- añadir: visible en TODAS las vistas (las stats también se alimentan de aquí) -->
-    <div class="flex flex-wrap items-center gap-2 mb-3">
-      <AutoComplete
-        v-model="searchValue"
-        :suggestions="geoResults"
-        optionLabel="display_name"
-        :placeholder="t('world.search.placePlaceholder')"
-        class="w-full sm:w-80 [&_input]:w-full"
-        @complete="(e) => geoSearch(e.query)"
-        @item-select="onGeocodeSelect"
-      />
-      <CountrySelect
-        v-model="addCountryCodes"
-        multiple
-        :exclude="markedCountryCodes"
-        :placeholder="t('world.search.countryPlaceholder')"
-        :disabled="addingCountry"
-        class="w-full sm:w-80"
-      />
-      <Button
-        v-if="addCountryCodes.length"
-        class="tt-pop-in max-sm:w-full"
-        icon="pi pi-plus"
-        :label="
-          t('world.search.addCountries', { n: addCountryCodes.length }, addCountryCodes.length)
-        "
-        :loading="addingCountry"
-        @click="addCountries"
-      />
-    </div>
+    <WorldAddBar
+      v-model:codes="addCountryCodes"
+      v-model:search="searchValue"
+      :markedCountryCodes="markedCountryCodes"
+      :adding="addingCountry"
+      @geocode-select="onGeocodeSelect"
+      @add="addCountries"
+    />
 
     <!-- filtros + vista -->
     <div class="flex flex-col gap-3 mb-4">
@@ -351,63 +319,17 @@ function bulkDelete() {
       </div>
 
       <!-- -mt-3 anula el gap del padre con el panel cerrado; el pt-3 interno lo repone animado -->
+      <!-- -mt-3 anula el gap del padre con el panel cerrado; el pt-3 interno lo repone animado -->
       <CollapsePanel :open="showFilters" class="-mt-3">
-      <div class="pt-3">
-      <div
-        class="flex flex-wrap items-center gap-2 bg-surface-muted border border-line rounded-card p-3"
-      >
-        <InputText
-          v-model="filters.searchText"
-          :placeholder="t('world.filters.searchPlaceholder')"
-          class="w-full sm:w-auto sm:flex-1"
-        />
-        <MultiSelect
-          v-model="filters.kinds"
-          :options="kindFilterOptions"
-          optionLabel="label"
-          optionValue="value"
-          :placeholder="t('world.filters.all')"
-          :maxSelectedLabels="2"
-          class="flex-1 min-w-menu sm:flex-none sm:w-40"
-        />
-        <CountrySelect
-          v-model="filters.countries"
-          multiple
-          display="comma"
-          :codes="journalCountryCodes"
-          :placeholder="t('world.filters.allCountries')"
-          :maxSelectedLabels="1"
-          class="flex-1 min-w-menu sm:flex-none sm:w-52"
-        />
-        <MultiSelect
-          v-model="filters.sources"
-          :options="sourceFilterOptions"
-          optionLabel="label"
-          optionValue="value"
-          :placeholder="t('world.filters.anySource')"
-          :maxSelectedLabels="1"
-          class="flex-1 min-w-menu sm:flex-none sm:w-48"
-        />
-        <MultiSelect
-          v-model="filters.years"
-          :options="yearFilterOptions"
-          optionLabel="label"
-          optionValue="value"
-          :placeholder="t('world.filters.anyYear')"
-          :maxSelectedLabels="2"
-          class="flex-1 min-w-menu sm:flex-none sm:w-40"
-        />
-        <Button
-          v-if="activeFilterCount"
-          :label="t('common.actions.clear')"
-          icon="pi pi-times"
-          text
-          severity="secondary"
-          size="small"
-          @click="clearFilters"
-        />
-      </div>
-      </div>
+        <div class="pt-3">
+          <WorldFilterPanel
+            :filters="filters"
+            :journalCountryCodes="journalCountryCodes"
+            :yearOptions="yearFilterOptions"
+            :activeFilterCount="activeFilterCount"
+            @clear="clearFilters"
+          />
+        </div>
       </CollapsePanel>
     </div>
 

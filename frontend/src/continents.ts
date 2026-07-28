@@ -56,7 +56,7 @@ const CODES: Record<ContinentKey, string[]> = {
     'HT', 'JM', 'KN', 'LC', 'MX', 'NI', 'PA', 'SV', 'TT', 'US', 'VC',
   ],
   southAmerica: ['AR', 'BO', 'BR', 'CL', 'CO', 'EC', 'GY', 'PE', 'PY', 'SR', 'UY', 'VE'],
-  oceania: ['AU', 'FJ', 'FM', 'KI', 'NR', 'NZ', 'PG', 'PW', 'TO', 'TV', 'VU', 'WS'],
+  oceania: ['AU', 'FJ', 'FM', 'KI', 'MH', 'NR', 'NZ', 'PG', 'PW', 'SB', 'TO', 'TV', 'VU', 'WS'],
 }
 
 export const CONTINENT_BY_CODE: Map<string, ContinentKey> = new Map(

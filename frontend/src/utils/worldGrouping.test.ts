@@ -28,6 +28,7 @@ function makePlace(overrides: Partial<WorldPlace> = {}): WorldPlace {
     name: 'Lugar',
     kind: 'city',
     country_code: null,
+    region_code: null,
     lat: null,
     lon: null,
     note: null,
@@ -121,12 +122,13 @@ describe('worldStats', () => {
     const stats = worldStats(
       [
         makePlace({ kind: 'country', country_code: 'ES' }),
+        makePlace({ kind: 'region', country_code: 'ES', region_code: 'ES-CT' }),
         makePlace({ kind: 'city', note: 'x' }),
         makePlace({ kind: 'place' }),
       ],
       100,
     )
-    expect(stats).toEqual({ countries: 1, worldPct: 1, cities: 1, places: 1 })
+    expect(stats).toEqual({ countries: 1, worldPct: 1, regions: 1, cities: 1, places: 1 })
   })
 })
 

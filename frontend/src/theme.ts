@@ -55,8 +55,31 @@ export const MEMBER_COLORS = [
 /** marcadores del mapa mundial por tipo de lugar */
 export const KIND_COLORS: Record<WorldPlaceKind, string> = {
   country: colors.amber[500],
+  region: colors.emerald[600],
   city: colors.sky[500],
   place: colors.rose[600],
+}
+
+/**
+ * Relleno de países y regiones del mapa mundial. Los polígonos los pinta
+ * Leaflet desde JS, así que el color vive aquí y no en los tokens CSS; el par
+ * claro/oscuro se elige con `isDark` (los basemaps de CARTO son muy distintos).
+ */
+export const WORLD_CHOROPLETH = {
+  fill: colors.emerald[500],
+  fillDark: colors.emerald[400],
+  stroke: colors.emerald[700],
+  strokeDark: colors.emerald[300],
+  /** países sin visitar: solo un borde tenue, sin relleno */
+  idleStroke: colors.slate[400],
+  idleStrokeDark: colors.slate[500],
+  /** división interna sin marcar: un punto más oscura que la de países, o se
+   *  pierde sobre el beige de la cartografía */
+  regionStroke: colors.slate[500],
+  regionStrokeDark: colors.slate[400],
+  /** territorios sin código ISO (Kosovo, Somalilandia) o fuera de la app */
+  noData: colors.slate[300],
+  noDataDark: colors.slate[600],
 }
 
 /** marcadores de reservas (mapa del viaje y eventos del calendario) */

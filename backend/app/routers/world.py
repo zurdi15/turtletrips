@@ -23,6 +23,31 @@ def _ensure_family_owned(user: User, place: WorldPlace) -> None:
         raise HTTPException(status_code=403, detail="Ese lugar pertenece a otra familia")
 
 
+def _normalize_codes(
+    data: dict, *, kind: str, country_code: str | None, region_code: str | None = None
+) -> None:
+    """Mayúsculas en los códigos ISO y coherencia región ↔ país (in place)."""
+    if data.get("country_code"):
+        data["country_code"] = data["country_code"].upper()
+    if data.get("region_code"):
+        data["region_code"] = data["region_code"].upper()
+    if kind != "region":
+        return
+    # en un PATCH puede no venir ninguno de los dos: valen los que ya tiene
+    region = data.get("region_code", region_code)
+    country = data.get("country_code", country_code)
+    if not region or not country:
+        raise HTTPException(
+            status_code=400,
+            detail="Una región necesita su código ISO 3166-2 y el de su país",
+        )
+    # "ES-CT" pertenece a "ES": si no casan, la región acabaría colgando de otro país
+    if not region.startswith(f"{country}-"):
+        raise HTTPException(
+            status_code=400, detail=f"La región {region} no pertenece al país {country}"
+        )
+
+
 @router.get("/world-places", response_model=list[WorldPlaceRead])
 def list_world_places(user: CurrentUser, db: Session = Depends(get_db)):
     family_id = user.traveler.family_id
@@ -56,10 +81,9 @@ def create_world_place(
     family_id = require_family(user)
     data = payload.model_dump()
     data["family_id"] = family_id
-    if data.get("country_code"):
-        data["country_code"] = data["country_code"].upper()
-    # una ciudad/sitio nuevo arrastra su país al diario; la fecha del país la
-    # deriva la lectura a partir de sus ciudades (save_new hace commit)
+    _normalize_codes(data, kind=data.get("kind", "place"), country_code=None)
+    # una región/ciudad/sitio nuevo arrastra su país al diario; la fecha del país
+    # la deriva la lectura a partir de sus hijos (save_new hace commit)
     if data.get("kind") != "country":
         ensure_country_entry(db, family_id, data.get("country_code"))
     return save_new(db, WorldPlace(), data)
@@ -72,8 +96,12 @@ def update_world_place(
     place = get_or_404(db, WorldPlace, place_id)
     _ensure_family_owned(user, place)
     data = payload.model_dump(exclude_unset=True)
-    if data.get("country_code"):
-        data["country_code"] = data["country_code"].upper()
+    _normalize_codes(
+        data,
+        kind=data.get("kind", place.kind),
+        country_code=place.country_code,
+        region_code=place.region_code,
+    )
     if data.get("kind", place.kind) != "country":
         ensure_country_entry(db, place.family_id, data.get("country_code"))
     return save_updates(db, place, data)
@@ -84,7 +112,7 @@ def delete_world_place(place_id: int, user: CurrentUser, db: Session = Depends(g
     place = get_or_404(db, WorldPlace, place_id)
     _ensure_family_owned(user, place)
     if place.kind == "country" and place.country_code:
-        # un país con ciudades/sitios visibles no se elimina: primero ellos
+        # un país con regiones/ciudades/sitios visibles no se elimina: primero ellos
         has_children = db.scalars(
             select(WorldPlace.id)
             .where(
@@ -98,7 +126,7 @@ def delete_world_place(place_id: int, user: CurrentUser, db: Session = Depends(g
         if has_children is not None:
             raise HTTPException(
                 status_code=409,
-                detail="El país tiene ciudades o sitios: elimínalos primero",
+                detail="El país tiene regiones, ciudades o sitios: elimínalos primero",
             )
     if place.auto:
         # las derivadas de viajes se ocultan para que el sync no las reviva

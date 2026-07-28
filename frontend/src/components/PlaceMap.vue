@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { LMap, LTileLayer, LCircleMarker, LMarker, LPolyline, LPopup, LTooltip } from '@vue-leaflet/vue-leaflet'
-import { divIcon, latLngBounds, type Icon, type Map as LeafletMap } from 'leaflet'
+import { divIcon, type Icon, type Map as LeafletMap } from 'leaflet'
 import type { Booking, BookingType, Place } from '../api/types'
 import { BOOKING_MARKER_COLORS, PLACE_CATEGORY_COLORS, ROUTE_COLOR, WHITE } from '../theme'
 import { BOOKING_TYPE_KEYS, PLACE_CATEGORY_KEYS } from '../constants'
@@ -91,7 +91,10 @@ function fitAll() {
     ...locatedBookings.value.map((b) => [b.lat!, b.lon!] as [number, number]),
   ]
   if (points.length) {
-    map.fitBounds(latLngBounds(points).pad(0.2), { maxZoom: 15 })
+    // puntos sueltos, NO un LatLngBounds: con `useGlobalLeaflet: false`,
+    // vue-leaflet trae su propia copia de Leaflet y un objeto creado con el
+    // `latLngBounds` de la app falla su instanceof ("Bounds are not valid")
+    map.fitBounds(points, { padding: [24, 24], maxZoom: 15 })
   } else if (countryCenter.value) {
     // sin sitios localizados: centrar en el país del viaje
     map.setView(countryCenter.value, 5)

@@ -22,6 +22,15 @@ export const router = createRouter({
       meta: { public: true, bare: true },
     },
     {
+      // viaje compartido en solo lectura: quien abre el enlace puede no tener
+      // cuenta en la instancia, así que ni sesión ni cabecera de la app
+      path: '/s/:token',
+      name: 'public-trip',
+      component: () => import('../views/PublicTripView.vue'),
+      props: true,
+      meta: { public: true, bare: true },
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),

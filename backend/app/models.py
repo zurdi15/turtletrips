@@ -101,6 +101,10 @@ class Trip(TimestampMixin, Base):
     album_url: Mapped[str | None] = mapped_column(String(500))  # enlace a álbum de fotos externo
     # llave secreta del feed .ics de suscripción (URL pública sin auth)
     ics_token: Mapped[str | None] = mapped_column(String(64), unique=True)
+    # llave del enlace de solo lectura (/s/{token}); NULL = no compartido
+    share_token: Mapped[str | None] = mapped_column(String(64), unique=True)
+    # qué secciones viajan en ese enlace: itinerary | bookings | map
+    share_scopes: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     notes: Mapped[str | None] = mapped_column(Text)
     # familia del creador: determina qué categorías/plantillas usa el viaje.
     # Nullable como red de seguridad para datos legacy; la app siempre lo asigna.
@@ -601,8 +605,10 @@ class WorldPlace(TimestampMixin, Base):
         ForeignKey("families.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(200))
-    kind: Mapped[str] = mapped_column(String(10), default="place")  # country|city|place
+    kind: Mapped[str] = mapped_column(String(10), default="place")  # country|region|city|place
     country_code: Mapped[str | None] = mapped_column(String(2))  # ISO alpha-2
+    # ISO 3166-2 ("ES-CT"); solo en kind='region'
+    region_code: Mapped[str | None] = mapped_column(String(6), index=True)
     lat: Mapped[float | None] = mapped_column()
     lon: Mapped[float | None] = mapped_column()
     note: Mapped[str | None] = mapped_column(Text)

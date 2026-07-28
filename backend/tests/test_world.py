@@ -234,3 +234,69 @@ def test_sync_visited_place_pulls_country(client):
     country = next(p for p in listed if p["kind"] == "country")
     assert country["country_code"] == "IT"
     assert country["origin"] == "Italia"
+
+
+def test_world_regions(client):
+    """Regiones (ISO 3166-2): arrastran su país y alimentan su fecha derivada."""
+    region = client.post(
+        "/api/v1/world-places",
+        json={
+            "name": "Cataluña", "kind": "region",
+            "country_code": "es", "region_code": "es-ct", "visited_year": 2019,
+        },
+    )
+    assert region.status_code == 201
+    assert region.json()["region_code"] == "ES-CT"
+
+    listed = client.get("/api/v1/world-places").json()
+    by_kind = {p["kind"]: p for p in listed}
+    # marcar una región mete su país en el diario…
+    assert set(by_kind) == {"region", "country"}
+    # …y el país hereda el año de la región (no tiene fecha propia)
+    assert by_kind["country"]["country_code"] == "ES"
+    assert by_kind["country"]["visited_year"] == 2019
+
+    # el país ya no se puede quitar mientras cuelgue la región
+    country_id = by_kind["country"]["id"]
+    conflict = client.delete(f"/api/v1/world-places/{country_id}")
+    assert conflict.status_code == 409
+    assert "regiones" in conflict.json()["detail"]
+
+    assert client.delete(f"/api/v1/world-places/{region.json()['id']}").status_code == 204
+    assert client.delete(f"/api/v1/world-places/{country_id}").status_code == 204
+
+
+def test_world_region_requires_matching_country(client):
+    # sin código de región
+    missing = client.post(
+        "/api/v1/world-places",
+        json={"name": "Cataluña", "kind": "region", "country_code": "ES"},
+    )
+    assert missing.status_code == 400
+
+    # la región no pertenece a ese país
+    mismatch = client.post(
+        "/api/v1/world-places",
+        json={
+            "name": "Cataluña", "kind": "region",
+            "country_code": "FR", "region_code": "ES-CT",
+        },
+    )
+    assert mismatch.status_code == 400
+    assert "no pertenece" in mismatch.json()["detail"]
+
+
+def test_world_region_patch_keeps_codes(client):
+    """Editar la nota de una región no debe exigir repetir sus códigos."""
+    region = client.post(
+        "/api/v1/world-places",
+        json={
+            "name": "Hokkaido", "kind": "region",
+            "country_code": "JP", "region_code": "JP-01",
+        },
+    ).json()
+    resp = client.patch(
+        f"/api/v1/world-places/{region['id']}", json={"note": "Volver en invierno"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["region_code"] == "JP-01"

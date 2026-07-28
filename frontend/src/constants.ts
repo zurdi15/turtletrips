@@ -1,4 +1,5 @@
 import type { BookingType, PlaceCategory, TripStatus } from './api/types'
+import type { TransferMode } from './utils/transfers'
 
 // Claves i18n (common.*) de los enums de la API; traducir con t(...KEYS[valor])
 export const TRIP_STATUS_KEYS: Record<TripStatus, string> = {
@@ -69,6 +70,21 @@ export const BOOKING_TYPE_ICONS: Record<BookingType, string> = {
   car_rental: 'mdi mdi-car',
   activity: 'mdi mdi-ticket-outline',
   other: 'mdi mdi-bookmark-outline',
+}
+
+// modo con el que se estiman los traslados entre paradas de un día
+export const TRANSFER_MODE_KEYS: Record<TransferMode, string> = {
+  walk: 'common.transferMode.walk',
+  bike: 'common.transferMode.bike',
+  transit: 'common.transferMode.transit',
+  car: 'common.transferMode.car',
+}
+
+export const TRANSFER_MODE_ICONS: Record<TransferMode, string> = {
+  walk: 'mdi mdi-walk',
+  bike: 'mdi mdi-bike',
+  transit: 'mdi mdi-bus',
+  car: 'mdi mdi-car',
 }
 
 // Monedas soportadas por frankfurter (BCE) más las habituales

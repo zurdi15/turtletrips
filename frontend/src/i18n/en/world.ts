@@ -3,12 +3,14 @@ export default {
   info: 'Your travel diary: countries, cities and places you have visited, with notes. It fills in on its own from finished trips, places marked as visited and places linked to expenses — and you can add anything else by hand.',
   kind: {
     country: 'Country',
+    region: 'Region',
     city: 'City',
     place: 'Place',
   },
   noCountry: 'No country assigned',
   stats: {
     countries: 'countries',
+    regions: 'regions',
     worldPct: '({pct}% of the world)',
     cities: 'cities',
     places: 'places',
@@ -60,6 +62,7 @@ export default {
   filters: {
     all: 'All types',
     countries: 'Countries',
+    regions: 'Regions',
     cities: 'Cities',
     places: 'Places',
     allCountries: 'All countries',
@@ -95,6 +98,12 @@ export default {
   map: {
     tripOrigin: 'Trip: {origin}',
     editNote: 'Edit note',
+    cityCount: 'no cities | 1 city inside | {n} cities inside',
+    regionCount: 'no regions | 1 region marked | {n} regions marked',
+    viewRegions: 'Show regions',
+    hideRegions: 'Hide regions',
+    noRegions: 'This country has no regions on the map yet',
+    regionsOf: '{name} regions',
   },
   form: {
     addTitle: 'Add to the map',
@@ -122,6 +131,10 @@ export default {
   },
   toast: {
     countryAdded: '{flag} {name} added',
+    countryRemoved: '{flag} {name} removed from the map',
+    regionAdded: '{name} added',
+    regionRemoved: '{name} removed from the map',
+    removeError: 'Could not remove it from the map',
     countriesAdded: '{n} countries added',
     addError: 'Could not add',
     bulkDeleted: '{n} places deleted',

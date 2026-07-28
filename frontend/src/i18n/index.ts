@@ -49,6 +49,24 @@ export function intlLocale(): string {
   return INTL_LOCALES[currentLocale()]
 }
 
+/**
+ * Idioma del navegador, SOLO para la página pública de un viaje compartido:
+ * quien la abre no tiene cuenta, así que no hay preferencia que respetar y
+ * caer al inglés fijo sería peor. No toca localStorage ni la regla de la app
+ * (idioma por usuario en la DB, sin detección de navegador).
+ */
+export function applyVisitorLocale() {
+  try {
+    if (isSupported(localStorage.getItem(STORAGE_KEY))) return
+  } catch {
+    /* sin localStorage: se decide por navegador igual */
+  }
+  const guess = navigator.language?.slice(0, 2)
+  if (!isSupported(guess)) return
+  i18n.global.locale.value = guess
+  document.documentElement.lang = guess
+}
+
 export function setLocale(locale: AppLocale) {
   i18n.global.locale.value = locale
   localStorage.setItem(STORAGE_KEY, locale)

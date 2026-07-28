@@ -31,6 +31,18 @@ export default {
     placeTooltip: 'Place: {name}',
     bookingTooltip: 'Booking: {name}',
   },
+  transfers: {
+    mode: 'How you get around',
+    estimate: 'Straight-line estimate with a detour factor: not a real route',
+    covered: 'A transport booking that day covers this hop',
+    dayTotal: 'Transfers today: {km} · {time}',
+    tight: 'Tight day',
+    issues: {
+      overlap: 'With the times you set there is no time to get to the next activity',
+      tooLong: 'Transfers plus stops push this day past 12 hours',
+      tooFar: 'There is a very long hop and no transport booked that day',
+    },
+  },
   journal: {
     title: 'Journal',
     empty: 'Add a note or a postcard',

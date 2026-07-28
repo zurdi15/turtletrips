@@ -31,6 +31,18 @@ export default {
     placeTooltip: 'Sitio: {name}',
     bookingTooltip: 'Reserva: {name}',
   },
+  transfers: {
+    mode: 'Cómo te mueves',
+    estimate: 'Estimación en línea recta con factor de rodeo: no es una ruta real',
+    covered: 'Este salto lo cubre una reserva de transporte de ese día',
+    dayTotal: 'Traslados del día: {km} · {time}',
+    tight: 'Día apretado',
+    issues: {
+      overlap: 'Con las horas puestas no da tiempo a llegar de una actividad a la siguiente',
+      tooLong: 'Sumando traslados y visitas, el día se pasa de 12 horas',
+      tooFar: 'Hay un salto muy largo y ese día no tienes transporte reservado',
+    },
+  },
   journal: {
     title: 'Diario',
     empty: 'Añade una nota o una postal',

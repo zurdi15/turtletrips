@@ -26,6 +26,7 @@ from .routers import (
     packing,
     places,
     rates,
+    share,
     stats,
     travelers,
     trips,
@@ -74,6 +75,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         stats.router,
         weather.router,
         world.router,
+        share.router,
         families.router,  # GET para todos; mutaciones con candado admin por endpoint
     ):
         app.include_router(
@@ -86,9 +88,11 @@ def create_app(engine: Engine | None = None) -> FastAPI:
             router, prefix=API_PREFIX, dependencies=[Depends(require_admin)]
         )
 
-    # públicos: auth (login/bootstrap/status) y el feed .ics de suscripción
+    # públicos: auth (login/bootstrap/status), el feed .ics de suscripción y
+    # el viaje compartido en solo lectura — el token es la llave
     app.include_router(auth.router, prefix=API_PREFIX)
     app.include_router(itinerary.public_router, prefix=API_PREFIX)
+    app.include_router(share.public_router, prefix=API_PREFIX)
 
     # sembrar categorías por defecto de cada familia (idempotente)
     with app.state.sessionmaker() as session:

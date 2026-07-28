@@ -3,8 +3,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class WorldPlaceCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
-    kind: str = Field(default="place", pattern="^(country|city|place)$")
+    kind: str = Field(default="place", pattern="^(country|region|city|place)$")
     country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    # ISO 3166-2 ("ES-CT"), solo en kind='region'
+    region_code: str | None = Field(default=None, min_length=4, max_length=6)
     lat: float | None = None
     lon: float | None = None
     note: str | None = None
@@ -14,8 +16,9 @@ class WorldPlaceCreate(BaseModel):
 
 class WorldPlaceUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
-    kind: str | None = Field(default=None, pattern="^(country|city|place)$")
+    kind: str | None = Field(default=None, pattern="^(country|region|city|place)$")
     country_code: str | None = Field(default=None, min_length=2, max_length=2)
+    region_code: str | None = Field(default=None, min_length=4, max_length=6)
     lat: float | None = None
     lon: float | None = None
     note: str | None = None
@@ -30,6 +33,7 @@ class WorldPlaceRead(BaseModel):
     name: str
     kind: str
     country_code: str | None
+    region_code: str | None
     lat: float | None
     lon: float | None
     note: str | None

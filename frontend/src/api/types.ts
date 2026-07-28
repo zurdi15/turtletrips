@@ -93,6 +93,9 @@ export interface Trip {
   budget_amount: number | null
   album_url: string | null
   ics_token: string | null
+  // enlace público de solo lectura (/s/{token}); null = no compartido
+  share_token: string | null
+  share_scopes: ShareScope[]
   notes: string | null
   travelers: Traveler[]
   // true si hay liquidaciones registradas y los saldos quedan a cero
@@ -328,13 +331,15 @@ export interface TripBalances {
   common_total_base: number
 }
 
-export type WorldPlaceKind = 'country' | 'city' | 'place'
+export type WorldPlaceKind = 'country' | 'region' | 'city' | 'place'
 
 export interface WorldPlace {
   id: number
   name: string
   kind: WorldPlaceKind
   country_code: string | null
+  /** ISO 3166-2 ("ES-CT"), solo en kind='region' */
+  region_code: string | null
   lat: number | null
   lon: number | null
   note: string | null
@@ -396,4 +401,74 @@ export interface ImportResult {
   valid_rows: ImportPreviewRow[]
   errors: ImportRowError[]
   imported: number
+}
+
+// --- enlace público de solo lectura (/s/{token}) ---
+// Espejo de schemas/share.py: campo a campo, SIN dinero, códigos de reserva ni
+// notas privadas. Los tipos son deliberadamente distintos de Trip/Place/…: si
+// alguien reutiliza aquí un tipo de la app, deja de verse lo que NO viaja.
+export type ShareScope = 'itinerary' | 'bookings' | 'map'
+
+export interface PublicTraveler {
+  name: string
+  color: string | null
+}
+
+export interface PublicPlace {
+  id: number
+  name: string
+  category: PlaceCategory
+  address: string | null
+  lat: number | null
+  lon: number | null
+  url: string | null
+}
+
+export interface PublicItineraryItem {
+  id: number
+  day: string
+  end_day: string | null
+  start_time: string | null
+  end_time: string | null
+  order_index: number
+  title: string
+  notes: string | null
+  place_id: number | null
+  booking_id: number | null
+}
+
+export interface PublicBooking {
+  id: number
+  type: BookingType
+  title: string
+  provider: string | null
+  start_dt: string | null
+  end_dt: string | null
+  origin: string | null
+  destination: string | null
+  address: string | null
+  lat: number | null
+  lon: number | null
+  place_id: number | null
+}
+
+export interface PublicTrip {
+  name: string
+  countries: string[]
+  start_date: string | null
+  end_date: string | null
+  status: TripStatus
+  notes: string | null
+  album_url: string | null
+  cover_url: string | null
+  travelers: PublicTraveler[]
+  scopes: ShareScope[]
+  places: PublicPlace[]
+  itinerary: PublicItineraryItem[]
+  bookings: PublicBooking[]
+}
+
+export interface ShareState {
+  token: string | null
+  scopes: ShareScope[]
 }

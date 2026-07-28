@@ -53,6 +53,11 @@ const kindOptions = computed(() => [
   { value: 'city', label: t('world.kind.city') },
   { value: 'place', label: t('world.kind.place') },
   { value: 'country', label: t('world.kind.country') },
+  // las regiones se marcan desde el mapa (necesitan su código ISO 3166-2):
+  // aquí solo aparecen al editar una, para no dejar el selector en blanco
+  ...(props.place?.kind === 'region'
+    ? [{ value: 'region', label: t('world.kind.region') }]
+    : []),
 ])
 
 const noCountryOption = computed(() => ({ value: null, label: t('world.noCountry') }))

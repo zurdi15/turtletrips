@@ -101,6 +101,8 @@ export const COUNTRIES: Country[] = [
   { code: 'IR', es: 'Irán', en: 'Iran' },
   { code: 'IE', es: 'Irlanda', en: 'Ireland' },
   { code: 'IS', es: 'Islandia', en: 'Iceland' },
+  { code: 'MH', es: 'Islas Marshall', en: 'Marshall Islands' },
+  { code: 'SB', es: 'Islas Salomón', en: 'Solomon Islands' },
   { code: 'IL', es: 'Israel', en: 'Israel' },
   { code: 'IT', es: 'Italia', en: 'Italy' },
   { code: 'JM', es: 'Jamaica', en: 'Jamaica' },

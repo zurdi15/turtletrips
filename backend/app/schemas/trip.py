@@ -94,6 +94,9 @@ class TripRead(BaseModel):
     budget_amount: float | None
     album_url: str | None
     ics_token: str | None
+    # enlace público de solo lectura: NULL = no compartido
+    share_token: str | None
+    share_scopes: list[str] = []
     notes: str | None
     family_id: int | None
     travelers: list[TravelerRead] = []

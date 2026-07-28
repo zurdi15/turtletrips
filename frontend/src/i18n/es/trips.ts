@@ -101,6 +101,16 @@ export default {
     noUpcoming: 'Nada próximo en la agenda.',
     notes: 'Notas',
   },
+  lodging: {
+    gapsTitle: 'Sin alojamiento | 1 noche sin alojamiento | {n} noches sin alojamiento',
+    coverage: '{covered} de {total} noches con alojamiento',
+    overlapTitle: 'Noches con dos alojamientos',
+    overlapHint:
+      'sin solapes | 1 noche con dos reservas encima | {n} noches con dos reservas encima',
+    viewBookings: 'Ver reservas',
+    nightGap: 'Sin alojamiento',
+    nightGapTooltip: 'Esta noche no tiene alojamiento reservado',
+  },
   settings: {
     dataTitle: 'Datos del viaje',
     saveChanges: 'Guardar cambios',

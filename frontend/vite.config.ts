@@ -39,12 +39,13 @@ export default defineConfig({
           // API (solo GET): red primero con fallback a caché para consultar
           // el viaje sin conexión; nunca se cachean descargas ni backups, ni
           // auth/users/families (un /auth/me cacheado serviría al usuario
-          // anterior del dispositivo)
+          // anterior del dispositivo) ni public/trips (un enlace revocado
+          // seguiría abriéndose desde la caché del que lo tuviera)
           {
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               url.pathname.startsWith('/api/v1/') &&
-              !/\/(auth|users|families|backup|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(
+              !/\/(auth|users|families|backup|public\/trips|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(
                 url.pathname,
               ),
             handler: 'NetworkFirst',
@@ -53,6 +54,19 @@ export default defineConfig({
               networkTimeoutSeconds: 4,
               cacheableResponse: { statuses: [200] },
               expiration: { maxEntries: 300, maxAgeSeconds: 7 * 86400 },
+            },
+          },
+          // geometría del mapa mundial: inmutable (el nombre lleva versión) y
+          // pesada, así que se guarda a largo plazo. Ojo: session.logout()
+          // limpia 'api' e 'images' — esta caché NO lleva datos de usuario y no
+          // debe borrarse ahí (serían 756 KB en cada login).
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/geo/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'geo',
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 60, maxAgeSeconds: 180 * 86400 },
             },
           },
           // tiles de CARTO: cache-first (cambian poco y pesan)

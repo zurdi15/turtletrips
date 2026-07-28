@@ -101,6 +101,15 @@ export default {
     noUpcoming: 'Nothing coming up.',
     notes: 'Notes',
   },
+  lodging: {
+    gapsTitle: 'No lodging | 1 night without lodging | {n} nights without lodging',
+    coverage: '{covered} of {total} nights covered',
+    overlapTitle: 'Nights with two places booked',
+    overlapHint: 'no overlaps | 1 night with two bookings | {n} nights with two bookings',
+    viewBookings: 'View bookings',
+    nightGap: 'No lodging',
+    nightGapTooltip: 'No lodging booked for this night',
+  },
   settings: {
     dataTitle: 'Trip details',
     saveChanges: 'Save changes',

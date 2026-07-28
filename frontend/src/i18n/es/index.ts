@@ -11,6 +11,7 @@ import settings from './settings'
 import travelers from './travelers'
 import auth from './auth'
 import profile from './profile'
+import share from './share'
 
 export default {
   common,
@@ -26,4 +27,5 @@ export default {
   travelers,
   auth,
   profile,
+  share,
 }

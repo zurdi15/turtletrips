@@ -4,6 +4,7 @@ import { intlLocale } from '../i18n'
 
 export const KIND_KEYS: Record<WorldPlaceKind, string> = {
   country: 'world.kind.country',
+  region: 'world.kind.region',
   city: 'world.kind.city',
   place: 'world.kind.place',
 }
@@ -102,7 +103,7 @@ export function groupByCountry(filtered: WorldPlace[]): CountryGroup[] {
     if (place.kind === 'country') ensure(place.country_code).entry = place
     else ensure(place.country_code).children.push(place)
   }
-  const kindOrder: Record<string, number> = { city: 0, place: 1 }
+  const kindOrder: Record<string, number> = { region: 0, city: 1, place: 2 }
   for (const group of byCode.values()) {
     group.children.sort(
       (a, b) =>
@@ -128,7 +129,7 @@ export interface TimelineYear {
  * final), países antes que ciudades/sitios, y alfabético de desempate.
  */
 export function buildTimeline(items: WorldPlace[]): TimelineYear[] {
-  const kindOrder: Record<string, number> = { country: 0, city: 1, place: 2 }
+  const kindOrder: Record<string, number> = { country: 0, region: 1, city: 2, place: 3 }
   const byYear = new Map<number, WorldPlace[]>()
   for (const place of items) {
     if (place.visited_year == null) continue
@@ -197,6 +198,7 @@ export function buildTimelineSegments(
 export interface WorldStats {
   countries: number
   worldPct: number
+  regions: number
   cities: number
   places: number
 }
@@ -206,6 +208,7 @@ export function worldStats(items: WorldPlace[], totalCountries = COUNTRIES.lengt
   return {
     countries,
     worldPct: Math.round((countries / totalCountries) * 100),
+    regions: items.filter((p) => p.kind === 'region').length,
     cities: items.filter((p) => p.kind === 'city').length,
     places: items.filter((p) => p.kind === 'place').length,
   }

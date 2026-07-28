@@ -89,6 +89,12 @@ export default {
     lodging: 'Alojamiento',
     other: 'Otro',
   },
+  transferMode: {
+    walk: 'A pie',
+    bike: 'En bici',
+    transit: 'Transporte público',
+    car: 'En coche',
+  },
   bookingType: {
     hotel: 'Hotel',
     flight: 'Vuelo',
