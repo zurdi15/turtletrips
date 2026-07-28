@@ -4,9 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
 import AppNav from './components/app/AppNav.vue'
+import AppBottomNav from './components/app/AppBottomNav.vue'
+import { useMediaQuery } from './composables/useMediaQuery'
 
 const route = useRoute()
 const router = useRouter()
+
+// móvil = secciones en la barra flotante inferior; desktop = en la cabecera
+const isDesktop = useMediaQuery('(min-width: 640px)')
 
 // tt-view = rise estándar al entrar cualquier vista (la entrada la pone el
 // Transition, no una clase en el root: ver nota en style.css); tt-splash =
@@ -34,7 +39,12 @@ function onViewBeforeEnter() {
     <Transition name="tt-fade">
       <AppNav v-if="navVisible" />
     </Transition>
-    <main class="max-w-6xl mx-auto px-4 py-6">
+    <!-- pb generoso en móvil con la barra inferior montada: el último elemento
+         de la página no queda debajo de ella -->
+    <main
+      class="max-w-6xl mx-auto px-4 pt-6"
+      :class="navVisible && !isDesktop ? 'pb-28' : 'pb-6'"
+    >
       <!-- cada vista entra con un rise suave (appear cubre la carga inicial) -->
       <router-view v-slot="{ Component }">
         <Transition :name="transitionName" mode="out-in" appear @before-enter="onViewBeforeEnter">
@@ -42,6 +52,9 @@ function onViewBeforeEnter() {
         </Transition>
       </router-view>
     </main>
+    <Transition name="tt-fade">
+      <AppBottomNav v-if="navVisible && !isDesktop" />
+    </Transition>
     <Toast position="bottom-right" />
     <ConfirmDialog class="w-full max-w-md mx-4" />
   </div>

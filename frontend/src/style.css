@@ -67,6 +67,9 @@
   --tt-range-preview-text: theme('colors.white');
   /* movimiento */
   --tt-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  /* muelle con rebote: se pasa de largo y vuelve — para los indicadores que
+     VIAJAN (guion de la nav, pills de ClusterBtn y de la barra inferior) */
+  --tt-ease-bounce: cubic-bezier(0.34, 1.3, 0.5, 1);
   --tt-dur-50: 50ms; /* feedback al pulsar */
   --tt-dur-150: 150ms; /* colores en hover, hover-actions */
   --tt-dur-180: 180ms; /* lift, salida de listas, subrayado de tabs */
@@ -235,6 +238,17 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
 /* móvil: los toasts no deben desbordar la pantalla */
 .p-toast {
   max-width: calc(100vw - 2rem);
+}
+
+/* móvil: la barra de navegación flotante ocupa el pie, así que los toasts se
+   colocan justo encima. !important porque PrimeVue pone el `bottom` como
+   estilo inline (inlineStyles.root del Toast). */
+@media (max-width: 639px) {
+  .p-toast-bottom-right,
+  .p-toast-bottom-left,
+  .p-toast-bottom-center {
+    bottom: 6rem !important;
+  }
 }
 
 /* AutoComplete: el panel se monta en <body> y crecía con el contenido. Las
@@ -670,6 +684,7 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   .tt-collapse-clip,
   .tt-cluster-pill,
   .tt-nav-dash,
+  .tt-bottom-nav-pill,
   .tt-list-move,
   .tt-list-enter-active,
   .tt-list-leave-active,

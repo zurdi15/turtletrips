@@ -1,28 +1,23 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Popover from 'primevue/popover'
 import BrandMark from '../BrandMark.vue'
 import TravelerAvatar from '../ui/TravelerAvatar.vue'
+import { useMediaQuery } from '../../composables/useMediaQuery'
+import { useNavItems } from '../../composables/useNavItems'
 import { useSessionStore } from '../../stores/session'
 
-const route = useRoute()
 const router = useRouter()
 const { t, locale } = useI18n()
 const session = useSessionStore()
 
-const navItems = computed(() => [
-  // solo la lista: dentro del detalle de un viaje (/trips/:id) ninguna
-  // sección de la nav queda marcada como activa
-  { to: '/', label: t('common.nav.trips'), icon: 'pi pi-compass', match: (p: string) => p === '/' },
-  { to: '/map', label: t('common.nav.map'), icon: 'pi pi-globe', match: (p: string) => p.startsWith('/map') },
-  { to: '/packing', label: t('common.nav.packing'), icon: 'pi pi-briefcase', match: (p: string) => p.startsWith('/packing') },
-  // el hub de viajeros/familias/cuentas es gestión: solo lo ve el admin
-  ...(session.isAdmin
-    ? [{ to: '/travelers', label: t('common.nav.travelers'), icon: 'pi pi-users', match: (p: string) => p.startsWith('/travelers') }]
-    : []),
-])
+// en móvil las secciones se van a la barra flotante inferior (AppBottomNav):
+// aquí solo quedan el logo y el menú de usuario
+const isDesktop = useMediaQuery('(min-width: 640px)')
+
+const { items: navItems, activeIndex, pendingTo } = useNavItems()
 
 // --- skeleton hasta que las fuentes de iconos estén listas ---
 // Los glifos pi/mdi llegan por @font-face: hasta que cargan, los ítems se
@@ -66,17 +61,6 @@ const itemEls: (HTMLElement | null)[] = []
 function setItemEl(comp: unknown, index: number) {
   itemEls[index] = (comp as { $el?: HTMLElement } | null)?.$el ?? null
 }
-
-// la sección clicada se marca activa al momento (optimista), sin esperar al router
-const pendingTo = ref<string | null>(null)
-const activePath = computed(() => pendingTo.value ?? route.path)
-watch(
-  () => route.path,
-  () => (pendingTo.value = null),
-)
-const activeIndex = computed(() =>
-  navItems.value.findIndex((item) => item.match(activePath.value)),
-)
 
 const dashX = ref<number | null>(null)
 const dashSnap = ref(false)
@@ -129,23 +113,24 @@ async function logout() {
       <!-- la tortuga nada al pasar el ratón por el logo -->
       <router-link to="/" class="tt-swim-hover flex items-center gap-2 no-underline shrink-0">
         <BrandMark class="tt-swim-target h-8 w-8 text-ink-heading" />
-        <span class="font-bold text-lg tracking-tight text-ink-heading hidden md:inline"
+        <!-- en móvil la cabecera se queda solo con logo y avatar: cabe el nombre -->
+        <span class="font-bold text-lg tracking-tight text-ink-heading"
           >turtle<span class="text-emerald-500">trips</span></span
         >
       </router-link>
-      <nav class="absolute left-1/2 -translate-x-1/2">
+      <nav v-if="isDesktop" class="absolute left-1/2 -translate-x-1/2">
         <!-- la nav no se pinta hasta que las fuentes de iconos están listas
              (evita el baile de anchos del FOUT) y entra con un fade; al estar
              centrada en absoluto, su ausencia no desplaza nada. El guion se
              coloca cuando el bloque entra de verdad en el DOM (hook enter). -->
         <Transition name="tt-fade" @enter="() => placeDash(true)">
-          <div v-if="navReady" class="relative flex items-center gap-0.5 sm:gap-1">
+          <div v-if="navReady" class="relative flex items-center gap-1">
             <router-link
               v-for="(item, index) in navItems"
               :key="item.to"
               :ref="(comp) => setItemEl(comp, index)"
               :to="item.to"
-              class="inline-flex items-center justify-center px-3 sm:px-3.5 py-2 rounded-lg text-sm font-medium no-underline transition-colors whitespace-nowrap"
+              class="inline-flex items-center justify-center px-3.5 py-2 rounded-lg text-sm font-medium no-underline transition-colors whitespace-nowrap"
               :class="
                 index === activeIndex
                   ? 'text-ink-strong'
@@ -153,8 +138,8 @@ async function logout() {
               "
               @click="pendingTo = item.to"
             >
-              <i :class="item.icon" class="text-sm sm:mr-1.5" />
-              <span class="hidden sm:inline">{{ item.label }}</span>
+              <i :class="item.icon" class="text-sm mr-1.5" />
+              <span>{{ item.label }}</span>
             </router-link>
             <!-- el guion viaja hasta el centro del ítem activo (translateX -50% lo centra) -->
             <span
@@ -218,7 +203,7 @@ async function logout() {
 <style scoped>
 /* reduced-motion lo cubre el guard global de style.css */
 .tt-nav-dash {
-  transition: transform var(--tt-dur-250) var(--tt-ease-spring);
+  transition: transform var(--tt-dur-300) var(--tt-ease-bounce);
 }
 .tt-nav-dash-snap {
   transition: none;

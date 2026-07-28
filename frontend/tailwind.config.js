@@ -81,6 +81,7 @@ export default {
       },
       transitionTimingFunction: {
         spring: 'var(--tt-ease-spring)',
+        bounce: 'var(--tt-ease-bounce)',
       },
       minWidth: {
         menu: '9rem',

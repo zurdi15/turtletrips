@@ -87,7 +87,9 @@ defineExpose({ flyTo, fitAll })
 </script>
 
 <template>
-  <div class="relative h-[68vh] lg:h-[74vh] rounded-card overflow-hidden border border-line">
+  <!-- isolate: la banda de z-index del mapa (paneles Leaflet + overlays) se
+       queda dentro y no puede pintar sobre la navegación de la app -->
+  <div class="relative isolate h-[68vh] lg:h-[74vh] rounded-card overflow-hidden border border-line">
     <LMap
       ref="mapRef"
       v-model:zoom="zoom"

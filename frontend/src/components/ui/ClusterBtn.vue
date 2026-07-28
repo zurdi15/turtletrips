@@ -35,24 +35,27 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === mo
       }"
     />
     <!-- el color activo cambia sin transición (se congelaría con el hilo ocupado) -->
-    <!-- los segmentos son minmax(0,1fr): pueden encogerse por debajo de su
-         contenido, así que el label recorta con ellipsis en vez de desbordar
-         y pisar al vecino -->
+    <!-- en móvil el icono va ENCIMA del label (así el texto se queda con todo el
+         ancho del segmento); desde sm, en línea. Los segmentos son
+         minmax(0,1fr) y pueden encogerse por debajo de su contenido: el label
+         recorta con ellipsis en vez de desbordar y pisar al vecino -->
     <button
       v-for="o in options"
       :key="o.value"
       type="button"
-      class="relative flex min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md font-medium cursor-pointer"
+      class="relative flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden rounded-md font-medium cursor-pointer sm:flex-row sm:gap-1.5"
       :class="[
-        size === 'small' ? 'px-2 py-1 text-xs' : 'px-2 py-1.5 text-sm sm:px-3',
+        size === 'small'
+          ? 'px-2 py-1 text-3xs sm:text-xs'
+          : 'px-2 py-1.5 text-2xs sm:px-3 sm:text-sm',
         model === o.value ? 'text-ink' : 'text-ink-muted hover:text-ink',
       ]"
       :aria-pressed="model === o.value"
       v-tooltip.top="iconOnly && o.label ? o.label : undefined"
       @click="model = o.value"
     >
-      <i v-if="o.icon" :class="[o.icon, 'shrink-0', !iconOnly && 'text-xs']" />
-      <span v-if="!iconOnly && o.label" class="truncate">{{ o.label }}</span>
+      <i v-if="o.icon" :class="[o.icon, 'shrink-0 text-sm', !iconOnly && 'sm:text-xs']" />
+      <span v-if="!iconOnly && o.label" class="max-w-full truncate">{{ o.label }}</span>
     </button>
   </div>
 </template>
@@ -60,6 +63,6 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === mo
 <style scoped>
 /* reduced-motion lo cubre el guard global de style.css */
 .tt-cluster-pill {
-  transition: transform var(--tt-dur-180) var(--tt-ease-spring);
+  transition: transform var(--tt-dur-250) var(--tt-ease-bounce);
 }
 </style>
