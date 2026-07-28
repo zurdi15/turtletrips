@@ -3,7 +3,6 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import ClusterBtn from '../../components/ui/ClusterBtn.vue'
-import Pill from '../../components/ui/Pill.vue'
 import draggable from 'vuedraggable'
 import ItineraryFormDialog from '../../components/itinerary/ItineraryFormDialog.vue'
 import CalendarSubscribeDialog from '../../components/itinerary/CalendarSubscribeDialog.vue'
@@ -14,6 +13,7 @@ import AgendaBookingSection, {
   type AgendaRow,
 } from '../../components/itinerary/AgendaBookingSection.vue'
 import AgendaItemRow from '../../components/itinerary/AgendaItemRow.vue'
+import AgendaDayHeader from '../../components/itinerary/AgendaDayHeader.vue'
 import AgendaDayJournal from '../../components/itinerary/AgendaDayJournal.vue'
 import { API_BASE } from '../../api/client'
 import type { ItineraryItem, Trip } from '../../api/types'
@@ -24,19 +24,10 @@ import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
 import { useCrudView } from '../../composables/useCrudView'
 import { useTripTabData } from '../../composables/useTripTabData'
+import { useDayInsights } from '../../composables/useDayInsights'
 import { useWeather } from '../../composables/useWeather'
 import { expenseIdByBooking } from '../../utils/expenses'
-import { hasLodgingBookings, lodgingCoverage } from '../../utils/lodging'
-import {
-  buildDayTransfers,
-  dayFeasibility,
-  formatKm,
-  formatMinutes,
-  type TransferMode,
-} from '../../utils/transfers'
-import { TRANSFER_MODE_ICONS, TRANSFER_MODE_KEYS } from '../../constants'
-import { intlLocale } from '../../i18n'
-import { itemCoord, pickDayCoords, weatherIcon, type Coord } from '../../utils/weather'
+import { itemCoord, pickDayCoords, type Coord } from '../../utils/weather'
 import {
   agendaDayLabel,
   agendaDays,
@@ -103,14 +94,6 @@ const days = computed(() =>
 
 const continuations = computed(() => buildContinuations(store.items))
 
-// noches del viaje sin cama: se avisa en la cabecera del día en que te acuestas
-// (solo si el viaje lleva alojamiento apuntado, si no todo el viaje saldría rojo)
-const lodgingGaps = computed(() =>
-  hasLodgingBookings(bookings.items)
-    ? lodgingCoverage(props.trip, bookings.items).gapNights
-    : new Set<string>(),
-)
-
 // ---- previsión meteo: cabecera = alojamiento de la noche (multi-día
 // incluido); cada actividad lleva la de SU sitio (un día puede tocar varias
 // zonas si vas en coche) ----
@@ -157,51 +140,23 @@ function persistOrder() {
   store.reorder(entries)
 }
 
-// ---- traslados entre paradas (estimación pura, utils/transfers.ts) ----
-// salen del espejo local `lists`, NO de store.byDay: así se recalculan mientras
-// arrastras, sin esperar al PATCH del orden
-
-const transferMode = ref<TransferMode>('transit')
-const transferModeOptions = computed(() =>
-  (Object.keys(TRANSFER_MODE_KEYS) as TransferMode[]).map((mode) => ({
-    value: mode,
-    label: t(TRANSFER_MODE_KEYS[mode]),
-    icon: TRANSFER_MODE_ICONS[mode],
-  })),
-)
-
-const transfersByDay = computed(
-  () =>
-    new Map(
-      days.value.map((day) => [
-        day,
-        buildDayTransfers(lists[day] ?? [], placeById.value, transferMode.value, {
-          hasTransport: (transportsByDay.value.get(day) ?? []).length > 0,
-        }),
-      ]),
-    ),
-)
-
-const issuesByDay = computed(
-  () =>
-    new Map(
-      days.value.map((day) => [day, dayFeasibility(lists[day] ?? [], transfersByDay.value.get(day)!)]),
-    ),
-)
-
-/** "12 km · 1 h 20 min" del día, o null si no te mueves por tu cuenta */
-function transferSummary(day: string): string | null {
-  const own = transfersByDay.value.get(day)
-  // un día entero cubierto por un tren no tiene total propio que enseñar
-  if (!own?.list.some((t) => !t.covered)) return null
-  return `${formatKm(own.km, intlLocale())} · ${formatMinutes(own.minutes)}`
-}
-
-function issuesTooltip(day: string): string {
-  return (issuesByDay.value.get(day) ?? [])
-    .map((issue) => t(`itinerary.transfers.issues.${issue}`))
-    .join(' · ')
-}
+// avisos del día (cama y traslados): lógica pura en utils/, atada en el composable
+const {
+  lodgingGaps,
+  transferMode,
+  transferModeOptions,
+  transfersByDay,
+  issuesByDay,
+  transferSummary,
+  issuesTooltip,
+} = useDayInsights({
+  trip: () => props.trip,
+  days,
+  lists,
+  bookings: () => bookings.items,
+  placeById,
+  transportsByDay,
+})
 
 function dayLabel(iso: string): { title: string; sub: string } {
   return agendaDayLabel(iso, props.trip.start_date, t)
@@ -337,64 +292,16 @@ function openNew(day?: string) {
         :key="day"
         class="bg-surface rounded-card border border-line overflow-hidden"
       >
-        <div class="flex items-center justify-between px-4 py-2.5 bg-surface-muted border-b border-line-subtle">
-          <div class="flex items-baseline gap-2 min-w-0">
-            <span class="font-semibold text-ink capitalize">{{ dayLabel(day).title }}</span>
-            <span class="text-sm text-ink-faint truncate">{{ dayLabel(day).sub }}</span>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <Pill
-              v-if="(issuesByDay.get(day) ?? []).length"
-              color="warn"
-              icon="mdi mdi-alert-outline"
-              v-tooltip.top="issuesTooltip(day)"
-            >
-              <span class="max-sm:hidden">{{ t('itinerary.transfers.tight') }}</span>
-            </Pill>
-            <Pill
-              v-if="lodgingGaps.has(day)"
-              color="warn"
-              icon="mdi mdi-bed-empty"
-              v-tooltip.top="t('trips.lodging.nightGapTooltip')"
-            >
-              <span class="max-sm:hidden">{{ t('trips.lodging.nightGap') }}</span>
-            </Pill>
-            <!-- kilómetros y tiempo de los traslados del día (estimación) -->
-            <Pill
-              v-if="transferSummary(day)"
-              icon="mdi mdi-map-marker-distance"
-              class="hidden sm:inline-flex"
-              v-tooltip.top="t('itinerary.transfers.estimate')"
-            >
-              <span class="tabular-nums">{{ transferSummary(day) }}</span>
-            </Pill>
-            <!-- previsión del alojamiento de la noche (días dentro del horizonte) -->
-            <span
-              v-if="headerForecast(day)"
-              class="flex items-center gap-1.5 text-xs text-ink-muted whitespace-nowrap"
-            >
-              <i :class="weatherIcon(headerForecast(day)!.weather_code)" class="text-sm" />
-              <span class="tabular-nums">
-                {{ Math.round(headerForecast(day)!.t_max) }}° / {{ Math.round(headerForecast(day)!.t_min) }}°
-              </span>
-              <span
-                v-if="(headerForecast(day)!.precip_prob ?? 0) >= 30"
-                class="text-info"
-                v-tooltip.top="t('itinerary.agenda.rainProb', { pct: headerForecast(day)!.precip_prob })"
-              >
-                <i class="mdi mdi-water text-2xs" />{{ headerForecast(day)!.precip_prob }}%
-              </span>
-            </span>
-            <Button
-              icon="pi pi-plus"
-              text
-              size="small"
-              severity="secondary"
-              v-tooltip.left="t('itinerary.agenda.addToDay')"
-              @click="openNew(day)"
-            />
-          </div>
-        </div>
+        <AgendaDayHeader
+          :title="dayLabel(day).title"
+          :sub="dayLabel(day).sub"
+          :issues="issuesByDay.get(day) ?? []"
+          :issuesTooltip="issuesTooltip(day)"
+          :lodgingGap="lodgingGaps.has(day)"
+          :transfers="transferSummary(day)"
+          :forecast="headerForecast(day)"
+          @add="openNew(day)"
+        />
         <!-- transportes del día: sección propia con cabecera -->
         <AgendaBookingSection
           v-if="transportRows(day).length"

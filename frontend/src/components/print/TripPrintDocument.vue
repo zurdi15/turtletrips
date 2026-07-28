@@ -117,7 +117,7 @@ function has(sections: PrintSection[], section: PrintSection) {
             <span class="w-4 shrink-0 mt-0.5 text-xs grid place-items-center">
               <i v-if="row.icon" :class="row.icon" />
             </span>
-            <span class="w-28 shrink-0 text-xs opacity-80 tabular-nums">{{ row.head }}</span>
+            <span class="w-32 shrink-0 text-xs opacity-80 tabular-nums">{{ row.head }}</span>
             <span class="min-w-0">
               <span class="font-medium">{{ row.title }}</span>
               <span v-if="row.place" class="text-xs opacity-70"> · {{ row.place }}</span>

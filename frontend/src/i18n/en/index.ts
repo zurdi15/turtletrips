@@ -12,6 +12,7 @@ import travelers from './travelers'
 import auth from './auth'
 import profile from './profile'
 import share from './share'
+import print from './print'
 
 export default {
   common,
@@ -28,4 +29,5 @@ export default {
   auth,
   profile,
   share,
+  print,
 }

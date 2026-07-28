@@ -22,7 +22,9 @@ export default {
     copied: 'Link copied',
     saveError: 'Could not update the link',
     privacy:
-      'Expenses, balances, budget, confirmation codes and private notes never travel with the link.',
+      'Expenses, balances, budget, confirmation codes and flight numbers never travel with the link.',
+    privacyNotes:
+      'Heads up: trip notes and activity notes ARE visible. Place notes and the daily journal are not.',
   },
   scopes: {
     itinerary: 'Day-by-day itinerary',
@@ -33,6 +35,9 @@ export default {
     readOnly: 'Read-only shared plan',
     emptyDay: 'Free day',
     placeLink: 'More information',
+    errorTitle: 'Could not load the trip',
+    errorSubtitle: 'It may be a connection problem. Try again.',
+    retry: 'Retry',
     goneTitle: 'This link no longer works',
     goneSubtitle: 'It may have been regenerated, or the trip is no longer shared.',
   },

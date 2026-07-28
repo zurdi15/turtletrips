@@ -102,7 +102,15 @@ watch(
     for (const code of codes) {
       const before = previous.get(code)
       const after = states.get(code)
-      if (before?.status !== after?.status || before?.cities !== after?.cities) restyle(code)
+      // `regions` cuenta igual que `cities` en fillOpacityFor: sin compararlo,
+      // marcar la 2ª región de un país ya visitado no repintaba nada
+      if (
+        before?.status !== after?.status ||
+        before?.cities !== after?.cities ||
+        before?.regions !== after?.regions
+      ) {
+        restyle(code)
+      }
     }
     previous = new Map(states)
   },

@@ -31,6 +31,21 @@ export const router = createRouter({
       meta: { public: true, bare: true },
     },
     {
+      // el mismo viaje compartido, listo para el "Guardar como PDF" del navegador
+      path: '/s/:token/print',
+      name: 'public-trip-print',
+      component: () => import('../views/PublicTripPrintView.vue'),
+      props: true,
+      meta: { public: true, bare: true },
+    },
+    {
+      path: '/trips/:id/print',
+      name: 'trip-print',
+      component: () => import('../views/TripPrintView.vue'),
+      props: true,
+      meta: { bare: true },
+    },
+    {
       path: '/profile',
       name: 'profile',
       component: () => import('../views/ProfileView.vue'),

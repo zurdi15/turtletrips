@@ -18,7 +18,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  pick: [code: string, name: string]
+  pick: [code: string, name: string, at: [number, number]]
   hover: [code: string | null]
 }>()
 
@@ -69,7 +69,7 @@ function onEachFeature(feature: Feature, layer: Layer) {
   layer.on({
     click: (event: LeafletMouseEvent) => {
       event.originalEvent?.stopPropagation()
-      emit('pick', code, name)
+      emit('pick', code, name, [event.latlng.lat, event.latlng.lng])
     },
     mouseover: (event: LeafletMouseEvent) => {
       layer.bindTooltip(name, { sticky: true, direction: 'top' }).openTooltip(event.latlng)

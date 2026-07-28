@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 import { divIcon, type Icon, type Map as LeafletMap } from 'leaflet'
@@ -14,12 +13,19 @@ import { buildCountryStates, visitedCodes } from '../../utils/worldChoropleth'
 import { WHITE } from '../../theme'
 import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useMapTiles } from '../../composables/useMapTiles'
-import { useNotify } from '../../composables/useNotify'
 import { useWorldGeometry, type RegionGeometry } from '../../composables/useWorldGeometry'
 import { useWorldMarking } from '../../composables/useWorldMarking'
 
 const props = defineProps<{
+  /** entradas que pasan los filtros: son las que se pintan como marcadores */
   places: WorldPlace[]
+  /**
+   * El diario COMPLETO, sin filtrar. El relleno de países y regiones sale de
+   * aquí a propósito: con los filtros puestos, un país ya visitado desaparecía
+   * de `places`, el mapa lo pintaba como no visitado y tocarlo lo volvía a dar
+   * de alta — dos entradas del mismo país en el diario.
+   */
+  diary: WorldPlace[]
   showEmptyHint: boolean
 }>()
 
@@ -27,8 +33,6 @@ const emit = defineEmits<{ edit: [place: WorldPlace] }>()
 
 const selectedId = defineModel<number | null>('selectedId', { default: null })
 
-const { t } = useI18n()
-const notify = useNotify()
 const tiles = useMapTiles()
 const { centerFor } = useCountryCenter()
 
@@ -45,7 +49,7 @@ const hoveredCode = ref<string | null>(null)
 const pickedCode = ref<string | null>(null)
 
 const countryStates = computed(() => {
-  const states = buildCountryStates(props.places)
+  const states = buildCountryStates(props.diary)
   // los países en vuelo se pintan ya como visitados
   for (const code of pending.value) {
     if (code.includes('-')) continue // los pendientes con guion son regiones
@@ -59,7 +63,7 @@ const countryStates = computed(() => {
 const pickedState = computed(() => (pickedCode.value ? countryStates.value.get(pickedCode.value) : null))
 const pickedPlace = computed(() => {
   const id = pickedState.value?.placeId
-  return id ? (props.places.find((p) => p.id === id) ?? null) : null
+  return id ? (props.diary.find((p) => p.id === id) ?? null) : null
 })
 
 /** un país con regiones, ciudades o sitios dentro no se quita (el backend da 409) */
@@ -102,7 +106,7 @@ let regionKey = ''
 /** todas las regiones marcadas, por código ISO 3166-2 (son únicos en el mundo) */
 const visitedRegions = computed(() => {
   const codes = new Set<string>()
-  for (const place of props.places) {
+  for (const place of props.diary) {
     if (place.kind === 'region' && place.region_code) codes.add(place.region_code)
   }
   for (const code of pending.value) if (code.includes('-')) codes.add(code)
@@ -144,7 +148,8 @@ async function syncRegions() {
     regionLayers.value = loaded.filter(
       (entry): entry is { code: string; geometry: RegionGeometry } => !!entry.geometry,
     )
-  } finally {
+    loadingRegions.value = false
+  } catch {
     loadingRegions.value = false
   }
 }
@@ -160,10 +165,10 @@ function zoomToRegions(code: string) {
   if (bounds) leafletMap()?.fitBounds(bounds, { padding: [24, 24], maxZoom: 7 })
 }
 
-function onRegionPick(country: string, regionCode: string, name: string) {
-  const marked = props.places.find((p) => p.kind === 'region' && p.region_code === regionCode)
+function onRegionPick(country: string, regionCode: string, name: string, at: [number, number]) {
+  const marked = props.diary.find((p) => p.kind === 'region' && p.region_code === regionCode)
   if (marked) unmarkRegion(marked.id, name)
-  else markRegion(country, regionCode, name)
+  else markRegion(country, regionCode, name, at)
 }
 
 // --- alto: el mapa llega hasta el borde inferior de la ventana ---
@@ -341,7 +346,7 @@ defineExpose({ flyTo, fitAll })
         :visited="visitedRegions"
         :hoveredCode="regionHovered"
         @hover="(code) => (regionHovered = code)"
-        @pick="(code, name) => onRegionPick(entry.code, code, name)"
+        @pick="(code, name, at) => onRegionPick(entry.code, code, name, at)"
       />
       <!-- solo-rótulos, en su propio panel por encima del choropleth -->
       <LTileLayer

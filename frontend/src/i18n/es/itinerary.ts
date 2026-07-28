@@ -32,10 +32,8 @@ export default {
     bookingTooltip: 'Reserva: {name}',
   },
   transfers: {
-    mode: 'Cómo te mueves',
     estimate: 'Estimación en línea recta con factor de rodeo: no es una ruta real',
     covered: 'Este salto lo cubre una reserva de transporte de ese día',
-    dayTotal: 'Traslados del día: {km} · {time}',
     tight: 'Día apretado',
     issues: {
       overlap: 'Con las horas puestas no da tiempo a llegar de una actividad a la siguiente',

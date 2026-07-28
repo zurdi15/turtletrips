@@ -40,7 +40,9 @@ watch(
   { immediate: true },
 )
 
-const trip = computed(() => trips.trips.find((candidate) => candidate.id === tripId.value) ?? null)
+// `loadTrip` deja el viaje en `current`: la lista solo se llena en el listado y
+// aquí se entra por URL directa (o desde Ajustes), sin pasar por él
+const trip = computed(() => (trips.current?.id === tripId.value ? trips.current : null))
 
 const doc = usePrintTripData({
   trip: () =>
@@ -69,14 +71,14 @@ watch(
 </script>
 
 <template>
-  <div class="min-h-screen bg-page">
+  <div class="min-h-screen -mt-6 bg-page">
     <PrintToolbar
       v-model:options="options"
       :backTo="`/trips/${id}/settings`"
       allowExpenses
       @print="print"
     />
-    <main class="max-w-4xl mx-auto px-4 py-6">
+    <div class="max-w-4xl mx-auto py-6">
       <TabSkeleton v-if="!trip" variant="cards" :rows="3" />
       <TripPrintDocument
         v-else-if="doc.trip.value"
@@ -89,6 +91,6 @@ watch(
         :options="options"
         :sections="doc.sections.value"
       />
-    </main>
+    </div>
   </div>
 </template>

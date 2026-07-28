@@ -51,7 +51,14 @@ export function useWorldMarking() {
   }
 
   /** Alta de una región (ISO 3166-2) tocándola en el mapa */
-  async function markRegion(countryCode: string, regionCode: string, name: string) {
+  /** `at` = punto donde se tocó la región: sin coordenadas no se puede volar a
+   *  ella desde la lista */
+  async function markRegion(
+    countryCode: string,
+    regionCode: string,
+    name: string,
+    at?: [number, number] | null,
+  ) {
     if (pending.value.has(regionCode)) return
     setPending(regionCode, true)
     try {
@@ -60,6 +67,8 @@ export function useWorldMarking() {
         kind: 'region',
         country_code: countryCode,
         region_code: regionCode,
+        lat: at?.[0] ?? null,
+        lon: at?.[1] ?? null,
       })
       notify.success(t('world.toast.regionAdded', { name }))
     } catch (err) {

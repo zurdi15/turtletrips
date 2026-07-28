@@ -67,6 +67,18 @@ function removeTrip() {
     <section class="bg-surface rounded-card border border-line p-4 sm:p-6">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
+          <h3 class="text-sm font-semibold text-ink-secondary mb-1">{{ t('print.openTitle') }}</h3>
+          <p class="text-sm text-ink-muted">{{ t('print.openHint') }}</p>
+        </div>
+        <router-link :to="`/trips/${trip.id}/print`">
+          <Button :label="t('print.open')" icon="pi pi-print" severity="secondary" outlined />
+        </router-link>
+      </div>
+    </section>
+
+    <section class="bg-surface rounded-card border border-line p-4 sm:p-6">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
           <h3 class="text-sm font-semibold text-ink-secondary mb-1">{{ t('share.section.title') }}</h3>
           <p class="text-sm text-ink-muted">
             {{ trip.share_token ? t('share.section.active') : t('share.section.inactive') }}

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Button from 'primevue/button'
 import PlaceMap from '../components/PlaceMap.vue'
 import TabSkeleton from '../components/TabSkeleton.vue'
 import EmptyState from '../components/EmptyState.vue'
 import PublicAgendaDay from '../components/share/PublicAgendaDay.vue'
 import PublicTripHero from '../components/share/PublicTripHero.vue'
-import type { Booking, ItineraryItem, Place } from '../api/types'
+import type { ItineraryItem } from '../api/types'
 import { BOOKING_TYPE_ICONS, BOOKING_TYPE_KEYS } from '../constants'
 import { applyVisitorLocale } from '../i18n'
 import { usePublicTrip } from '../composables/usePublicTrip'
@@ -24,37 +25,13 @@ import { buildPublicDay } from '../utils/publicAgenda'
 const props = defineProps<{ token: string }>()
 
 const { t } = useI18n()
-const { trip, loading, gone, load } = usePublicTrip()
+const { trip, loading, gone, failed, load, retry, bookings, places, items } = usePublicTrip()
 
 onMounted(() => {
   // el invitado no tiene cuenta ni preferencia guardada: manda su navegador
   applyVisitorLocale()
   load(props.token)
 })
-
-// El enlace trae tipos propios (sin dinero, códigos ni notas privadas). Para
-// reutilizar las derivaciones de la agenda y el mapa se completan con NULOS los
-// campos que no viajan: la lista de abajo es, literalmente, lo que el enlace no
-// contiene.
-const bookings = computed<Booking[]>(() =>
-  (trip.value?.bookings ?? []).map((b) => ({
-    ...b,
-    trip_id: 0,
-    confirmation_code: null,
-    flight_number: null,
-    cost_amount: null,
-    cost_currency: null,
-    notes: null,
-    paid_by_id: null,
-    paid_by_common: false,
-  })),
-)
-const places = computed<Place[]>(() =>
-  (trip.value?.places ?? []).map((p) => ({ ...p, trip_id: 0, notes: null, visited: false, priority: 0 })),
-)
-const items = computed<ItineraryItem[]>(() =>
-  (trip.value?.itinerary ?? []).map((i) => ({ ...i, trip_id: 0 })),
-)
 
 const placeById = computed(() => new Map(places.value.map((p) => [p.id, p])))
 const transportsByDay = computed(() => buildTransportsByDay(bookings.value))
@@ -103,6 +80,15 @@ const has = (scope: string) => !!trip.value?.scopes.includes(scope as never)
     <TabSkeleton v-if="loading" variant="cards" :rows="3" />
 
     <EmptyState
+      v-else-if="failed"
+      icon="pi pi-exclamation-triangle"
+      :title="t('share.public.errorTitle')"
+      :subtitle="t('share.public.errorSubtitle')"
+    >
+      <Button :label="t('share.public.retry')" icon="pi pi-refresh" outlined @click="retry" />
+    </EmptyState>
+
+    <EmptyState
       v-else-if="gone || !trip"
       icon="pi pi-link"
       :title="t('share.public.goneTitle')"
@@ -111,6 +97,17 @@ const has = (scope: string) => !!trip.value?.scopes.includes(scope as never)
 
     <template v-else>
       <PublicTripHero :trip="trip" />
+
+      <!-- para quien lo quiera en papel o en PDF (sin cuenta, sin instalar nada) -->
+      <router-link :to="`/s/${token}/print`" class="self-start -mt-4">
+        <Button
+          :label="t('print.open')"
+          icon="pi pi-print"
+          severity="secondary"
+          text
+          size="small"
+        />
+      </router-link>
 
       <section v-if="has('itinerary') && agenda.length" class="flex flex-col gap-3">
         <h2 class="text-sm font-semibold text-ink-secondary uppercase tracking-wide">

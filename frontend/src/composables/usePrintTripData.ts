@@ -43,6 +43,9 @@ export function usePrintTripData(input: {
     return map
   })
 
+  // en papel solo van los días con ALGO: `agendaDays` cubre el rango entero del
+  // viaje, así que sin filtrar salía una tarjeta "Día libre" por fecha — y con
+  // un enlace que no comparte el itinerario, hoja tras hoja de nada
   const days = computed(() => {
     const current = trip.value
     if (!current) return []
@@ -64,7 +67,7 @@ export function usePrintTripData(input: {
         placeById.value,
         input.t,
       ),
-    }))
+    })).filter((entry) => entry.rows.length)
   })
 
   const route = computed(() => buildRoute(items.value, placeById.value))

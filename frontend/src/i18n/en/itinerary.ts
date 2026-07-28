@@ -32,10 +32,8 @@ export default {
     bookingTooltip: 'Booking: {name}',
   },
   transfers: {
-    mode: 'How you get around',
     estimate: 'Straight-line estimate with a detour factor: not a real route',
     covered: 'A transport booking that day covers this hop',
-    dayTotal: 'Transfers today: {km} · {time}',
     tight: 'Tight day',
     issues: {
       overlap: 'With the times you set there is no time to get to the next activity',

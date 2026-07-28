@@ -22,7 +22,9 @@ export default {
     copied: 'Enlace copiado',
     saveError: 'No se pudo actualizar el enlace',
     privacy:
-      'Nunca viajan los gastos, los saldos, el presupuesto, los códigos de reserva ni las notas privadas.',
+      'Nunca viajan los gastos, los saldos, el presupuesto, los códigos de reserva ni los números de vuelo.',
+    privacyNotes:
+      'Ojo: las notas del viaje y las de cada actividad SÍ se ven. Las notas de los sitios y el diario de cada día, no.',
   },
   scopes: {
     itinerary: 'Itinerario día a día',
@@ -33,6 +35,9 @@ export default {
     readOnly: 'Plan compartido en solo lectura',
     emptyDay: 'Día libre',
     placeLink: 'Más información',
+    errorTitle: 'No se pudo cargar el viaje',
+    errorSubtitle: 'Puede ser un problema de conexión. Inténtalo otra vez.',
+    retry: 'Reintentar',
     goneTitle: 'Este enlace ya no vale',
     goneSubtitle: 'Puede que se haya regenerado o que hayan dejado de compartir el viaje.',
   },

@@ -101,9 +101,6 @@ export default {
     cityCount: 'ninguna ciudad | 1 ciudad dentro | {n} ciudades dentro',
     regionCount: 'ninguna región | 1 región marcada | {n} regiones marcadas',
     viewRegions: 'Ver regiones',
-    hideRegions: 'Ocultar regiones',
-    noRegions: 'Todavía no hay regiones de este país en el mapa',
-    regionsOf: 'Regiones de {name}',
   },
   form: {
     addTitle: 'Añadir al mapa',

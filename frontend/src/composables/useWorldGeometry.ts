@@ -213,7 +213,14 @@ export function useWorldGeometry() {
    * fichero (solo hay una lista curada), y entonces la UI no ofrece regiones.
    */
   async function loadRegions(code: string): Promise<RegionGeometry | null> {
-    if (regionCache.has(code)) return regionCache.get(code) ?? null
+    if (regionCache.has(code)) {
+      // Map conserva el orden de INSERCIÓN: sin re-insertar, la expulsión sería
+      // por antigüedad y podría tirar justo el país que estás mirando
+      const cached = regionCache.get(code) ?? null
+      regionCache.delete(code)
+      regionCache.set(code, cached)
+      return cached
+    }
     const inFlight = regionPending.get(code)
     if (inFlight) return inFlight
 

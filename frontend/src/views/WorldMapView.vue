@@ -338,6 +338,7 @@ function bulkDelete() {
       ref="mapPanel"
       v-model:selectedId="selectedId"
       :places="filtered"
+      :diary="store.items"
       :showEmptyHint="!store.loading && !store.items.length"
       @edit="openEdit"
     />

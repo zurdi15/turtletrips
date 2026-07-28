@@ -101,9 +101,6 @@ export default {
     cityCount: 'no cities | 1 city inside | {n} cities inside',
     regionCount: 'no regions | 1 region marked | {n} regions marked',
     viewRegions: 'Show regions',
-    hideRegions: 'Hide regions',
-    noRegions: 'This country has no regions on the map yet',
-    regionsOf: '{name} regions',
   },
   form: {
     addTitle: 'Add to the map',

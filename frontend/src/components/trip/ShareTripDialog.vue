@@ -165,7 +165,10 @@ function copy() {
         @click="share"
       />
 
-      <Message severity="warn" size="small">{{ t('share.dialog.privacy') }}</Message>
+      <Message severity="warn" size="small">
+        {{ t('share.dialog.privacy') }}
+        <span class="block mt-1">{{ t('share.dialog.privacyNotes') }}</span>
+      </Message>
     </div>
   </Dialog>
 </template>
