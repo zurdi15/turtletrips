@@ -115,6 +115,19 @@ const visitedRegions = computed(() => {
 /** países cuyas regiones se están pintando (para esconder su bandera) */
 const regionCountries = computed(() => new Set(regionLayers.value.map((entry) => entry.code)))
 
+/**
+ * Los mismos países, como chips flotantes. Son el ÚNICO acceso al país
+ * mientras se ven sus regiones: su bandera está escondida (robaba el clic) y
+ * el relleno queda tapado por las regiones, así que sin esto no hay forma de
+ * abrir la ficha ni de marcar el país entero desde el zoom de regiones.
+ */
+const regionChips = computed(() =>
+  regionLayers.value.map((entry) => ({
+    code: entry.code,
+    visited: countryStates.value.get(entry.code)?.status === 'visited',
+  })),
+)
+
 async function syncRegions() {
   const geo = geometry.value
   const map = leafletMap()
@@ -387,6 +400,26 @@ defineExpose({ flyTo, fitAll })
         </LCircleMarker>
       </template>
     </LMap>
+    <!-- países con regiones a la vista: arriba a la derecha porque el control
+         de zoom ocupa la izquierda y la ficha sale por abajo -->
+    <div
+      v-if="regionChips.length"
+      class="absolute top-2 right-2 z-map-overlay flex flex-wrap justify-end gap-1 max-w-xs"
+    >
+      <button
+        v-for="chip in regionChips"
+        :key="chip.code"
+        type="button"
+        class="tt-pop-in bg-surface rounded-full border shadow-lift px-2 py-1 text-base leading-none"
+        :class="chip.visited ? 'border-brand' : 'border-line opacity-70'"
+        :title="countryName(chip.code)"
+        :aria-label="countryName(chip.code)"
+        @click="onPick(chip.code)"
+      >
+        {{ flagEmoji(chip.code) }}
+      </button>
+    </div>
+
     <!-- pista flotante cuando el diario está vacío -->
     <div
       v-if="showEmptyHint"
