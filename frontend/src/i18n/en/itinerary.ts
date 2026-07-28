@@ -48,6 +48,7 @@ export default {
     saved: 'Saved',
     saveError: 'Could not save the journal',
     postcard: 'Postcard',
+    viewPhoto: 'View photo',
     addPhoto: 'Add postcard',
     replacePhoto: 'Replace',
     deletePhoto: 'Delete',

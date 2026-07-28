@@ -2,8 +2,9 @@
 // Primitiva TONTA: imagen con skeleton shimmer mientras carga y fade al
 // aparecer. El tamaño lo pone el consumidor (clases al root por fallthrough);
 // si la carga falla se queda el fondo del contenedor (sin shimmer eterno).
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import Skeleton from 'primevue/skeleton'
+import { focusStyle } from '../../utils/imageFocus'
 
 const props = withDefaults(
   defineProps<{
@@ -12,9 +13,14 @@ const props = withDefaults(
     imgClass?: string
     alt?: string
     lazy?: boolean
+    /** encuadre elegido (0-1); sin él, centrada */
+    focusX?: number | null
+    focusY?: number | null
   }>(),
-  { imgClass: '', alt: '', lazy: false },
+  { imgClass: '', alt: '', lazy: false, focusX: null, focusY: null },
 )
+
+const objectPosition = computed(() => focusStyle(props.focusX, props.focusY))
 
 const imgEl = ref<HTMLImageElement | null>(null)
 const loaded = ref(false)
@@ -48,6 +54,7 @@ onMounted(() => {
       :loading="lazy ? 'lazy' : undefined"
       :class="[imgClass, loaded ? 'opacity-100' : 'opacity-0']"
       class="transition-opacity duration-300"
+      :style="{ objectPosition }"
       @load="loaded = true"
       @error="failed = true"
     />

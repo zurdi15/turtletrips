@@ -12,6 +12,9 @@ import UploadButton from '../ui/UploadButton.vue'
 import type { WorldPlace, WorldPlaceKind } from '../../api/types'
 import { intlLocale } from '../../i18n'
 import { displayName } from '../../utils/worldGrouping'
+import { visitMonths, visitYears } from '../../utils/worldDates'
+import ImageFramer from '../ui/ImageFramer.vue'
+import type { Focus } from '../../utils/imageFocus'
 import { useWorldPlacesStore } from '../../stores/worldPlaces'
 import { useFormDialog } from '../../composables/useFormDialog'
 import { useNotify } from '../../composables/useNotify'
@@ -66,6 +69,7 @@ const noCountryOption = computed(() => ({ value: null, label: t('world.noCountry
 
 const photoUrl = ref<string | null>(null)
 const uploadingPhoto = ref(false)
+const photoFocus = ref<Focus>({ x: 0.5, y: 0.5 })
 
 async function onPhotoChosen(file: File) {
   if (!props.place) return
@@ -73,6 +77,8 @@ async function onPhotoChosen(file: File) {
   try {
     const updated = await store.uploadPhoto(props.place.id, file)
     photoUrl.value = updated.photo_url
+    // el backend recentra al subir: el encuadre de la postal anterior no vale
+    photoFocus.value = { x: updated.photo_focus_x, y: updated.photo_focus_y }
   } catch (err) {
     notify.error(t('world.toast.photoError'), err)
   } finally {
@@ -86,21 +92,15 @@ async function removePhoto() {
   photoUrl.value = null
 }
 
-const CURRENT_YEAR = new Date().getFullYear()
+// mismas opciones que la tarjeta de alta rápida del mapa
 const yearOptions = computed(() => [
   { value: null as number | null, label: t('world.form.noYear') },
-  ...Array.from({ length: CURRENT_YEAR - 1949 }, (_, i) => {
-    const year = CURRENT_YEAR - i
-    return { value: year as number | null, label: String(year) }
-  }),
+  ...visitYears().map((year) => ({ value: year as number | null, label: String(year) })),
 ])
 
 const monthOptions = computed(() => [
   { value: null as number | null, label: '—' },
-  ...Array.from({ length: 12 }, (_, i) => ({
-    value: (i + 1) as number | null,
-    label: new Date(2000, i, 1).toLocaleDateString(intlLocale(), { month: 'long' }),
-  })),
+  ...visitMonths(intlLocale()).map((m) => ({ value: m.value as number | null, label: m.label })),
 ])
 
 const { saving, save } = useFormDialog({
@@ -117,6 +117,7 @@ const { saving, save } = useFormDialog({
       formYear.value = place.visited_year
       formMonth.value = place.visited_month
       photoUrl.value = place.photo_url
+      photoFocus.value = { x: place.photo_focus_x, y: place.photo_focus_y }
     } else {
       formName.value = props.prefill?.name ?? ''
       formKind.value = props.prefill?.kind ?? 'city'
@@ -127,6 +128,7 @@ const { saving, save } = useFormDialog({
       formYear.value = null
       formMonth.value = null
       photoUrl.value = null
+      photoFocus.value = { x: 0.5, y: 0.5 }
     }
   },
   validate: () => (formName.value.trim() ? null : t('world.form.nameRequired')),
@@ -144,6 +146,8 @@ const { saving, save } = useFormDialog({
       visited_year: formYear.value,
       // el mes sin año no significa nada
       visited_month: formYear.value != null ? formMonth.value : null,
+      photo_focus_x: photoFocus.value.x,
+      photo_focus_y: photoFocus.value.y,
     }
     return props.place ? store.update(props.place.id, payload) : store.create(payload)
   },
@@ -203,11 +207,13 @@ const { saving, save } = useFormDialog({
     <!-- postal del país: una foto que lo resuma (solo al editar) -->
     <div v-if="place && place.kind === 'country'" class="flex flex-col gap-2">
       <label class="text-sm font-medium">{{ t('world.form.photo') }}</label>
-      <img
+      <!-- la postal se ve recortada en la ficha del mapa: se encuadra aquí -->
+      <ImageFramer
         v-if="photoUrl"
+        v-model="photoFocus"
         :src="photoUrl"
-        class="w-full max-h-40 object-cover rounded-lg border border-line"
-        alt=""
+        aspect="16 / 9"
+        :hint="t('common.image.frameHint')"
       />
       <div class="flex items-center gap-2">
         <UploadButton

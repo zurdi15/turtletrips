@@ -36,6 +36,21 @@ export const useItineraryJournalStore = defineStore('itineraryJournal', () => {
     return entry
   }
 
+  /**
+   * Encuadre de la postal. Va con el texto ACTUAL a cuestas a propósito: el
+   * PUT del diario reescribe la fila entera, así que mandar solo el encuadre
+   * borraría lo escrito ese día.
+   */
+  async function saveFocus(day: string, focusX: number, focusY: number) {
+    const entry = await api.put<DayJournal>(`/trips/${tripId.value}/journal/${day}`, {
+      text: byDay.value.get(day)?.text ?? null,
+      photo_focus_x: focusX,
+      photo_focus_y: focusY,
+    })
+    _upsert(entry)
+    return entry
+  }
+
   async function uploadPhoto(day: string, file: File) {
     const form = new FormData()
     form.append('file', file)
@@ -55,5 +70,5 @@ export const useItineraryJournalStore = defineStore('itineraryJournal', () => {
     if (existing) _upsert({ ...existing, photo_url: null })
   }
 
-  return { items, tripId, loading, byDay, load, saveText, uploadPhoto, deletePhoto }
+  return { items, tripId, loading, byDay, load, saveText, saveFocus, uploadPhoto, deletePhoto }
 })

@@ -19,6 +19,8 @@ defineProps<{ trip: Trip; image: string | null }>()
           lazy
           class="w-full h-full"
           img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          :focus-x="trip.cover_url ? trip.cover_focus_x : null"
+          :focus-y="trip.cover_url ? trip.cover_focus_y : null"
         />
         <div
           v-else

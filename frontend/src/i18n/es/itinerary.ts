@@ -48,6 +48,7 @@ export default {
     saved: 'Guardado',
     saveError: 'No se pudo guardar el diario',
     postcard: 'Postal',
+    viewPhoto: 'Ver la foto',
     addPhoto: 'Añadir postal',
     replacePhoto: 'Reemplazar',
     deletePhoto: 'Eliminar',

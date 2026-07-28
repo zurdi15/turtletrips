@@ -22,6 +22,8 @@ defineProps<{ trip: Trip; bannerImage: string | null }>()
         :src="bannerImage"
         class="absolute inset-0"
         img-class="w-full h-full object-cover banner-fade-y"
+        :focus-x="trip.cover_url ? trip.cover_focus_x : null"
+        :focus-y="trip.cover_url ? trip.cover_focus_y : null"
       />
     </div>
 

@@ -5,6 +5,7 @@ import Tag from 'primevue/tag'
 import EmptyState from '../EmptyState.vue'
 import Pill from '../ui/Pill.vue'
 import type { WorldPlace } from '../../api/types'
+import { focusStyle } from '../../utils/imageFocus'
 import { KIND_COLORS, KIND_KEYS, visitedLabel, type CountryGroup } from '../../utils/worldGrouping'
 
 defineProps<{
@@ -76,6 +77,9 @@ function toggleGroup(group: CountryGroup) {
             v-if="group.entry?.photo_url"
             :src="group.entry.photo_url"
             class="h-9 w-14 object-cover rounded-md border border-line shrink-0"
+            :style="{
+              objectPosition: focusStyle(group.entry.photo_focus_x, group.entry.photo_focus_y),
+            }"
             alt=""
           />
           <span class="font-semibold text-ink-heading">{{ group.title ?? $t('world.noCountry') }}</span>

@@ -17,6 +17,8 @@ defineProps<{ trip: Trip; image: string | null }>()
         v-if="image"
         :src="image"
         img-class="block w-full h-auto min-h-40 max-h-[26rem] object-cover group-hover:scale-105 transition-transform duration-700"
+        :focus-x="trip.cover_url ? trip.cover_focus_x : null"
+        :focus-y="trip.cover_url ? trip.cover_focus_y : null"
       />
       <div v-else class="h-56 bg-gradient-to-br from-sky-700 to-indigo-900" />
       <div

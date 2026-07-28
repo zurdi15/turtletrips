@@ -241,6 +241,8 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
                         :name="option.name"
                         :color="option.color"
                         :avatar-url="option.avatar_url"
+                        :focus-x="option.avatar_focus_x"
+                        :focus-y="option.avatar_focus_y"
                         size="xs"
                       />
                     </span>
@@ -254,6 +256,8 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
                         :name="detailOwner.name"
                         :color="detailOwner.color"
                         :avatar-url="detailOwner.avatar_url"
+                        :focus-x="detailOwner.avatar_focus_x"
+                        :focus-y="detailOwner.avatar_focus_y"
                         size="xs"
                       />
                     </span>
@@ -274,6 +278,8 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
                   :name="detailOwner.name"
                   :color="detailOwner.color"
                   :avatar-url="detailOwner.avatar_url"
+                  :focus-x="detailOwner.avatar_focus_x"
+                  :focus-y="detailOwner.avatar_focus_y"
                   size="xs"
                 />
                 {{ detailOwner.id === session.travelerId ? $t('packing.templates.ownerYou') : detailOwner.name }}

@@ -38,6 +38,11 @@ export default {
     deleteHeader: 'Delete attachment',
     deleteConfirm: 'Delete the file "{name}"?',
   },
+  image: {
+    frameHint: 'Drag the image to reposition it',
+    frameSaved: 'Framing saved',
+    frameError: 'Could not save the framing',
+  },
   dateRange: {
     start: 'Start',
     end: 'End',

@@ -3,6 +3,7 @@
 // con el color del viajero (iniciales a partir de tamaño sm; en xs, solo dot).
 import { computed } from 'vue'
 import { FALLBACK_COLOR } from '../../theme'
+import { focusStyle } from '../../utils/imageFocus'
 import { initials } from '../../utils/auth'
 
 const props = withDefaults(
@@ -11,8 +12,11 @@ const props = withDefaults(
     color?: string | null
     avatarUrl?: string | null
     size?: 'xs' | 'sm' | 'md' | 'xl'
+    /** encuadre de la foto (0-1); sin él, centrada */
+    focusX?: number | null
+    focusY?: number | null
   }>(),
-  { color: null, avatarUrl: null, size: 'md' },
+  { color: null, avatarUrl: null, size: 'md', focusX: null, focusY: null },
 )
 
 const IMG_SIZES = { xs: 'w-4 h-4', sm: 'w-6 h-6', md: 'w-8 h-8', xl: 'w-24 h-24' }
@@ -28,6 +32,7 @@ const bg = computed(() => props.color ?? FALLBACK_COLOR)
     :alt="name"
     class="rounded-full object-cover shrink-0"
     :class="IMG_SIZES[size]"
+    :style="{ objectPosition: focusStyle(focusX, focusY) }"
   />
   <!-- xs sin foto = el dot clásico de la app -->
   <span

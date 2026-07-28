@@ -164,6 +164,8 @@ async function logout() {
           :name="session.me.traveler.name"
           :color="session.me.traveler.color"
           :avatar-url="session.me.traveler.avatar_url"
+          :focus-x="session.me.traveler.avatar_focus_x"
+          :focus-y="session.me.traveler.avatar_focus_y"
           size="md"
         />
       </button>

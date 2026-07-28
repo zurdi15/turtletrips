@@ -6,12 +6,23 @@ import { useConfirmDelete } from './useConfirmDelete'
 import { useNotify } from './useNotify'
 import { useWorldGeometry } from './useWorldGeometry'
 
+/** lo que la tarjeta de alta deja rellenar antes de confirmar */
+export interface MarkDetails {
+  visited_year?: number | null
+  visited_month?: number | null
+  note?: string | null
+}
+
 /**
  * Marcar y desmarcar países desde el propio mapa.
  *
  * Mientras el POST viaja, el código queda en `pending` para que el relleno se
  * pinte al instante: el store recarga el diario entero tras cada alta (el
  * backend puede arrastrar entradas), y esperar a eso se nota al tocar.
+ *
+ * Las altas devuelven si salieron bien: la tarjeta que las llama solo se cierra
+ * con un true, para que un fallo de red no se lleve por delante el año y la
+ * nota que acabas de escribir.
  */
 export function useWorldMarking() {
   const store = useWorldPlacesStore()
@@ -30,8 +41,8 @@ export function useWorldMarking() {
   }
 
   /** Alta de un país tocándolo en el mapa; las coordenadas salen del centroide */
-  async function markCountry(code: string) {
-    if (pending.value.has(code)) return
+  async function markCountry(code: string, details: MarkDetails = {}): Promise<boolean> {
+    if (pending.value.has(code)) return false
     setPending(code, true)
     const center = geometry.value?.centerOf(code) ?? null
     try {
@@ -41,10 +52,13 @@ export function useWorldMarking() {
         country_code: code,
         lat: center?.[0] ?? null,
         lon: center?.[1] ?? null,
+        ...details,
       })
       notify.success(t('world.toast.countryAdded', { flag: flagEmoji(code), name: countryName(code) }))
+      return true
     } catch (err) {
       notify.error(t('world.toast.addError'), err)
+      return false
     } finally {
       setPending(code, false)
     }
@@ -58,8 +72,9 @@ export function useWorldMarking() {
     regionCode: string,
     name: string,
     at?: [number, number] | null,
-  ) {
-    if (pending.value.has(regionCode)) return
+    details: MarkDetails = {},
+  ): Promise<boolean> {
+    if (pending.value.has(regionCode)) return false
     setPending(regionCode, true)
     try {
       await store.create({
@@ -69,23 +84,37 @@ export function useWorldMarking() {
         region_code: regionCode,
         lat: at?.[0] ?? null,
         lon: at?.[1] ?? null,
+        ...details,
       })
       notify.success(t('world.toast.regionAdded', { name }))
+      return true
     } catch (err) {
       notify.error(t('world.toast.addError'), err)
+      return false
     } finally {
       setPending(regionCode, false)
     }
   }
 
-  /** Quitar una región (sin confirmación: es tan barato como marcarla) */
-  async function unmarkRegion(placeId: number, name: string) {
-    try {
-      await store.remove(placeId)
-      notify.success(t('world.toast.regionRemoved', { name }))
-    } catch (err) {
-      notify.error(t('world.toast.removeError'), err)
-    }
+  /**
+   * Quitar una región. Con confirmación: dejó de ser simétrico el día en que
+   * marcarla pasó a costar una tarjeta con fecha y nota — un toque en falso se
+   * llevaba todo eso por delante sin preguntar.
+   */
+  function unmarkRegion(placeId: number, name: string) {
+    confirmAction({
+      message: t('world.confirmRemove.messageManual', { name }),
+      header: t('world.confirmRemove.header'),
+      acceptLabel: t('world.confirmRemove.accept'),
+      accept: async () => {
+        try {
+          await store.remove(placeId)
+          notify.success(t('world.toast.regionRemoved', { name }))
+        } catch (err) {
+          notify.error(t('world.toast.removeError'), err)
+        }
+      },
+    })
   }
 
   /** Quitar el país del diario; el backend responde 409 si tiene ciudades dentro */

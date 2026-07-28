@@ -327,6 +327,8 @@ async function saveTemplate() {
                   :name="option.owner.name"
                   :color="option.owner.color"
                   :avatar-url="option.owner.avatar_url"
+                  :focus-x="option.owner.avatar_focus_x"
+                  :focus-y="option.owner.avatar_focus_y"
                   size="xs"
                 />
               </span>
@@ -342,6 +344,8 @@ async function saveTemplate() {
                   :name="selectedTemplateOption.owner.name"
                   :color="selectedTemplateOption.owner.color"
                   :avatar-url="selectedTemplateOption.owner.avatar_url"
+                  :focus-x="selectedTemplateOption.owner.avatar_focus_x"
+                  :focus-y="selectedTemplateOption.owner.avatar_focus_y"
                   size="xs"
                 />
               </span>

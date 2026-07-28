@@ -101,6 +101,9 @@ export default {
     cityCount: 'no cities | 1 city inside | {n} cities inside',
     regionCount: 'no regions | 1 region marked | {n} regions marked',
   },
+  mark: {
+    hint: 'add the date if you remember it',
+  },
   form: {
     addTitle: 'Add to the map',
     editTitle: 'Edit place',

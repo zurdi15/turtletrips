@@ -24,6 +24,9 @@ class WorldPlaceUpdate(BaseModel):
     note: str | None = None
     visited_year: int | None = Field(default=None, ge=1900, le=2100)
     visited_month: int | None = Field(default=None, ge=1, le=12)
+    # encuadre de la postal (0-1); subir una foto nueva lo devuelve al centro
+    photo_focus_x: float | None = Field(default=None, ge=0, le=1)
+    photo_focus_y: float | None = Field(default=None, ge=0, le=1)
 
 
 class WorldPlaceRead(BaseModel):
@@ -40,5 +43,7 @@ class WorldPlaceRead(BaseModel):
     visited_year: int | None
     visited_month: int | None
     photo_url: str | None
+    photo_focus_x: float
+    photo_focus_y: float
     auto: bool
     origin: str | None

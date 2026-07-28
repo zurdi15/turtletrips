@@ -101,6 +101,9 @@ export default {
     cityCount: 'ninguna ciudad | 1 ciudad dentro | {n} ciudades dentro',
     regionCount: 'ninguna región | 1 región marcada | {n} regiones marcadas',
   },
+  mark: {
+    hint: 'ponle fecha si te acuerdas',
+  },
   form: {
     addTitle: 'Añadir al mapa',
     editTitle: 'Editar lugar',

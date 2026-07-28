@@ -43,6 +43,12 @@ export default {
     deleteHeader: 'Eliminar adjunto',
     deleteConfirm: '¿Eliminar el fichero "{name}"?',
   },
+  // encuadre de las imágenes recortadas (ImageFramer)
+  image: {
+    frameHint: 'Arrastra la imagen para encuadrarla',
+    frameSaved: 'Encuadre guardado',
+    frameError: 'No se pudo guardar el encuadre',
+  },
   // selector de rango de fechas (DateRangePicker)
   dateRange: {
     start: 'Inicio',

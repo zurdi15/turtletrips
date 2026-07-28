@@ -5,6 +5,7 @@ import type { RouteStop } from '../../utils/itinerary'
 import type { PublicDayRow } from '../../utils/publicAgenda'
 import type { PrintOptions, PrintSection } from '../../utils/print'
 import { BOOKING_TYPE_ICONS, BOOKING_TYPE_KEYS } from '../../constants'
+import { focusStyle } from '../../utils/imageFocus'
 import { countryName, flagEmoji } from '../../countries'
 import { formatDate, formatDateTime, formatMoney } from '../../composables/useMoney'
 
@@ -16,6 +17,8 @@ export interface PrintTrip {
   end_date: string | null
   notes: string | null
   cover_url: string | null
+  cover_focus_x: number
+  cover_focus_y: number
   travelers: { name: string; color: string | null }[]
 }
 
@@ -63,6 +66,7 @@ function has(sections: PrintSection[], section: PrintSection) {
         :src="trip.cover_url"
         alt=""
         class="w-full h-40 sm:h-56 object-cover rounded-card mb-4"
+        :style="{ objectPosition: focusStyle(trip.cover_focus_x, trip.cover_focus_y) }"
       />
       <h1 class="text-3xl font-bold text-ink-heading">{{ trip.name }}</h1>
       <p class="mt-1 text-sm text-ink-secondary flex flex-wrap items-center gap-x-3 gap-y-1">

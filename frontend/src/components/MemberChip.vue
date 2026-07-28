@@ -7,6 +7,8 @@ interface MemberLike {
   name: string
   color: string | null
   avatar_url?: string | null
+  avatar_focus_x?: number
+  avatar_focus_y?: number
 }
 
 defineProps<{ member: MemberLike; removable?: boolean }>()
@@ -29,6 +31,8 @@ defineEmits<{ remove: [event: Event] }>()
         :name="member.name"
         :color="member.color"
         :avatar-url="member.avatar_url"
+        :focus-x="member.avatar_focus_x"
+        :focus-y="member.avatar_focus_y"
         size="xs"
       />
     </span>

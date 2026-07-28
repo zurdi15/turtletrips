@@ -170,6 +170,8 @@ def public_trip(token: str, db: Session = Depends(get_db)):
         cover_url=f"/api/v1/public/trips/{token}/cover?v={trip.cover_image}"
         if trip.cover_image
         else None,
+        cover_focus_x=trip.cover_focus_x,
+        cover_focus_y=trip.cover_focus_y,
         travelers=[PublicTraveler(name=t.name, color=t.color) for t in trip.travelers],
         scopes=scopes,
         places=places,

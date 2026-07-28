@@ -19,6 +19,8 @@ defineProps<{ trip: PublicTrip }>()
         :src="trip.cover_url"
         class="absolute inset-0"
         img-class="w-full h-full object-cover banner-fade-y"
+        :focus-x="trip.cover_focus_x"
+        :focus-y="trip.cover_focus_y"
       />
     </div>
 

@@ -5,6 +5,7 @@ import { LMap, LTileLayer, LCircleMarker, LMarker, LPopup } from '@vue-leaflet/v
 import { divIcon, type Icon, type Map as LeafletMap } from 'leaflet'
 import WorldChoroplethLayer from './WorldChoroplethLayer.vue'
 import WorldCountryCard from './WorldCountryCard.vue'
+import WorldMarkCard from './WorldMarkCard.vue'
 import WorldRegionLayer from './WorldRegionLayer.vue'
 import type { WorldPlace } from '../../api/types'
 import { countryName, flagEmoji } from '../../countries'
@@ -14,7 +15,7 @@ import { WHITE } from '../../theme'
 import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useMapTiles } from '../../composables/useMapTiles'
 import { useWorldGeometry, type RegionGeometry } from '../../composables/useWorldGeometry'
-import { useWorldMarking } from '../../composables/useWorldMarking'
+import { useWorldMarking, type MarkDetails } from '../../composables/useWorldMarking'
 
 const props = defineProps<{
   /** entradas que pasan los filtros: son las que se pintan como marcadores */
@@ -77,16 +78,42 @@ function tooltipFor(code: string): string {
   return `${flagEmoji(code)} ${countryName(code)}${year}`
 }
 
-/** tocar un país lo marca; si ya está marcado, abre su ficha */
+// --- alta en dos pasos ---
+// Tocar NO da de alta: abre la tarjeta de confirmación, que además es donde se
+// pone la fecha (a toro pasado nadie recuerda el año en que pisó un sitio).
+const marking = ref<{
+  kind: 'country' | 'region'
+  code: string
+  countryCode: string
+  name: string
+  at: [number, number] | null
+} | null>(null)
+const markSaving = ref(false)
+
+/** tocar un país abre su alta; si ya está marcado, abre su ficha */
 function onPick(code: string) {
   const state = countryStates.value.get(code)
   if (state?.status === 'visited') {
+    marking.value = null
     pickedCode.value = code
     selectedId.value = state.placeId
     return
   }
   pickedCode.value = null
-  markCountry(code)
+  marking.value = { kind: 'country', code, countryCode: code, name: countryName(code), at: null }
+}
+
+async function confirmMark(details: MarkDetails) {
+  const target = marking.value
+  if (!target) return
+  markSaving.value = true
+  const ok =
+    target.kind === 'country'
+      ? await markCountry(target.code, details)
+      : await markRegion(target.countryCode, target.code, target.name, target.at, details)
+  markSaving.value = false
+  // con un error, la tarjeta sigue abierta con lo que habías escrito dentro
+  if (ok) marking.value = null
 }
 
 // --- regiones ---
@@ -173,8 +200,12 @@ watch([zoom, center], syncRegions)
 
 function onRegionPick(country: string, regionCode: string, name: string, at: [number, number]) {
   const marked = props.diary.find((p) => p.kind === 'region' && p.region_code === regionCode)
-  if (marked) unmarkRegion(marked.id, name)
-  else markRegion(country, regionCode, name, at)
+  if (marked) {
+    unmarkRegion(marked.id, name)
+    return
+  }
+  pickedCode.value = null
+  marking.value = { kind: 'region', code: regionCode, countryCode: country, name, at }
 }
 
 // --- alto: el mapa llega hasta el borde inferior de la ventana ---
@@ -336,11 +367,13 @@ defineExpose({ flyTo, fitAll })
       />
       <!-- los polígonos van al overlayPane (400) y los marcadores al markerPane
            (600): las banderas y los círculos siguen por encima del relleno -->
+      <!-- mientras la tarjeta de alta está abierta, el sitio que vas a añadir se
+           queda resaltado: en táctil no hay hover que lo señale -->
       <WorldChoroplethLayer
         v-if="geometry"
         :geometry="geometry"
         :states="countryStates"
-        :hoveredCode="hoveredCode"
+        :hoveredCode="marking?.kind === 'country' ? marking.code : hoveredCode"
         :label="tooltipFor"
         @hover="(code) => (hoveredCode = code)"
         @pick="onPick"
@@ -350,7 +383,7 @@ defineExpose({ flyTo, fitAll })
         :key="entry.code"
         :geometry="entry.geometry"
         :visited="visitedRegions"
-        :hoveredCode="regionHovered"
+        :hoveredCode="marking?.kind === 'region' ? marking.code : regionHovered"
         @hover="(code) => (regionHovered = code)"
         @pick="(code, name, at) => onRegionPick(entry.code, code, name, at)"
       />
@@ -434,9 +467,20 @@ defineExpose({ flyTo, fitAll })
       </div>
     </div>
 
+    <!-- alta de país o región: tocar en el mapa abre esto, no da de alta nada -->
+    <WorldMarkCard
+      v-if="marking"
+      :kind="marking.kind"
+      :countryCode="marking.countryCode"
+      :name="marking.name"
+      :saving="markSaving"
+      @cancel="marking = null"
+      @confirm="confirmMark"
+    />
+
     <!-- ficha del país tocado: va sobre el mapa, no en un popup de Leaflet -->
     <WorldCountryCard
-      v-if="pickedCode && pickedState"
+      v-else-if="pickedCode && pickedState"
       :code="pickedCode"
       :state="pickedState"
       :place="pickedPlace"

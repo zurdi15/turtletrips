@@ -6,8 +6,10 @@ import InputText from 'primevue/inputtext'
 import PageHeader from '../components/ui/PageHeader.vue'
 import Pill from '../components/ui/Pill.vue'
 import ColorSwatchPopover from '../components/ui/ColorSwatchPopover.vue'
+import ImageFramer from '../components/ui/ImageFramer.vue'
 import UploadButton from '../components/ui/UploadButton.vue'
 import TravelerAvatar from '../components/ui/TravelerAvatar.vue'
+import type { Focus } from '../utils/imageFocus'
 import PasswordChangeForm from '../components/auth/PasswordChangeForm.vue'
 import { useNotify } from '../composables/useNotify'
 import { useSessionStore } from '../stores/session'
@@ -51,6 +53,36 @@ async function pickColor(color: string) {
   }
 }
 
+// encuadre del avatar: se guarda al soltar, no en cada píxel del arrastre
+const avatarFocus = ref<Focus>({ x: 0.5, y: 0.5 })
+watch(
+  traveler,
+  (v) => {
+    avatarFocus.value = { x: v?.avatar_focus_x ?? 0.5, y: v?.avatar_focus_y ?? 0.5 }
+  },
+  { immediate: true },
+)
+
+async function saveAvatarFocus() {
+  const current = traveler.value
+  if (!current) return
+  if (
+    current.avatar_focus_x === avatarFocus.value.x &&
+    current.avatar_focus_y === avatarFocus.value.y
+  )
+    return // un clic sin arrastre no manda nada
+  try {
+    session.setTraveler(
+      await travelers.update(current.id, {
+        avatar_focus_x: avatarFocus.value.x,
+        avatar_focus_y: avatarFocus.value.y,
+      }),
+    )
+  } catch (err) {
+    notify.error(t('common.image.frameError'), err)
+  }
+}
+
 const uploadingAvatar = ref(false)
 async function onAvatar(file: File) {
   if (!traveler.value) return
@@ -88,10 +120,22 @@ async function removeAvatar() {
           <div class="flex flex-col items-center gap-3">
             <!-- el key hace que cambiar la foto entre con un pop -->
             <div :key="traveler.avatar_url ?? 'none'" class="tt-pop-in">
+              <!-- con foto, el círculo es arrastrable: la cara no siempre está
+                   en el centro del encuadre -->
+              <ImageFramer
+                v-if="traveler.avatar_url"
+                v-model="avatarFocus"
+                :src="traveler.avatar_url"
+                aspect="1 / 1"
+                circle
+                class="w-24"
+                @pointerup="saveAvatarFocus"
+                @keyup="saveAvatarFocus"
+              />
               <TravelerAvatar
+                v-else
                 :name="traveler.name"
                 :color="traveler.color"
-                :avatar-url="traveler.avatar_url"
                 size="xl"
               />
             </div>
@@ -115,6 +159,9 @@ async function removeAvatar() {
                 @click="removeAvatar"
               />
             </div>
+            <span v-if="traveler.avatar_url" class="text-xs text-ink-faint text-center">
+              {{ t('common.image.frameHint') }}
+            </span>
           </div>
           <div class="flex flex-col gap-4 flex-1 w-full">
             <div class="flex flex-col gap-1">

@@ -53,6 +53,8 @@ const doc = usePrintTripData({
       end_date: trip.value.end_date,
       notes: trip.value.notes,
       cover_url: trip.value.cover_url,
+      cover_focus_x: trip.value.cover_focus_x,
+      cover_focus_y: trip.value.cover_focus_y,
       travelers: trip.value.travelers.map((who) => ({ name: who.name, color: who.color })),
     },
   places: () => places.items,

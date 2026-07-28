@@ -150,6 +150,9 @@ async def upload_cover(
     if trip.cover_image:
         files.delete_stored_file(trip_id, trip.cover_image)
     trip.cover_image = stored_name
+    # el encuadre anterior no vale para otra foto: vuelve al centro
+    trip.cover_focus_x = 0.5
+    trip.cover_focus_y = 0.5
     db.commit()
     db.refresh(trip)
     return trip
@@ -189,6 +192,9 @@ async def cover_from_url(
     if trip.cover_image:
         files.delete_stored_file(trip_id, trip.cover_image)
     trip.cover_image = stored_name
+    # el encuadre anterior no vale para otra foto: vuelve al centro
+    trip.cover_focus_x = 0.5
+    trip.cover_focus_y = 0.5
     db.commit()
     db.refresh(trip)
     return trip

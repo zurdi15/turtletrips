@@ -4,6 +4,7 @@ import Pill from '../ui/Pill.vue'
 import type { WorldPlace } from '../../api/types'
 import { countryName, flagEmoji } from '../../countries'
 import { visitedLabel } from '../../utils/worldGrouping'
+import { focusStyle } from '../../utils/imageFocus'
 import type { CountryState } from '../../utils/worldChoropleth'
 
 // Ficha del país tocado en el mapa: flota sobre el mapa en vez de ir en un
@@ -57,6 +58,7 @@ defineEmits<{ close: []; edit: []; remove: [] }>()
         v-if="place?.photo_url"
         :src="place.photo_url"
         class="w-full h-24 object-cover rounded-lg mt-2"
+        :style="{ objectPosition: focusStyle(place.photo_focus_x, place.photo_focus_y) }"
         alt=""
       />
       <p v-if="place?.note" class="mt-2 text-xs text-ink-muted whitespace-pre-wrap">

@@ -113,6 +113,9 @@ async def upload_avatar(
     if traveler.avatar_image:
         files.delete_avatar(traveler.avatar_image)
     traveler.avatar_image = stored_name
+    # el encuadre anterior no vale para otra foto: vuelve al centro
+    traveler.avatar_focus_x = 0.5
+    traveler.avatar_focus_y = 0.5
     db.commit()
     db.refresh(traveler)
     return traveler

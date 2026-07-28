@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
@@ -11,7 +11,9 @@ import DateRangePicker from '../DateRangePicker.vue'
 import MemberChip from '../MemberChip.vue'
 import CountrySelect from '../ui/CountrySelect.vue'
 import FormField from '../ui/FormField.vue'
+import ImageFramer from '../ui/ImageFramer.vue'
 import TravelerAvatar from '../ui/TravelerAvatar.vue'
+import type { Focus } from '../../utils/imageFocus'
 import type { Traveler, Trip, TripStatus } from '../../api/types'
 import { api } from '../../api/client'
 import { CURRENCIES, TRIP_STATUS_KEYS, toSelectOptions } from '../../constants'
@@ -56,6 +58,19 @@ const notes = ref(props.trip?.notes ?? '')
 const statusOverride = ref<TripStatus | 'auto'>(props.trip?.status_override ?? 'auto')
 const uploadingCover = ref(false)
 const coverInput = ref<HTMLInputElement>()
+// encuadre de la portada: se guarda con el resto del formulario
+const coverFocus = ref<Focus>({
+  x: props.trip?.cover_focus_x ?? 0.5,
+  y: props.trip?.cover_focus_y ?? 0.5,
+})
+// portada nueva → el backend recentra el encuadre y el formulario le sigue (si
+// no, el recuadro de la foto anterior se quedaría puesto sobre otra distinta)
+watch(
+  () => props.trip?.cover_url,
+  () => {
+    coverFocus.value = { x: props.trip?.cover_focus_x ?? 0.5, y: props.trip?.cover_focus_y ?? 0.5 }
+  },
+)
 
 const statusOptions = computed(() => [
   { value: 'auto', label: t('trips.form.statusAuto') },
@@ -158,6 +173,8 @@ async function submit(): Promise<Trip> {
     notes: notes.value || null,
     status_override: statusOverride.value === 'auto' ? null : statusOverride.value,
     traveler_ids: travelerIds.value,
+    // al crear no hay portada todavía: el encuadre no pinta nada
+    ...(props.trip ? { cover_focus_x: coverFocus.value.x, cover_focus_y: coverFocus.value.y } : {}),
   }
   return props.trip
     ? await store.updateTrip(props.trip.id, payload)
@@ -197,6 +214,8 @@ defineExpose({ validate, submit })
                 :name="option.name"
                 :color="option.color"
                 :avatar-url="option.avatar_url"
+                :focus-x="option.avatar_focus_x"
+                :focus-y="option.avatar_focus_y"
                 size="xs"
               />
             </span>
@@ -278,6 +297,16 @@ defineExpose({ validate, submit })
       <span v-if="!trip.cover_url" class="text-xs text-ink-faint">
         {{ t('trips.form.noCoverHint') }}
       </span>
+      <!-- vista previa arrastrable: la portada sale recortada en la cabecera y
+           en las tarjetas, y aquí se elige por dónde -->
+      <ImageFramer
+        v-if="trip.cover_url"
+        v-model="coverFocus"
+        :src="trip.cover_url"
+        aspect="16 / 7"
+        :hint="t('common.image.frameHint')"
+        class="mt-1 max-w-sm"
+      />
 
       <!-- buscador de fotos (Wikimedia Commons): clic en una para usarla -->
       <div v-if="showPhotoSearch" class="flex flex-col gap-2 mt-1">

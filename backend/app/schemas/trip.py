@@ -18,6 +18,9 @@ class TravelerUpdate(BaseModel):
     color: str | None = None
     # asignación de familia: solo la puede tocar el admin (lo valida el router)
     family_id: int | None = None
+    # encuadre del avatar (0-1); subir una foto nueva lo devuelve al centro
+    avatar_focus_x: float | None = Field(default=None, ge=0, le=1)
+    avatar_focus_y: float | None = Field(default=None, ge=0, le=1)
 
 
 class TravelerRead(BaseModel):
@@ -28,6 +31,8 @@ class TravelerRead(BaseModel):
     color: str | None
     family_id: int | None
     avatar_url: str | None
+    avatar_focus_x: float
+    avatar_focus_y: float
     # True si el viajero tiene cuenta de usuario vinculada
     has_user: bool
 
@@ -72,6 +77,9 @@ class TripUpdate(BaseModel):
     album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
     traveler_ids: list[int] | None = None
+    # encuadre de la portada (0-1); subir una portada nueva lo devuelve al centro
+    cover_focus_x: float | None = Field(default=None, ge=0, le=1)
+    cover_focus_y: float | None = Field(default=None, ge=0, le=1)
 
     @field_validator("countries")
     @classmethod
@@ -86,6 +94,8 @@ class TripRead(BaseModel):
     name: str
     countries: list[str]
     cover_url: str | None
+    cover_focus_x: float
+    cover_focus_y: float
     start_date: date | None
     end_date: date | None
     status: TripStatus

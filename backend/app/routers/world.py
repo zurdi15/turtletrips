@@ -154,6 +154,9 @@ async def upload_world_photo(
     if place.photo_image:
         files.delete_world_photo(place.photo_image)
     place.photo_image = stored_name
+    # el encuadre anterior no vale para otra foto: vuelve al centro
+    place.photo_focus_x = 0.5
+    place.photo_focus_y = 0.5
     db.commit()
     db.refresh(place)
     return place

@@ -11,6 +11,9 @@ export interface Traveler {
   family_id: number | null
   // ya trae ?v= de cache-bust; null si no hay foto
   avatar_url: string | null
+  // encuadre del avatar (0-1 → object-position); 0,5/0,5 = centrado
+  avatar_focus_x: number
+  avatar_focus_y: number
   // true si el viajero tiene cuenta de usuario vinculada
   has_user: boolean
 }
@@ -85,6 +88,9 @@ export interface Trip {
   name: string
   countries: string[]
   cover_url: string | null
+  // encuadre de la portada (0-1 → object-position); 0,5/0,5 = centrada
+  cover_focus_x: number
+  cover_focus_y: number
   start_date: string | null
   end_date: string | null
   status: TripStatus
@@ -194,6 +200,8 @@ export interface DayJournal {
   day: string // "YYYY-MM-DD"
   text: string | null
   photo_url: string | null
+  photo_focus_x: number
+  photo_focus_y: number
 }
 
 export interface Booking {
@@ -346,6 +354,8 @@ export interface WorldPlace {
   visited_year: number | null
   visited_month: number | null // 1-12
   photo_url: string | null
+  photo_focus_x: number
+  photo_focus_y: number
   auto: boolean
   origin: string | null
 }
@@ -461,6 +471,8 @@ export interface PublicTrip {
   notes: string | null
   album_url: string | null
   cover_url: string | null
+  cover_focus_x: number
+  cover_focus_y: number
   travelers: PublicTraveler[]
   scopes: ShareScope[]
   places: PublicPlace[]

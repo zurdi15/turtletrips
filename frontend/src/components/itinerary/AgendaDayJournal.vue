@@ -3,7 +3,10 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Textarea from 'primevue/textarea'
+import ImageFramer from '../ui/ImageFramer.vue'
 import UploadButton from '../ui/UploadButton.vue'
+import type { Focus } from '../../utils/imageFocus'
+import { focusStyle } from '../../utils/imageFocus'
 import { useItineraryJournalStore } from '../../stores/itineraryJournal'
 import { useNotify } from '../../composables/useNotify'
 import { useConfirmDelete } from '../../composables/useConfirmDelete'
@@ -64,6 +67,36 @@ async function onPhoto(file: File) {
   }
 }
 
+// --- encuadre de la postal ---
+// La miniatura del modo lectura va recortada; aquí se elige por dónde. El
+// arrastre es local y se persiste al soltar, no en cada píxel.
+const photoFocus = ref<Focus>({ x: 0.5, y: 0.5 })
+/** contenedor del marco: es el origen del vuelo del zoom en modo edición */
+const framerBox = ref<HTMLElement | null>(null)
+
+watch(
+  () => [entry.value?.photo_url, entry.value?.photo_focus_x, entry.value?.photo_focus_y],
+  () => {
+    photoFocus.value = {
+      x: entry.value?.photo_focus_x ?? 0.5,
+      y: entry.value?.photo_focus_y ?? 0.5,
+    }
+  },
+  { immediate: true },
+)
+
+async function saveFocus() {
+  const current = entry.value
+  if (!current) return
+  if (current.photo_focus_x === photoFocus.value.x && current.photo_focus_y === photoFocus.value.y)
+    return // dirty-check: un clic sin arrastre no manda nada
+  try {
+    await store.saveFocus(props.day, photoFocus.value.x, photoFocus.value.y)
+  } catch (err) {
+    notify.error(t('common.image.frameError'), err)
+  }
+}
+
 // --- lightbox con zoom FLIP: la postal crece desde su miniatura al abrir y
 // vuelve encogiéndose a su sitio al cerrar (transform/opacity, ver .tt-lightbox*) ---
 const zoomOpen = ref(false)
@@ -104,9 +137,15 @@ function toSourceTransform(card: HTMLElement, source: HTMLElement): string {
   return `translate(${dx}px, ${dy}px) rotate(${sourceAngle(source)}deg) scale(${from.width / to.width})`
 }
 
-async function openZoom(ev: Event) {
-  if (zoomOpen.value) return
-  zoomSource = ev.currentTarget as HTMLElement
+function openZoom(ev: Event) {
+  openZoomFrom(ev.currentTarget as HTMLElement)
+}
+
+/** el zoom vuela desde el elemento que enseña la foto: la miniatura en modo
+ *  lectura, el marco de encuadre en modo edición */
+async function openZoomFrom(source: HTMLElement | null) {
+  if (zoomOpen.value || !source) return
+  zoomSource = source
   // tamaño destino: la miniatura escalada (aspecto idéntico) hasta 85vw/80vh
   const thumb = zoomSource.querySelector('img')?.getBoundingClientRect()
   if (!thumb) return
@@ -242,6 +281,7 @@ function confirmDeletePhoto() {
           :alt="t('itinerary.journal.postcard')"
           loading="lazy"
           class="block w-full h-24 sm:h-32 rounded-sm object-cover"
+          :style="{ objectPosition: focusStyle(entry.photo_focus_x, entry.photo_focus_y) }"
         />
       </button>
     </div>
@@ -274,21 +314,28 @@ function confirmDeletePhoto() {
           <i class="mdi mdi-postage-stamp text-ink-faint" />
           {{ t('itinerary.journal.postcard') }}
         </div>
-        <div v-if="entry?.photo_url" class="flex flex-col items-start gap-2">
-          <button
-            type="button"
-            class="cursor-zoom-in"
-            :class="{ invisible: zoomReady }"
-            @click="openZoom"
-          >
-            <img
-              :src="entry.photo_url"
-              :alt="t('itinerary.journal.postcard')"
-              loading="lazy"
-              class="block max-h-64 w-auto max-w-full rounded-card border border-line object-contain shadow-lift"
-            />
-          </button>
+        <div v-if="entry?.photo_url" ref="framerBox" class="flex flex-col items-start gap-2">
+          <!-- se encuadra con el mismo recorte que luego luce en la agenda; para
+               verla entera está el zoom -->
+          <ImageFramer
+            v-model="photoFocus"
+            :src="entry.photo_url"
+            aspect="4 / 3"
+            :hint="t('common.image.frameHint')"
+            class="w-48 sm:w-64"
+            @pointerup="saveFocus"
+            @keyup="saveFocus"
+          />
           <div class="flex items-center gap-2">
+            <!-- el marco enseña el recorte: para ver la foto entera, el zoom -->
+            <Button
+              :label="t('itinerary.journal.viewPhoto')"
+              icon="pi pi-search-plus"
+              severity="secondary"
+              text
+              size="small"
+              @click="openZoomFrom(framerBox)"
+            />
             <UploadButton
               :label="t('itinerary.journal.replacePhoto')"
               icon="pi pi-image"

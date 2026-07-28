@@ -78,6 +78,10 @@ class PublicTrip(BaseModel):
     notes: str | None
     album_url: str | None
     cover_url: str | None
+    # encuadre de la portada: sin él, el enlace público recorta la foto por el
+    # centro y enseña otra cosa que la app
+    cover_focus_x: float
+    cover_focus_y: float
     travelers: list[PublicTraveler] = []
     scopes: list[str] = []
     places: list[PublicPlace] = []

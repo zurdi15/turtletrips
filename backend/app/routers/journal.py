@@ -49,6 +49,11 @@ def upsert_journal(
 ):
     entry = _get_or_create(db, user, trip_id, day)
     entry.text = payload.text
+    # el encuadre solo se toca si viene: guardar el texto no debe recentrar la foto
+    if payload.photo_focus_x is not None:
+        entry.photo_focus_x = payload.photo_focus_x
+    if payload.photo_focus_y is not None:
+        entry.photo_focus_y = payload.photo_focus_y
     db.commit()
     db.refresh(entry)
     return entry
@@ -68,6 +73,9 @@ async def upload_photo(
     if entry.photo_image:
         files.delete_stored_file(trip_id, entry.photo_image)
     entry.photo_image = stored_name
+    # el encuadre anterior no vale para otra foto: vuelve al centro
+    entry.photo_focus_x = 0.5
+    entry.photo_focus_y = 0.5
     db.commit()
     db.refresh(entry)
     return entry

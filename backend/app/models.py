@@ -8,6 +8,7 @@ from sqlalchemy import (
     Column,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -92,6 +93,10 @@ class Trip(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200))
     countries: Mapped[list] = mapped_column(JSON, default=list)  # códigos ISO alpha-2
     cover_image: Mapped[str | None] = mapped_column(String(100))
+    # encuadre de la portada (0-1, el `object-position` del recorte); 0,5/0,5 =
+    # centrada, que es lo que hacía el navegador antes de poder moverla
+    cover_focus_x: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
+    cover_focus_y: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
     start_date: Mapped[date | None] = mapped_column(Date)
     end_date: Mapped[date | None] = mapped_column(Date)
     # NULL = estado auto-derivado de las fechas; un valor = override manual
@@ -201,6 +206,10 @@ class Traveler(TimestampMixin, Base):
     )
     # nombre del fichero guardado en uploads/avatars (como Trip.cover_image)
     avatar_image: Mapped[str | None] = mapped_column(String(100))
+    # encuadre del avatar (0-1): en un círculo de 24 px, una cara descentrada
+    # se queda fuera
+    avatar_focus_x: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
+    avatar_focus_y: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
 
     family: Mapped["Family | None"] = relationship()
     user: Mapped["User | None"] = relationship(
@@ -469,6 +478,9 @@ class DayJournal(TimestampMixin, Base):
     text: Mapped[str | None] = mapped_column(Text)
     # nombre del fichero guardado (como Trip.cover_image); la ruta la resuelve services/files
     photo_image: Mapped[str | None] = mapped_column(String(100))
+    # encuadre de la postal del día (0-1), como el de la portada
+    photo_focus_x: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
+    photo_focus_y: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
 
     trip: Mapped[Trip] = relationship(back_populates="day_journals")
 
@@ -617,6 +629,9 @@ class WorldPlace(TimestampMixin, Base):
     visited_month: Mapped[int | None] = mapped_column(Integer)  # 1-12
     # postal (una foto), como la del diario de viaje; ficheros en uploads/world/
     photo_image: Mapped[str | None] = mapped_column(String(100))
+    # encuadre de la postal (0-1), como el de la portada del viaje
+    photo_focus_x: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
+    photo_focus_y: Mapped[float] = mapped_column(Float, default=0.5, server_default="0.5")
     auto: Mapped[bool] = mapped_column(Boolean, default=False)  # derivado de un viaje
     hidden: Mapped[bool] = mapped_column(Boolean, default=False)  # auto "borrado" por el usuario
     origin: Mapped[str | None] = mapped_column(String(200))  # nombre del viaje de origen
