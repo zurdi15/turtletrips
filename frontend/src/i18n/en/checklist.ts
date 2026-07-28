@@ -1,6 +1,5 @@
 export default {
-  addPlaceholder: 'New task… (visa, insurance, online check-in)',
-  duePlaceholder: 'Due date',
+  newTask: 'New task',
   progress: '{done} of {total} done',
   linkTooltip: 'Open link',
   empty: {
@@ -19,8 +18,5 @@ export default {
   confirm: {
     header: 'Delete task',
     message: 'Delete "{name}"?',
-  },
-  toast: {
-    addError: 'Could not add the task',
   },
 }

@@ -74,7 +74,6 @@ export default {
     to: 'Hasta',
     allCategories: 'Todas las categorías',
     excludePlaceholder: 'Excluir categorías…',
-    allPayers: 'Todos los pagadores',
     allPlaces: 'Todos los sitios',
   },
   bulk: {
@@ -91,6 +90,8 @@ export default {
     commonTooltip: 'Pagado del fondo común: no entra en los saldos',
     placeTooltip: 'Sitio: {name}',
     viewReceipt: 'Ver recibo',
+    showNote: 'Ver la nota completa',
+    hideNote: 'Recoger la nota',
   },
   charts: {
     dim: {

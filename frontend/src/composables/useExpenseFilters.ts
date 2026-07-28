@@ -50,12 +50,6 @@ export function useExpenseFilters(ctx: {
   const excludeOptions = computed(() =>
     allCategoryNames.value.map((name) => ({ value: name, label: name })),
   )
-  const payerFilterOptions = computed(() => [
-    { value: 'all' as const, label: t('expenses.filters.allPayers') },
-    ...ctx.trip().travelers.map((t) => ({ value: t.id, label: t.name, color: t.color })),
-    { value: 'common' as const, label: t('expenses.payer.commonFund') },
-    { value: 'none' as const, label: t('expenses.payer.unassigned') },
-  ])
   const placeFilterOptions = computed(() => {
     const usedIds = new Set(
       ctx.items().map((e) => e.place_id).filter((id): id is number => id != null),
@@ -89,7 +83,6 @@ export function useExpenseFilters(ctx: {
     allCategoryNames,
     categoryFilterOptions,
     excludeOptions,
-    payerFilterOptions,
     placeFilterOptions,
   }
 }

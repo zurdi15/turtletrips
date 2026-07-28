@@ -15,7 +15,8 @@ export default {
   },
   search: {
     placePlaceholder: 'Buscar ciudad o sitio para añadir…',
-    countryPlaceholder: 'Marcar país visitado…',
+    countryPlaceholder: 'Marcar países visitados…',
+    addCountries: 'Añadir país | Añadir {n} países',
   },
   view: {
     map: 'Mapa',
@@ -121,6 +122,7 @@ export default {
   },
   toast: {
     countryAdded: '{flag} {name} añadido',
+    countriesAdded: '{n} países añadidos',
     addError: 'Error al añadir',
     bulkDeleted: '{n} sitios eliminados',
     photoError: 'Error al subir la postal',

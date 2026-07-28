@@ -35,21 +35,24 @@ const activeIndex = computed(() => props.options.findIndex((o) => o.value === mo
       }"
     />
     <!-- el color activo cambia sin transición (se congelaría con el hilo ocupado) -->
+    <!-- los segmentos son minmax(0,1fr): pueden encogerse por debajo de su
+         contenido, así que el label recorta con ellipsis en vez de desbordar
+         y pisar al vecino -->
     <button
       v-for="o in options"
       :key="o.value"
       type="button"
-      class="relative flex items-center justify-center gap-1.5 rounded-md font-medium whitespace-nowrap cursor-pointer"
+      class="relative flex min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md font-medium cursor-pointer"
       :class="[
-        size === 'small' ? 'px-2.5 py-1 text-xs' : 'px-3 py-1.5 text-sm',
+        size === 'small' ? 'px-2 py-1 text-xs' : 'px-2 py-1.5 text-sm sm:px-3',
         model === o.value ? 'text-ink' : 'text-ink-muted hover:text-ink',
       ]"
       :aria-pressed="model === o.value"
       v-tooltip.top="iconOnly && o.label ? o.label : undefined"
       @click="model = o.value"
     >
-      <i v-if="o.icon" :class="[o.icon, !iconOnly && 'text-xs']" />
-      <template v-if="!iconOnly && o.label">{{ o.label }}</template>
+      <i v-if="o.icon" :class="[o.icon, 'shrink-0', !iconOnly && 'text-xs']" />
+      <span v-if="!iconOnly && o.label" class="truncate">{{ o.label }}</span>
     </button>
   </div>
 </template>

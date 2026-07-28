@@ -13,9 +13,8 @@ import TripFilterBar from '../components/trips/TripFilterBar.vue'
 import TripHeroCard from '../components/trips/TripHeroCard.vue'
 import { useTripsStore } from '../stores/trips'
 import { useCountryImage } from '../composables/useCountryImage'
-import { countryLabel, countryName } from '../countries'
+import { countryName } from '../countries'
 import { TRIP_STATUS_KEYS, toSelectOptions } from '../constants'
-import { intlLocale } from '../i18n'
 import { groupTrips, pickHeroTrip } from '../utils/trips'
 import type { Trip, TripStatus } from '../api/types'
 
@@ -51,15 +50,7 @@ const statusOptions = computed(() => [
   ...toSelectOptions(TRIP_STATUS_KEYS, t),
 ])
 
-const countryOptions = computed(() => {
-  const codes = new Set(store.trips.flatMap((t) => t.countries))
-  return [
-    { value: 'all', label: t('trips.filters.allCountries') },
-    ...[...codes]
-      .map((code) => ({ value: code, label: countryLabel(code) }))
-      .sort((a, b) => a.label.localeCompare(b.label, intlLocale())),
-  ]
-})
+const countryCodes = computed(() => [...new Set(store.trips.flatMap((t) => t.countries))])
 
 const groupingOptions = computed(
   () =>
@@ -132,7 +123,7 @@ function tripImage(trip: Trip): string | null {
               v-model:status="filterStatus"
               v-model:country="filterCountry"
               :statusOptions="statusOptions"
-              :countryOptions="countryOptions"
+              :countryCodes="countryCodes"
               :activeCount="activeFilterCount"
               @clear="clearFilters"
             />

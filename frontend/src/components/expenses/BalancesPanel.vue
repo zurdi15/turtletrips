@@ -10,6 +10,7 @@ import type { SettlementTransfer, Trip } from '../../api/types'
 import { useExpensesStore } from '../../stores/expenses'
 import { useTripsStore } from '../../stores/trips'
 import { formatDate, formatMoney } from '../../composables/useMoney'
+import { useMediaQuery } from '../../composables/useMediaQuery'
 import { useNotify } from '../../composables/useNotify'
 
 const props = defineProps<{ trip: Trip }>()
@@ -18,11 +19,25 @@ const store = useExpensesStore()
 const trips = useTripsStore()
 const notify = useNotify()
 
+// bajo `sm` la tabla se sustituye por tarjetas apiladas (sin scroll lateral)
+const isDesktop = useMediaQuery('(min-width: 640px)')
+
 onMounted(() => store.loadBalances())
 watch(() => props.trip.id, () => store.loadBalances())
 
 const data = computed(() => store.balances)
 const money = (v: number) => formatMoney(v, props.trip.base_currency)
+
+// los saldos solo traen id/nombre/color: el viajero del viaje añade su avatar
+const memberById = computed(() => new Map(props.trip.travelers.map((tr) => [tr.id, tr])))
+
+function chipOf(id: number, name: string, color: string | null = null) {
+  return memberById.value.get(id) ?? { id, name, color }
+}
+
+function netClass(net: number): string {
+  return net > 0 ? 'text-brand' : net < 0 ? 'text-red-600' : 'text-ink-faint'
+}
 
 const settling = ref(false)
 
@@ -87,6 +102,7 @@ async function undo(settlementId: number) {
 
     <template v-else>
       <DataTable
+        v-if="isDesktop"
         :value="data.balances"
         dataKey="traveler_id"
         size="small"
@@ -94,9 +110,7 @@ async function undo(settlementId: number) {
       >
         <Column :header="$t('expenses.balances.columns.traveler')">
           <template #body="{ data: b }">
-            <MemberChip
-              :member="{ id: b.traveler_id, name: b.name, color: b.color }"
-            />
+            <MemberChip :member="chipOf(b.traveler_id, b.name, b.color)" />
           </template>
         </Column>
         <Column :header="$t('expenses.balances.columns.paid')">
@@ -111,17 +125,31 @@ async function undo(settlementId: number) {
         </Column>
         <Column :header="$t('expenses.balances.columns.net')">
           <template #body="{ data: b }">
-            <span
-              class="font-semibold tabular-nums"
-              :class="
-                b.net_base > 0 ? 'text-brand' : b.net_base < 0 ? 'text-red-600' : 'text-ink-faint'
-              "
-            >
+            <span class="font-semibold tabular-nums" :class="netClass(b.net_base)">
               {{ b.net_base > 0 ? '+' : '' }}{{ money(b.net_base) }}
             </span>
           </template>
         </Column>
       </DataTable>
+
+      <!-- móvil: una tarjeta por viajero — saldo grande y el desglose debajo -->
+      <ul
+        v-else
+        class="tt-stagger bg-surface rounded-card overflow-hidden border border-line divide-y divide-line-subtle"
+      >
+        <li
+          v-for="b in data.balances"
+          :key="b.traveler_id"
+          class="flex items-center px-4 py-3"
+        >
+          <MemberChip :member="chipOf(b.traveler_id, b.name, b.color)" />
+          <div class="ml-auto text-right">
+            <div class="text-sm font-semibold tabular-nums" :class="netClass(b.net_base)">
+              {{ b.net_base > 0 ? '+' : '' }}{{ money(b.net_base) }}
+            </div>
+          </div>
+        </li>
+      </ul>
 
       <div
         v-if="data.debts_settled"
@@ -137,20 +165,25 @@ async function undo(settlementId: number) {
           <i class="pi pi-check-circle text-emerald-500" /> {{ $t('expenses.balances.allSquare') }}
         </p>
         <TransitionGroup v-else tag="ul" name="tt-list" class="relative flex flex-col gap-2">
+          <!-- flex-wrap: en móvil el botón baja a su propia línea en vez de
+               empujar los chips fuera de la tarjeta -->
           <li
             v-for="t in data.settlements"
             :key="`${t.from_id}-${t.to_id}`"
-            class="flex items-center gap-2 text-sm text-ink"
+            class="flex flex-wrap items-center gap-2 text-sm text-ink"
           >
-            <span class="font-medium">{{ t.from_name }}</span>
+            <MemberChip :member="chipOf(t.from_id, t.from_name)" />
             <i class="pi pi-arrow-right text-xs text-ink-faint" />
-            <span class="font-medium">{{ t.to_name }}</span>
+            <MemberChip :member="chipOf(t.to_id, t.to_name)" />
             <span class="ml-auto font-semibold tabular-nums">{{ money(t.amount_base) }}</span>
+            <!-- acción ligera: la sección son chips y cifras, un botón sólido
+                 pesaba más que el propio saldo -->
             <Button
               :label="$t('expenses.balances.settle')"
               icon="pi pi-check"
               size="small"
-              outlined
+              text
+              class="max-sm:w-full"
               :loading="settling"
               v-tooltip.left="$t('expenses.balances.settleTooltip')"
               @click="settle(t)"
@@ -165,12 +198,12 @@ async function undo(settlementId: number) {
           <li
             v-for="s in data.paid_settlements"
             :key="s.id"
-            class="flex items-center gap-2 text-sm text-ink-secondary"
+            class="flex flex-wrap items-center gap-2 text-sm text-ink-secondary"
           >
             <i class="pi pi-check-circle text-emerald-500 text-xs" />
-            <span>{{ s.from_name }}</span>
+            <MemberChip :member="chipOf(s.from_id, s.from_name)" />
             <i class="pi pi-arrow-right text-xs text-ink-faint" />
-            <span>{{ s.to_name }}</span>
+            <MemberChip :member="chipOf(s.to_id, s.to_name)" />
             <span class="text-xs text-ink-faint">{{ formatDate(s.created_at) }}</span>
             <span class="ml-auto font-medium tabular-nums">{{ money(s.amount_base) }}</span>
             <Button
@@ -188,3 +221,12 @@ async function undo(settlementId: number) {
     </template>
   </div>
 </template>
+
+<style scoped>
+/* size="small" deja las celdas muy apretadas: un poco más de aire, igual que
+   en la tabla de gastos */
+:deep(.p-datatable-thead > tr > th),
+:deep(.p-datatable-tbody > tr > td) {
+  padding: 0.625rem 1rem;
+}
+</style>

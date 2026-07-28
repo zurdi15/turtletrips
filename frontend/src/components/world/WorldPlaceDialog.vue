@@ -5,11 +5,11 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
+import CountrySelect from '../ui/CountrySelect.vue'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import UploadButton from '../ui/UploadButton.vue'
 import type { WorldPlace, WorldPlaceKind } from '../../api/types'
-import { countryOptions } from '../../countries'
 import { intlLocale } from '../../i18n'
 import { displayName } from '../../utils/worldGrouping'
 import { useWorldPlacesStore } from '../../stores/worldPlaces'
@@ -55,10 +55,7 @@ const kindOptions = computed(() => [
   { value: 'country', label: t('world.kind.country') },
 ])
 
-const dialogCountryOptions = computed(() => [
-  { code: null as string | null, label: t('world.noCountry') },
-  ...countryOptions().map((o) => ({ code: o.code as string | null, label: o.label })),
-])
+const noCountryOption = computed(() => ({ value: null, label: t('world.noCountry') }))
 
 // ---- postal (solo países ya guardados; se sube al momento) ----
 
@@ -166,13 +163,7 @@ const { saving, save } = useFormDialog({
         <Select v-model="formKind" :options="kindOptions" optionLabel="label" optionValue="value" />
       </FormField>
       <FormField v-if="formKind !== 'country'" :label="t('world.form.country')">
-        <Select
-          v-model="formCountry"
-          :options="dialogCountryOptions"
-          optionLabel="label"
-          optionValue="code"
-          filter
-        />
+        <CountrySelect v-model="formCountry" :emptyOption="noCountryOption" />
       </FormField>
     </div>
     <!-- cuándo se visitó (retroactivo): da sentido a las estadísticas anuales -->

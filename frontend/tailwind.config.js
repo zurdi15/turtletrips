@@ -85,6 +85,11 @@ export default {
       minWidth: {
         menu: '9rem',
       },
+      maxWidth: {
+        // nota de un gasto dentro de su celda: recortada a una línea o
+        // desplegada, siempre en la misma columna estrecha
+        note: '16rem',
+      },
       // bandas de apilamiento: contenido 0-40 < paneles Leaflet 400-700
       // (aislados por .leaflet-container { z-index: 0 }) < overlays de mapa 500
       // < overlays de PrimeVue ~1100 < lightbox 1200

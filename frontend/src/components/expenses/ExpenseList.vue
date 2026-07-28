@@ -3,8 +3,7 @@ import { computed, ref, watch } from 'vue'
 import Checkbox from 'primevue/checkbox'
 import Paginator from 'primevue/paginator'
 import Tag from 'primevue/tag'
-import MemberChip from '../MemberChip.vue'
-import Pill from '../ui/Pill.vue'
+import PayerBadge from './PayerBadge.vue'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
@@ -114,13 +113,14 @@ const { rowClass } = useRowFlash({
           :class="[rowClass(entry.row), { 'tt-row-selected': isRowSelected(entry.row) }]"
         >
           <Checkbox
-            class="self-center"
+            class="self-start mt-0.5"
             :modelValue="isRowSelected(entry.row)"
             binary
             @update:modelValue="selected = toggleRowSelection(selected, entry.row)"
           />
 
-          <div class="min-w-0 self-center">
+          <!-- izquierda: título, fecha y categoría -->
+          <div class="min-w-0">
             <div class="flex items-center gap-2 min-w-0">
               <span class="text-sm text-ink break-words min-w-0">{{ entry.row.description }}</span>
               <EntityLink
@@ -144,8 +144,9 @@ const { rowClass } = useRowFlash({
                 :tooltip="$t('expenses.table.placeTooltip', { name: placeById.get(entry.row.place_id)!.name })"
               />
             </div>
-            <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-faint">
-              <span class="whitespace-nowrap">{{ formatDate(entry.row.day) }}</span>
+            <!-- cada dato en su propia línea: se lee de arriba abajo sin mezclas -->
+            <p class="mt-1 text-xs text-ink-faint">{{ formatDate(entry.row.day) }}</p>
+            <div class="mt-1">
               <Tag
                 :value="entry.row.category"
                 :style="{
@@ -153,41 +154,40 @@ const { rowClass } = useRowFlash({
                   color: catColor(entry.row.category),
                 }"
               />
-              <Pill
-                v-if="entry.row.paid_by_common"
-                color="warn"
-                icon="pi pi-wallet"
-                v-tooltip.top="$t('expenses.table.commonTooltip')"
-              >
-                {{ $t('expenses.table.commonPill') }}
-              </Pill>
-              <MemberChip
-                v-else-if="entry.row.paid_by_id != null && memberById.get(entry.row.paid_by_id)"
-                :member="memberById.get(entry.row.paid_by_id)!"
-              />
             </div>
-            <p v-if="entry.row.notes" class="mt-1 text-xs text-ink-faint break-words">
-              {{ entry.row.notes }}
-            </p>
           </div>
 
-          <div class="flex flex-col items-end gap-0.5 self-center">
-            <span class="text-sm font-medium text-ink whitespace-nowrap">
-              {{ formatMoney(entry.row.amount_base, trip.base_currency) }}
-            </span>
-            <span
-              v-if="entry.row.currency !== trip.base_currency"
-              class="text-xs text-ink-faint whitespace-nowrap"
-            >
-              {{ formatMoney(entry.row.amount, entry.row.currency) }}
-            </span>
+          <!-- derecha: importe arriba (a la altura del título), pagador debajo
+               y las acciones al pie de la fila -->
+          <div class="flex flex-col items-end gap-1.5">
+            <div class="text-right">
+              <div class="text-sm font-medium text-ink whitespace-nowrap">
+                {{ formatMoney(entry.row.amount_base, trip.base_currency) }}
+              </div>
+              <div
+                v-if="entry.row.currency !== trip.base_currency"
+                class="text-xs text-ink-faint whitespace-nowrap"
+              >
+                {{ formatMoney(entry.row.amount, entry.row.currency) }}
+              </div>
+            </div>
+            <PayerBadge :expense="entry.row" :memberById="memberById" />
             <RowActions
               always
-              class="-mr-1.5 -mb-1"
+              class="mt-auto -mr-1.5 -mb-1"
               @edit="$emit('edit', entry.row)"
               @remove="$emit('remove', entry.row)"
             />
           </div>
+
+          <!-- la nota, a lo ancho de la fila entera: en la columna estrecha se
+               agolpaba en un churro de líneas cortas -->
+          <p
+            v-if="entry.row.notes"
+            class="col-span-3 mt-2 text-xs text-ink-faint break-words"
+          >
+            {{ entry.row.notes }}
+          </p>
         </div>
       </template>
     </div>

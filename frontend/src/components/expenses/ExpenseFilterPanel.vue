@@ -4,29 +4,25 @@ import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import DateRangePicker from '../DateRangePicker.vue'
-import PayerTag from '../PayerTag.vue'
+import PayerSelect from '../PayerSelect.vue'
+import type { Traveler } from '../../api/types'
 import type { ExpenseFilterState } from '../../utils/expenses'
 
 interface Option<T> {
   value: T
   label: string
-  color?: string | null
 }
 
-const props = defineProps<{
+defineProps<{
   filters: ExpenseFilterState
   categoryOptions: Option<string>[]
   excludeOptions: Option<string>[]
-  payerOptions: Option<number | 'all' | 'none' | 'common'>[]
+  travelers: Traveler[]
   placeOptions: Option<number | 'all' | 'none'>[]
   activeFilterCount: number
 }>()
 
 defineEmits<{ clear: [] }>()
-
-function payerFor(value: number | 'all' | 'none' | 'common') {
-  return props.payerOptions.find((o) => o.value === value)
-}
 </script>
 
 <template>
@@ -62,20 +58,13 @@ function payerFor(value: number | 'all' | 'none' | 'common') {
       display="chip"
       class="flex-1 min-w-menu sm:flex-none sm:w-52"
     />
-    <Select
+    <PayerSelect
       v-model="filters.payer"
-      :options="payerOptions"
-      optionLabel="label"
-      optionValue="value"
+      :travelers="travelers"
+      lead="all"
+      includeNone
       class="flex-1 min-w-menu sm:flex-none sm:w-44"
-    >
-      <template #option="{ option }">
-        <PayerTag :value="option.value" :label="option.label" :color="option.color" />
-      </template>
-      <template #value="{ value }">
-        <PayerTag :value="value" :label="payerFor(value)?.label ?? ''" :color="payerFor(value)?.color" />
-      </template>
-    </Select>
+    />
     <Select
       v-model="filters.place"
       :options="placeOptions"

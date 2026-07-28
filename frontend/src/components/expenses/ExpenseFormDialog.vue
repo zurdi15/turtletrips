@@ -267,7 +267,9 @@ const { saving, save } = useFormDialog({
       </Message>
     </div>
 
-    <div class="grid grid-cols-2 gap-3">
+    <!-- en móvil cada uno en su línea: en dos columnas el select de pagador y
+         el buscador de sitio se quedan sin sitio para su contenido -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <FormField :label="$t('expenses.fields.paidBy')">
         <PayerSelect v-model="paidById" :travelers="trip.travelers" />
       </FormField>

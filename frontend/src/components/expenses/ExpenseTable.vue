@@ -4,8 +4,7 @@ import Checkbox from 'primevue/checkbox'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Tag from 'primevue/tag'
-import MemberChip from '../MemberChip.vue'
-import Pill from '../ui/Pill.vue'
+import PayerBadge from './PayerBadge.vue'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
@@ -41,6 +40,15 @@ function groupLabel(row: ExpenseRow): string {
   if (props.groupBy === 'category') return row.category
   if (props.groupBy === 'place_name') return row.place_name
   return row.payer_name
+}
+
+// --- notas desplegables (en la tabla van a una línea; el chevron las abre) ---
+
+const openNotes = ref(new Set<number>())
+
+function toggleNote(id: number) {
+  if (openNotes.value.has(id)) openNotes.value.delete(id)
+  else openNotes.value.add(id)
 }
 
 // --- resaltar un gasto al llegar enlazado (?expense=id desde reserva/sitio/itinerario) ---
@@ -137,9 +145,25 @@ const { rowClass } = useRowFlash({
             :tooltip="$t('expenses.table.placeTooltip', { name: placeById.get(data.place_id)!.name })"
           />
         </span>
-        <p v-if="data.notes" class="mt-1.5 text-xs text-ink-faint truncate max-w-[16rem]">
-          {{ data.notes }}
-        </p>
+        <!-- la nota va recortada a una línea; el chevron la despliega entera -->
+        <button
+          v-if="data.notes"
+          type="button"
+          class="mt-1.5 flex items-start gap-1 text-left text-xs text-ink-faint hover:text-ink-secondary transition-colors"
+          v-tooltip.top="openNotes.has(data.id) ? $t('expenses.table.hideNote') : $t('expenses.table.showNote')"
+          @click.stop="toggleNote(data.id)"
+        >
+          <i
+            class="pi pi-chevron-down text-3xs mt-0.5 shrink-0 transition-transform duration-200"
+            :class="{ 'rotate-180': openNotes.has(data.id) }"
+          />
+          <span
+            class="max-w-note"
+            :class="openNotes.has(data.id) ? 'whitespace-pre-line break-words' : 'block truncate'"
+          >
+            {{ data.notes }}
+          </span>
+        </button>
       </template>
     </Column>
     <Column :header="$t('expenses.fields.amount')" style="width: 8rem">
@@ -154,19 +178,9 @@ const { rowClass } = useRowFlash({
     </Column>
     <Column :header="$t('expenses.table.paid')" field="payer_name" style="width: 7rem">
       <template #body="{ data }">
-        <Pill
-          v-if="data.paid_by_common"
-          color="warn"
-          icon="pi pi-wallet"
-          v-tooltip.top="$t('expenses.table.commonTooltip')"
-        >
-          {{ $t('expenses.table.commonPill') }}
-        </Pill>
-        <MemberChip
-          v-else-if="data.paid_by_id != null && memberById.get(data.paid_by_id)"
-          :member="memberById.get(data.paid_by_id)!"
-        />
-        <span v-else class="text-ink-disabled text-xs">—</span>
+        <PayerBadge :expense="data" :memberById="memberById">
+          <span class="text-ink-disabled text-xs">—</span>
+        </PayerBadge>
       </template>
     </Column>
     <Column style="width: 5.5rem">

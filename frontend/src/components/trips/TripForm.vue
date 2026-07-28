@@ -9,13 +9,14 @@ import InputNumber from 'primevue/inputnumber'
 import Button from 'primevue/button'
 import DateRangePicker from '../DateRangePicker.vue'
 import MemberChip from '../MemberChip.vue'
+import CountrySelect from '../ui/CountrySelect.vue'
 import FormField from '../ui/FormField.vue'
 import TravelerAvatar from '../ui/TravelerAvatar.vue'
 import type { Traveler, Trip, TripStatus } from '../../api/types'
 import { api } from '../../api/client'
 import { CURRENCIES, TRIP_STATUS_KEYS, toSelectOptions } from '../../constants'
 import { intlLocale } from '../../i18n'
-import { countryName, countryOptions as buildCountryOptions } from '../../countries'
+import { countryName } from '../../countries'
 import { useSessionStore } from '../../stores/session'
 import { useTripsStore } from '../../stores/trips'
 import { useTravelersStore } from '../../stores/travelers'
@@ -61,7 +62,6 @@ const statusOptions = computed(() => [
   ...toSelectOptions(TRIP_STATUS_KEYS, t),
 ])
 
-const countryOptions = computed(() => buildCountryOptions())
 const numberLocale = computed(() => intlLocale())
 
 // --- buscador de fotos online para la portada (Wikimedia Commons) ---
@@ -173,16 +173,10 @@ defineExpose({ validate, submit })
       <InputText v-model="name" :placeholder="t('trips.form.namePlaceholder')" :autofocus="autofocus" />
     </FormField>
     <FormField :label="t('trips.form.countries')">
-      <MultiSelect
+      <CountrySelect
         v-model="countries"
-        :options="countryOptions"
-        optionLabel="label"
-        optionValue="code"
-        filter
+        multiple
         :placeholder="t('trips.form.countriesPlaceholder')"
-        display="chip"
-        :maxSelectedLabels="6"
-        :virtualScrollerOptions="{ itemSize: 38 }"
       />
     </FormField>
     <FormField :label="t('trips.form.travelers')">

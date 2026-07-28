@@ -2,19 +2,19 @@
 import { ref } from 'vue'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
-import PayerTag from '../PayerTag.vue'
+import PayerSelect from '../PayerSelect.vue'
+import type { Traveler } from '../../api/types'
 
 interface Option<T> {
   value: T
   label: string
-  color?: string | null
 }
 
-const props = defineProps<{
+defineProps<{
   count: number
   working: boolean
   categoryOptions: Option<string>[]
-  payerOptions: Option<number | 'none' | 'common'>[]
+  travelers: Traveler[]
 }>()
 
 const emit = defineEmits<{
@@ -31,13 +31,10 @@ function onCategory(name: string | null) {
   if (name) emit('set-category', name)
   bulkCategory.value = null
 }
+// el select no guarda estado: dispara el cambio y vuelve a su placeholder
 function onPayer(value: number | 'none' | 'common' | null) {
   if (value != null) emit('set-payer', value)
   bulkPayer.value = null
-}
-
-function payerFor(value: number | 'none' | 'common') {
-  return props.payerOptions.find((o) => o.value === value)
 }
 </script>
 
@@ -55,29 +52,16 @@ function payerFor(value: number | 'none' | 'common') {
       class="w-full sm:w-52"
       @update:modelValue="onCategory"
     />
-    <Select
+    <PayerSelect
       v-model="bulkPayer"
-      :options="payerOptions"
-      optionLabel="label"
-      optionValue="value"
+      :travelers="travelers"
+      :lead="null"
+      includeNone
       :placeholder="$t('expenses.bulk.changePayer')"
       :disabled="working"
       class="w-full sm:w-48"
       @update:modelValue="onPayer"
-    >
-      <template #option="{ option }">
-        <PayerTag :value="option.value" :label="option.label" :color="option.color" />
-      </template>
-      <template #value="{ value, placeholder }">
-        <PayerTag
-          v-if="value != null"
-          :value="value"
-          :label="payerFor(value)?.label ?? ''"
-          :color="payerFor(value)?.color"
-        />
-        <template v-else>{{ placeholder }}</template>
-      </template>
-    </Select>
+    />
     <span class="hidden sm:block flex-1" />
     <Button
       icon="pi pi-trash"

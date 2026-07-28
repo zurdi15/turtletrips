@@ -74,7 +74,6 @@ export default {
     to: 'To',
     allCategories: 'All categories',
     excludePlaceholder: 'Exclude categories…',
-    allPayers: 'All payers',
     allPlaces: 'All places',
   },
   bulk: {
@@ -91,6 +90,8 @@ export default {
     commonTooltip: 'Paid from the common fund: not included in the balances',
     placeTooltip: 'Place: {name}',
     viewReceipt: 'View receipt',
+    showNote: 'Show the full note',
+    hideNote: 'Collapse the note',
   },
   charts: {
     dim: {

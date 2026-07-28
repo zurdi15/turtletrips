@@ -33,6 +33,7 @@ export default {
   // selector de pagador (PayerSelect)
   payer: {
     unassigned: 'Sin asignar',
+    anyPayer: 'Todos los pagadores',
     commonFund: 'Fondo común',
   },
   // adjuntos (AttachmentList)

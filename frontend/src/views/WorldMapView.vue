@@ -3,10 +3,10 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
-import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
 import AutoComplete from 'primevue/autocomplete'
 import ClusterBtn from '../components/ui/ClusterBtn.vue'
+import CountrySelect from '../components/ui/CountrySelect.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import CollapsePanel from '../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../components/ui/FilterToggleButton.vue'
@@ -21,8 +21,7 @@ import { api } from '../api/client'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
 import type { GeocodeResult, WorldPlace, WorldPlaceKind } from '../api/types'
-import { COUNTRY_BY_CODE, countryName, countryOptions, flagEmoji } from '../countries'
-import { intlLocale } from '../i18n'
+import { COUNTRY_BY_CODE, countryName, flagEmoji } from '../countries'
 import { useWorldPlacesStore } from '../stores/worldPlaces'
 import { useGeocodeSearch } from '../composables/useGeocode'
 import {
@@ -90,7 +89,7 @@ const yearFilterOptions = computed(() => {
 
 // alta
 const searchValue = ref<string | GeocodeResult>('')
-const addCountryCode = ref<string | null>(null)
+const addCountryCodes = ref<string[]>([])
 const addingCountry = ref(false)
 
 // diálogo
@@ -118,12 +117,10 @@ const visitedCountryCodes = computed(() =>
     .filter((code): code is string => !!code),
 )
 
-const countryFilterOptions = computed(() => {
-  const codes = new Set(store.items.map((p) => p.country_code).filter((c): c is string => !!c))
-  return [...codes]
-    .map((code) => ({ value: code, label: `${flagEmoji(code)} ${countryName(code)}` }))
-    .sort((a, b) => a.label.localeCompare(b.label, intlLocale()))
-})
+// países presentes en el diario: los únicos que tiene sentido filtrar
+const journalCountryCodes = computed(() => [
+  ...new Set(store.items.map((p) => p.country_code).filter((c): c is string => !!c)),
+])
 
 function flyTo(place: WorldPlace) {
   selectedId.value = place.id
@@ -147,36 +144,59 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
   searchValue.value = ''
 }
 
-// ---- alta rápida de país ----
+// ---- alta rápida de países ----
 
-const countryAddOptions = computed(() => {
-  const existing = new Set(store.countries.map((c) => c.country_code))
-  return countryOptions().filter((o) => !existing.has(o.code))
-})
+// los ya marcados no vuelven a salir en el selector
+const markedCountryCodes = computed(() =>
+  store.countries.map((c) => c.country_code).filter((c): c is string => !!c),
+)
 
-async function addCountry(code: string | null) {
-  if (!code) return
-  addingCountry.value = true
+// centro del país para plantar su marcador; es opcional, sin coordenadas la
+// entrada vale igual (se busca en serie: throttle de 1 req/s en el backend)
+async function countryCenter(code: string): Promise<{ lat: number | null; lon: number | null }> {
   try {
     const query = COUNTRY_BY_CODE.get(code)?.en ?? code
     const results = await api.get<GeocodeResult[]>(`/geocode?q=${encodeURIComponent(query)}`)
-    await store.create({
-      name: countryName(code),
-      kind: 'country',
-      country_code: code,
-      lat: results[0]?.lat ?? null,
-      lon: results[0]?.lon ?? null,
-    })
-    notify.success(
-      t('world.toast.countryAdded', { flag: flagEmoji(code), name: countryName(code) }),
-    )
-    // esperar al render para que el mapa ya tenga el marcador nuevo
-    nextTick(() => mapPanel.value?.fitAll())
+    return { lat: results[0]?.lat ?? null, lon: results[0]?.lon ?? null }
+  } catch {
+    return { lat: null, lon: null }
+  }
+}
+
+async function addCountries() {
+  const codes = [...addCountryCodes.value]
+  if (!codes.length) return
+  addingCountry.value = true
+  try {
+    const payloads = []
+    for (const code of codes) {
+      payloads.push({
+        name: countryName(code),
+        kind: 'country' as const,
+        country_code: code,
+        ...(await countryCenter(code)),
+      })
+    }
+    await store.createMany(payloads)
   } catch (err) {
     notify.error(t('world.toast.addError'), err)
   } finally {
     addingCountry.value = false
-    addCountryCode.value = null
+    // los que ya están en el diario salen del selector; si alguno falló, su
+    // chip se queda para reintentarlo
+    const marked = new Set(markedCountryCodes.value)
+    const added = codes.filter((code) => marked.has(code))
+    addCountryCodes.value = codes.filter((code) => !marked.has(code))
+    if (added.length === 1) {
+      const code = added[0]
+      notify.success(
+        t('world.toast.countryAdded', { flag: flagEmoji(code), name: countryName(code) }),
+      )
+    } else if (added.length) {
+      notify.success(t('world.toast.countriesAdded', { n: added.length }))
+    }
+    // esperar al render para que el mapa ya tenga los marcadores nuevos
+    if (added.length) nextTick(() => mapPanel.value?.fitAll())
   }
 }
 
@@ -283,27 +303,45 @@ function bulkDelete() {
         @complete="(e) => geoSearch(e.query)"
         @item-select="onGeocodeSelect"
       />
-      <Select
-        v-model="addCountryCode"
-        :options="countryAddOptions"
-        optionLabel="label"
-        optionValue="code"
-        filter
-        :loading="addingCountry"
+      <CountrySelect
+        v-model="addCountryCodes"
+        multiple
+        :exclude="markedCountryCodes"
         :placeholder="t('world.search.countryPlaceholder')"
-        class="w-full sm:w-56"
-        @update:modelValue="addCountry"
+        :disabled="addingCountry"
+        class="w-full sm:w-80"
+      />
+      <Button
+        v-if="addCountryCodes.length"
+        class="tt-pop-in max-sm:w-full"
+        icon="pi pi-plus"
+        :label="
+          t('world.search.addCountries', { n: addCountryCodes.length }, addCountryCodes.length)
+        "
+        :loading="addingCountry"
+        @click="addCountries"
       />
     </div>
 
     <!-- filtros + vista -->
     <div class="flex flex-col gap-3 mb-4">
-      <div class="flex items-center gap-2">
-        <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
-        <ClusterBtn v-model="viewMode" :options="viewOptions" class="flex-1" />
+      <!-- son cuatro vistas: en móvil el cluster se lleva su propia fila a todo
+           lo ancho y filtros + orden bajan debajo (juntos no caben) -->
+      <div class="flex flex-wrap items-center gap-2">
+        <ClusterBtn
+          v-model="viewMode"
+          :options="viewOptions"
+          class="order-1 w-full sm:order-2 sm:w-auto sm:flex-1"
+        />
+        <FilterToggleButton
+          v-model="showFilters"
+          :count="activeFilterCount"
+          class="order-2 sm:order-1"
+        />
         <!-- orden cronológico: de lo más reciente a lo más antiguo o al revés -->
         <Button
           v-if="sortableView"
+          class="order-3"
           :icon="sortDesc ? 'pi pi-sort-amount-down' : 'pi pi-sort-amount-up'"
           severity="secondary"
           outlined
@@ -332,12 +370,11 @@ function bulkDelete() {
           :maxSelectedLabels="2"
           class="flex-1 min-w-menu sm:flex-none sm:w-40"
         />
-        <MultiSelect
+        <CountrySelect
           v-model="filters.countries"
-          :options="countryFilterOptions"
-          optionLabel="label"
-          optionValue="value"
-          filter
+          multiple
+          display="comma"
+          :codes="journalCountryCodes"
           :placeholder="t('world.filters.allCountries')"
           :maxSelectedLabels="1"
           class="flex-1 min-w-menu sm:flex-none sm:w-52"

@@ -15,7 +15,8 @@ export default {
   },
   search: {
     placePlaceholder: 'Search for a city or place to add…',
-    countryPlaceholder: 'Mark a country as visited…',
+    countryPlaceholder: 'Mark countries as visited…',
+    addCountries: 'Add country | Add {n} countries',
   },
   view: {
     map: 'Map',
@@ -121,6 +122,7 @@ export default {
   },
   toast: {
     countryAdded: '{flag} {name} added',
+    countriesAdded: '{n} countries added',
     addError: 'Could not add',
     bulkDeleted: '{n} places deleted',
     photoError: 'Could not upload the postcard',

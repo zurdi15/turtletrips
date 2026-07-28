@@ -29,6 +29,7 @@ export default {
   },
   payer: {
     unassigned: 'Unassigned',
+    anyPayer: 'All payers',
     commonFund: 'Common fund',
   },
   attachments: {

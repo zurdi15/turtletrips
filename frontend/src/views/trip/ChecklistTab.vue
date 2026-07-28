@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
-import DatePicker from 'primevue/datepicker'
-import InputText from 'primevue/inputtext'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
@@ -37,27 +35,6 @@ const progressPct = computed(() =>
 )
 const todayIso = toIsoDate(new Date())
 
-// ---- alta rápida (título + fecha límite opcional) ----
-
-const newTitle = ref('')
-const newDue = ref<Date | null>(null)
-const adding = ref(false)
-
-async function add() {
-  const title = newTitle.value.trim()
-  if (!title) return
-  adding.value = true
-  try {
-    await store.create({ title, due_date: newDue.value ? toIsoDate(newDue.value) : null })
-    newTitle.value = ''
-    newDue.value = null
-  } catch (err) {
-    notify.error(t('checklist.toast.addError'), err)
-  } finally {
-    adding.value = false
-  }
-}
-
 async function toggle(item: ChecklistItem) {
   try {
     await store.update(item.id, { done: !item.done })
@@ -66,7 +43,7 @@ async function toggle(item: ChecklistItem) {
   }
 }
 
-const { showForm, editing, openEdit, removeItem } = useCrudView<ChecklistItem>({
+const { showForm, editing, openNew, openEdit, removeItem } = useCrudView<ChecklistItem>({
   confirm: (item) => ({
     message: t('checklist.confirm.message', { name: item.title }),
     header: t('checklist.confirm.header'),
@@ -77,33 +54,18 @@ const { showForm, editing, openEdit, removeItem } = useCrudView<ChecklistItem>({
 
 <template>
   <div>
+    <div class="flex items-center justify-between mb-4">
+      <Button
+        :label="$t('checklist.newTask')"
+        icon="pi pi-plus"
+        class="w-full sm:w-auto"
+        @click="openNew"
+      />
+    </div>
+
     <TabSkeleton v-if="initialLoading" variant="table" :rows="4" />
 
     <template v-else>
-      <div class="flex flex-wrap items-center gap-2 mb-4">
-        <InputText
-          v-model="newTitle"
-          :placeholder="t('checklist.addPlaceholder')"
-          class="w-full sm:flex-1"
-          @keyup.enter="add"
-        />
-        <DatePicker
-          v-model="newDue"
-          showIcon
-          showButtonBar
-          dateFormat="dd/mm/yy"
-          :placeholder="t('checklist.duePlaceholder')"
-          class="flex-1 sm:flex-none sm:w-44"
-        />
-        <Button
-          :label="$t('common.actions.add')"
-          icon="pi pi-plus"
-          :loading="adding"
-          class="max-sm:[&_.p-button-label]:hidden"
-          @click="add"
-        />
-      </div>
-
       <div v-if="store.items.length" class="mb-4">
         <ProgressMeter :value="progressPct" />
         <p class="text-xs text-ink-faint mt-1">

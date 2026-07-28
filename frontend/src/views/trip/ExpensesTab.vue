@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
@@ -130,7 +130,6 @@ const {
   allCategoryNames,
   categoryFilterOptions,
   excludeOptions,
-  payerFilterOptions,
   placeFilterOptions,
 } = useExpenseFilters({
   trip: () => props.trip,
@@ -160,19 +159,19 @@ const groupTotals = computed(() => computeGroupTotals(rows.value, tableGroup.val
 const selected = ref<ExpenseRow[]>([])
 const bulkWorking = ref(false)
 
+// la barra sigue montada mientras se recoge: conservar el último recuento
+// evita que el rótulo cambie a "0 seleccionados" durante la animación
+const bulkCount = ref(0)
+watch(
+  () => selected.value.length,
+  (n) => {
+    if (n) bulkCount.value = n
+  },
+)
+
 const bulkCategoryOptions = computed(() =>
   allCategoryNames.value.map((name) => ({ value: name, label: name })),
 )
-const bulkPayerOptions = computed(() => [
-  ...props.trip.travelers.map((traveler) => ({
-    value: traveler.id as number | 'none' | 'common',
-    label: traveler.name,
-    color: traveler.color,
-  })),
-  { value: 'common' as const, label: t('expenses.payer.commonFund') },
-  { value: 'none' as const, label: t('expenses.payer.unassigned') },
-])
-
 function bulkPayerPayload(value: number | 'none' | 'common') {
   if (value === 'common') return { paid_by_common: true }
   if (value === 'none') return { paid_by_id: null, paid_by_common: false }
@@ -274,7 +273,7 @@ const {
             :filters="filters"
             :categoryOptions="categoryFilterOptions"
             :excludeOptions="excludeOptions"
-            :payerOptions="payerFilterOptions"
+            :travelers="trip.travelers"
             :placeOptions="placeFilterOptions"
             :activeFilterCount="activeFilterCount"
             @clear="clearFilters"
@@ -320,17 +319,20 @@ const {
         {{ $t('expenses.empty.noMatch') }}
       </p>
       <div v-else-if="renderedView === 'table'" class="tt-anim-rise">
-        <ExpenseBulkBar
-          v-if="selected.length"
-          :count="selected.length"
-          :working="bulkWorking"
-          :categoryOptions="bulkCategoryOptions"
-          :payerOptions="bulkPayerOptions"
-          @set-category="(name) => applyBulk({ category: name })"
-          @set-payer="(value) => applyBulk(bulkPayerPayload(value))"
-          @delete="bulkDelete"
-          @clear="selected = []"
-        />
+        <!-- la barra de acciones en bloque despliega y recoge como el panel de
+             filtros: la tabla se desplaza con ella en vez de dar un salto -->
+        <CollapsePanel :open="!!selected.length">
+          <ExpenseBulkBar
+            :count="bulkCount"
+            :working="bulkWorking"
+            :categoryOptions="bulkCategoryOptions"
+            :travelers="trip.travelers"
+            @set-category="(name) => applyBulk({ category: name })"
+            @set-payer="(value) => applyBulk(bulkPayerPayload(value))"
+            @delete="bulkDelete"
+            @clear="selected = []"
+          />
+        </CollapsePanel>
 
         <component
           :is="isDesktop ? ExpenseTable : ExpenseList"

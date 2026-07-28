@@ -29,6 +29,14 @@ export const useWorldPlacesStore = defineStore('worldPlaces', {
       await this.load()
       return place
     },
+    /** alta en bloque: una sola recarga al final aunque alguna falle */
+    async createMany(payloads: WorldPlaceInput[]) {
+      try {
+        for (const payload of payloads) await api.post<WorldPlace>('/world-places', payload)
+      } finally {
+        await this.load()
+      }
+    },
     async update(id: number, payload: WorldPlaceInput) {
       const place = await api.patch<WorldPlace>(`/world-places/${id}`, payload)
       await this.load()

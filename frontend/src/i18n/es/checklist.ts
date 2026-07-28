@@ -1,6 +1,5 @@
 export default {
-  addPlaceholder: 'Nueva tarea… (visado, seguro, check-in online)',
-  duePlaceholder: 'Fecha límite',
+  newTask: 'Nueva tarea',
   progress: '{done} de {total} hechas',
   linkTooltip: 'Abrir enlace',
   empty: {
@@ -19,8 +18,5 @@ export default {
   confirm: {
     header: 'Eliminar tarea',
     message: '¿Eliminar "{name}"?',
-  },
-  toast: {
-    addError: 'Error al añadir la tarea',
   },
 }

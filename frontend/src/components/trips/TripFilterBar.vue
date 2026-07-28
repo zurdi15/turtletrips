@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import CountrySelect from '../ui/CountrySelect.vue'
 import type { TripStatus } from '../../api/types'
 
 defineProps<{
   statusOptions: { value: string; label: string }[]
-  countryOptions: { value: string; label: string }[]
+  /** países presentes en los viajes: los únicos que filtran algo */
+  countryCodes: string[]
   activeCount: number
 }>()
 defineEmits<{ clear: [] }>()
@@ -14,6 +18,13 @@ defineEmits<{ clear: [] }>()
 const search = defineModel<string>('search', { required: true })
 const status = defineModel<TripStatus | 'all'>('status', { required: true })
 const country = defineModel<string>('country', { required: true })
+
+const { t } = useI18n()
+// 'all' como centinela: con null PrimeVue mostraría el placeholder vacío
+const allCountriesOption = computed(() => ({
+  value: 'all',
+  label: t('trips.filters.allCountries'),
+}))
 </script>
 
 <template>
@@ -32,12 +43,10 @@ const country = defineModel<string>('country', { required: true })
       optionValue="value"
       class="flex-1 min-w-[8rem] sm:flex-none sm:w-44"
     />
-    <Select
+    <CountrySelect
       v-model="country"
-      :options="countryOptions"
-      optionLabel="label"
-      optionValue="value"
-      filter
+      :codes="countryCodes"
+      :emptyOption="allCountriesOption"
       class="flex-1 min-w-[8rem] sm:flex-none sm:w-48"
     />
     <Button
