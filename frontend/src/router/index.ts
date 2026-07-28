@@ -125,6 +125,11 @@ export const router = createRouter({
           component: () => import('../views/trip/FilesTab.vue'),
         },
         {
+          path: 'share',
+          name: 'trip-share',
+          component: () => import('../views/trip/ShareTab.vue'),
+        },
+        {
           path: 'settings',
           name: 'trip-settings',
           component: () => import('../views/trip/SettingsTab.vue'),

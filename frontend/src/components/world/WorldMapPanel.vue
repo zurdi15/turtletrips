@@ -116,16 +116,16 @@ const visitedRegions = computed(() => {
 const regionCountries = computed(() => new Set(regionLayers.value.map((entry) => entry.code)))
 
 /**
- * Los mismos países, como chips flotantes. Son el ÚNICO acceso al país
- * mientras se ven sus regiones: su bandera está escondida (robaba el clic) y
- * el relleno queda tapado por las regiones, así que sin esto no hay forma de
- * abrir la ficha ni de marcar el país entero desde el zoom de regiones.
+ * Chips flotantes de los países MARCADOS cuyas regiones se están pintando: son
+ * los que han perdido su bandera (robaba el clic) y con el relleno tapado por
+ * las regiones se quedaban sin ninguna forma de abrir la ficha. Los NO marcados
+ * se quedan fuera a propósito: ahí el toque no abriría nada, daría de alta el
+ * país entero de un golpe y sin preguntar.
  */
 const regionChips = computed(() =>
-  regionLayers.value.map((entry) => ({
-    code: entry.code,
-    visited: countryStates.value.get(entry.code)?.status === 'visited',
-  })),
+  regionLayers.value
+    .map((entry) => entry.code)
+    .filter((code) => countryStates.value.get(code)?.status === 'visited'),
 )
 
 async function syncRegions() {
@@ -407,16 +407,15 @@ defineExpose({ flyTo, fitAll })
       class="absolute top-2 right-2 z-map-overlay flex flex-wrap justify-end gap-1 max-w-xs"
     >
       <button
-        v-for="chip in regionChips"
-        :key="chip.code"
+        v-for="code in regionChips"
+        :key="code"
         type="button"
-        class="tt-pop-in bg-surface rounded-full border shadow-lift px-2 py-1 text-base leading-none"
-        :class="chip.visited ? 'border-brand' : 'border-line opacity-70'"
-        :title="countryName(chip.code)"
-        :aria-label="countryName(chip.code)"
-        @click="onPick(chip.code)"
+        class="tt-pop-in bg-surface border border-brand rounded-full shadow-lift px-2 py-1 text-base leading-none"
+        :title="countryName(code)"
+        :aria-label="countryName(code)"
+        @click="onPick(code)"
       >
-        {{ flagEmoji(chip.code) }}
+        {{ flagEmoji(code) }}
       </button>
     </div>
 

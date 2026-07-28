@@ -43,6 +43,7 @@ export default {
     packing: 'Maleta',
     checklist: 'Checklist',
     files: 'Ficheros',
+    share: 'Compartir',
     settings: 'Ajustes',
   },
   notFound: {

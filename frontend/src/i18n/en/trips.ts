@@ -43,6 +43,7 @@ export default {
     packing: 'Packing',
     checklist: 'Checklist',
     files: 'Files',
+    share: 'Share',
     settings: 'Settings',
   },
   notFound: {

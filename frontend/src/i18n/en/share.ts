@@ -3,11 +3,8 @@ export default {
     title: 'Share the trip',
     active: 'This trip has an active read-only public link.',
     inactive: 'Create a link to show the plan to people who do not use the app.',
-    share: 'Share',
-    manage: 'Manage link',
   },
-  dialog: {
-    title: 'Share as read-only',
+  link: {
     intro:
       'Anyone with the link sees the plan — no account needed, nothing they can change. Pick what shows up.',
     sections: 'What is visible',

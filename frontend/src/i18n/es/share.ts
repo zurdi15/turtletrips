@@ -3,11 +3,8 @@ export default {
     title: 'Compartir el viaje',
     active: 'El viaje tiene un enlace público de solo lectura activo.',
     inactive: 'Genera un enlace para enseñar el plan a quien no usa la app.',
-    share: 'Compartir',
-    manage: 'Gestionar enlace',
   },
-  dialog: {
-    title: 'Compartir en solo lectura',
+  link: {
     intro:
       'Cualquiera con el enlace verá el plan, sin cuenta y sin poder tocar nada. Elige qué secciones se ven.',
     sections: 'Qué se ve',

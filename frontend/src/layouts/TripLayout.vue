@@ -55,6 +55,7 @@ const TAB_SKELETON: Record<string, TabSkeletonSpec> = {
   'trip-expenses': { stats: true, main: 'table', rows: 8 },
   'trip-packing': { main: 'list', rows: 8 },
   'trip-files': { main: 'table', rows: 4 },
+  'trip-share': { main: 'cards', rows: 2 },
   'trip-settings': { main: 'cards', rows: 2 },
 }
 const tabSkeleton = computed(
