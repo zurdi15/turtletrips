@@ -99,7 +99,6 @@ const REGION_MAX_COUNTRIES = 8
 
 const regionLayers = shallowRef<{ code: string; geometry: RegionGeometry }[]>([])
 const regionHovered = ref<string | null>(null)
-const loadingRegions = ref(false)
 /** firma del conjunto ya cargado: sin esto se recargaría en cada movimiento */
 let regionKey = ''
 
@@ -138,7 +137,6 @@ async function syncRegions() {
   const key = codes.join(',')
   if (key === regionKey) return
   regionKey = key
-  loadingRegions.value = true
   try {
     const loaded = await Promise.all(
       codes.map(async (code) => ({ code, geometry: await loadRegions(code) })),
@@ -148,9 +146,9 @@ async function syncRegions() {
     regionLayers.value = loaded.filter(
       (entry): entry is { code: string; geometry: RegionGeometry } => !!entry.geometry,
     )
-    loadingRegions.value = false
   } catch {
-    loadingRegions.value = false
+    // geometría ilegible: se olvida la firma para reintentar al siguiente movimiento
+    if (regionKey === key) regionKey = ''
   }
 }
 
@@ -159,11 +157,6 @@ async function syncRegions() {
 // al mapa
 watch([zoom, center], syncRegions)
 
-/** "Ver regiones" de la ficha: encuadra el país y las regiones salen solas */
-function zoomToRegions(code: string) {
-  const bounds = geometry.value?.boundsOf(code)
-  if (bounds) leafletMap()?.fitBounds(bounds, { padding: [24, 24], maxZoom: 7 })
-}
 
 function onRegionPick(country: string, regionCode: string, name: string, at: [number, number]) {
   const marked = props.diary.find((p) => p.kind === 'region' && p.region_code === regionCode)
@@ -416,9 +409,7 @@ defineExpose({ flyTo, fitAll })
       :state="pickedState"
       :place="pickedPlace"
       :locked="pickedLocked"
-      :loadingRegions="loadingRegions"
       @close="pickedCode = null"
-      @regions="zoomToRegions(pickedCode)"
       @edit="pickedPlace && emit('edit', pickedPlace)"
       @remove="pickedPlace && unmarkCountry(pickedCode, pickedPlace.id)"
     />

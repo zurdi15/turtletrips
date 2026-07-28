@@ -100,7 +100,6 @@ export default {
     editNote: 'Edit note',
     cityCount: 'no cities | 1 city inside | {n} cities inside',
     regionCount: 'no regions | 1 region marked | {n} regions marked',
-    viewRegions: 'Show regions',
   },
   form: {
     addTitle: 'Add to the map',

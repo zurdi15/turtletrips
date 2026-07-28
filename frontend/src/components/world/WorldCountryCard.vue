@@ -16,10 +16,9 @@ defineProps<{
   place: WorldPlace | null
   /** el país tiene ciudades o sitios dentro: no se puede quitar (409 del backend) */
   locked: boolean
-  loadingRegions: boolean
 }>()
 
-defineEmits<{ close: []; edit: []; remove: []; regions: [] }>()
+defineEmits<{ close: []; edit: []; remove: [] }>()
 </script>
 
 <template>
@@ -67,18 +66,8 @@ defineEmits<{ close: []; edit: []; remove: []; regions: [] }>()
         {{ $t('world.map.tripOrigin', { origin: place.origin }) }}
       </Pill>
 
-      <div class="flex flex-wrap items-center gap-2 mt-3">
-        <!-- encuadra el país: al acercarse, sus regiones aparecen solas -->
+      <div v-if="place" class="flex flex-wrap items-center gap-2 mt-3">
         <Button
-          :label="$t('world.map.viewRegions')"
-          icon="mdi mdi-map-outline"
-          size="small"
-          outlined
-          :loading="loadingRegions"
-          @click="$emit('regions')"
-        />
-        <Button
-          v-if="place"
           :label="$t('common.actions.edit')"
           icon="pi pi-pencil"
           size="small"
@@ -87,7 +76,6 @@ defineEmits<{ close: []; edit: []; remove: []; regions: [] }>()
           @click="$emit('edit')"
         />
         <Button
-          v-if="place"
           :label="$t('world.confirmRemove.accept')"
           icon="pi pi-trash"
           size="small"
