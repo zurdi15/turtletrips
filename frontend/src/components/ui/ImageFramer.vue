@@ -2,7 +2,7 @@
 // Primitiva TONTA: la imagen dentro de su marco real, arrastrable para elegir
 // qué parte se ve. No guarda nada — emite el encuadre y ya decide el
 // consumidor cuándo persistirlo.
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   canFrame,
   clamp01,
@@ -53,11 +53,19 @@ function measure() {
 // panorámica y la nueva un retrato)
 watch(() => props.src, measure)
 
+onMounted(() => {
+  // servida de caché: el `load` pudo dispararse antes de montarse el listener
+  if (imgEl.value?.complete && imgEl.value.naturalWidth > 0) measure()
+})
+
 let last: { x: number; y: number } | null = null
 
 function onPointerDown(event: PointerEvent) {
-  if (!movable.value) return
+  // medir ANTES de decidir: con la imagen servida de caché el `load` puede
+  // haberse disparado antes de que este componente lo escuchase, y sin medidas
+  // `movable` sale false y el arrastre no llegaría a empezar nunca
   measure()
+  if (!movable.value) return
   last = { x: event.clientX, y: event.clientY }
   dragging.value = true
   // el puntero se captura para que el arrastre siga aunque te salgas del marco

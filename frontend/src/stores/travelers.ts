@@ -7,7 +7,14 @@ export const useTravelersStore = defineStore('travelers', () => {
   const base = useGlobalResource<
     Traveler,
     { name: string; color?: string | null; family_id?: number | null },
-    { name?: string; color?: string | null; family_id?: number | null }
+    {
+      name?: string
+      color?: string | null
+      family_id?: number | null
+      // encuadre del avatar (0-1); ver utils/imageFocus
+      avatar_focus_x?: number
+      avatar_focus_y?: number
+    }
   >({
     listPath: '/travelers',
     itemPath: (id) => `/travelers/${id}`,

@@ -35,6 +35,8 @@ function makePlace(overrides: Partial<WorldPlace> = {}): WorldPlace {
     visited_year: null,
     visited_month: null,
     photo_url: null,
+    photo_focus_x: 0.5,
+    photo_focus_y: 0.5,
     auto: false,
     origin: null,
     ...overrides,
