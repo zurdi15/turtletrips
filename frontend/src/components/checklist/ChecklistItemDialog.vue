@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import DatePicker from 'primevue/datepicker'
+import TripDatePicker from '../ui/TripDatePicker.vue'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import type { ChecklistItem } from '../../api/types'
 import { useChecklistStore } from '../../stores/checklist'
+import { useTripsStore } from '../../stores/trips'
 import { useFormDialog } from '../../composables/useFormDialog'
 import { parseIsoDate, toIsoDate } from '../../composables/useMoney'
 
@@ -15,6 +16,8 @@ const props = defineProps<{ item: ChecklistItem | null }>()
 const visible = defineModel<boolean>('visible', { required: true })
 const { t } = useI18n()
 const store = useChecklistStore()
+// el viaje en curso: sus fechas sitúan el vencimiento respecto al viaje
+const trip = computed(() => useTripsStore().current)
 
 const title = ref('')
 const due = ref<Date | null>(null)
@@ -55,7 +58,14 @@ const { saving, save } = useFormDialog<ChecklistItem>({
       <InputText v-model="title" autofocus @keyup.enter="save" />
     </FormField>
     <FormField :label="$t('checklist.dialog.due')">
-      <DatePicker v-model="due" showIcon dateFormat="dd/mm/yy" showButtonBar />
+      <TripDatePicker
+        v-model="due"
+        :tripStart="trip?.start_date"
+        :tripEnd="trip?.end_date"
+        showIcon
+        dateFormat="dd/mm/yy"
+        showButtonBar
+      />
     </FormField>
     <FormField :label="$t('checklist.dialog.url')">
       <InputText v-model="url" type="url" placeholder="https://…" />

@@ -5,15 +5,17 @@ import DatePicker from 'primevue/datepicker'
 import Popover from 'primevue/popover'
 import Button from 'primevue/button'
 import { intlLocale } from '../i18n'
+import { parseIsoDate } from '../composables/useMoney'
+import { spanClasses, tripSpanClass, type CalendarDay } from '../utils/tripCalendar'
 
-interface DayMeta {
-  day: number
-  month: number
-  year: number
-  otherMonth?: boolean
-}
-
-const props = defineProps<{ startLabel?: string; endLabel?: string; clearable?: boolean }>()
+const props = defineProps<{
+  startLabel?: string
+  endLabel?: string
+  clearable?: boolean
+  /** fechas del viaje: se pintan como franja de fondo para situar la selección */
+  tripStart?: string | null
+  tripEnd?: string | null
+}>()
 
 const { t } = useI18n()
 const startText = computed(() => props.startLabel ?? t('common.dateRange.start'))
@@ -28,9 +30,13 @@ const active = ref<'start' | 'end'>('start')
 const open = ref(false)
 const hoverKey = ref<number | null>(null)
 
-// el calendario solo refleja el inicio para abrirse en su mes; la selección la gestionamos aquí
+// el calendario solo refleja el inicio para abrirse en su mes; la selección la
+// gestionamos aquí. Sin fecha elegida se abre en el mes del VIAJE: si no,
+// aterrizas en el mes actual y la franja del viaje no se ve por ningún lado
+// (la selección interna del DatePicker va neutralizada por CSS, así que ese
+// día no aparece marcado)
 const calModel = computed({
-  get: () => start.value,
+  get: () => start.value ?? (props.tripStart ? parseIsoDate(props.tripStart) : null),
   set: () => {},
 })
 
@@ -87,9 +93,12 @@ function clearEnd() {
   if (open.value) active.value = 'end'
 }
 
-// extremos en verde sólido, interior en verde claro; mientras falta un extremo,
-// el hover previsualiza el lapso
-function dayClass(meta: DayMeta): string {
+// El lapso elegido se rellena como ÁREA, con la misma geometría que la franja
+// del viaje (`spanClasses`): así encaja dentro de ella en vez de ser una tira
+// de días sueltos, y las semanas se funden igual. Mientras falta un extremo, el
+// hover rellena esa misma área a modo de previsualización. Los extremos van
+// encima, en verde sólido.
+function dayClass(meta: CalendarDay): string {
   if (meta.otherMonth) return ''
   const k = meta.year * 10000 + meta.month * 100 + meta.day
   let s = startKey.value
@@ -102,14 +111,19 @@ function dayClass(meta: DayMeta): string {
     s = hoverKey.value
     preview = 'start'
   }
-  if (k === startKey.value) return 'tt-range-start'
-  if (k === endKey.value) return 'tt-range-end'
-  if ((k === s || k === e) && preview) return 'tt-range-preview'
-  if (s != null && e != null && k > s && k < e) return 'tt-in-range'
-  return ''
+  const classes: string[] = []
+  // debajo de todo, la duración del viaje: el relleno de la selección va encima
+  const trip = tripSpanClass(meta, props.tripStart, props.tripEnd)
+  if (trip) classes.push(trip)
+  const selection = spanClasses(meta, s, e, 'tt-sel-day')
+  if (selection) classes.push(selection)
+  if (k === startKey.value) classes.push('tt-range-start')
+  else if (k === endKey.value) classes.push('tt-range-end')
+  else if (preview && (k === s || k === e)) classes.push('tt-range-preview')
+  return classes.join(' ')
 }
 
-function onDayHover(meta: DayMeta) {
+function onDayHover(meta: CalendarDay) {
   if (meta.otherMonth) return
   hoverKey.value = meta.year * 10000 + meta.month * 100 + meta.day
 }

@@ -331,6 +331,8 @@ const { saving, save } = useFormDialog({
       v-model:end="endDate"
       :startLabel="dateLabels.start"
       :endLabel="dateLabels.end"
+      :tripStart="trip.start_date"
+      :tripEnd="trip.end_date"
       clearable
     />
     <div class="grid grid-cols-2 gap-3">

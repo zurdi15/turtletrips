@@ -71,6 +71,20 @@ def _checked_shares(
     ]
 
 
+def _replace_shares(db: Session, expense: Expense, rows: list[ExpenseShare]) -> None:
+    """Cambia el reparto entero, vaciando ANTES de meter.
+
+    Si se asigna la lista nueva de golpe, SQLAlchemy puede emitir los INSERT
+    antes que los DELETE de las filas viejas y, con (expense_id, traveler_id)
+    único, reenviar el MISMO reparto —lo que hace el formulario al guardar
+    cualquier campo— moría con IntegrityError.
+    """
+    if expense.shares:
+        expense.shares.clear()
+        db.flush()  # aquí salen los DELETE
+    expense.shares = rows
+
+
 @router.get("/trips/{trip_id}/expenses", response_model=list[ExpenseRead])
 def list_expenses(
     trip_id: int,
@@ -177,7 +191,7 @@ async def update_expense(
     new_mode = data["split_mode"].value if "split_mode" in data else expense.split_mode
     if payload.shares is not None:
         # reemplazo completo del reparto ([] + equal = volver al implícito)
-        expense.shares = _checked_shares(trip, amount, new_mode, payload.shares)
+        _replace_shares(db, expense, _checked_shares(trip, amount, new_mode, payload.shares))
         data.pop("shares", None)
     elif "amount" in data and new_mode == SplitMode.amount.value and expense.shares:
         # cambia el importe con reparto por importes: rescalar proporcionalmente
@@ -191,7 +205,7 @@ async def update_expense(
             ExpenseShareInput(traveler_id=s.traveler_id, value=s.value)
             for s in expense.shares
         ]
-        expense.shares = _checked_shares(trip, amount, new_mode, current)
+        _replace_shares(db, expense, _checked_shares(trip, amount, new_mode, current))
 
     # gasto generado desde una reserva: importe, moneda, pagador y día se
     # espejan de vuelta en la reserva (el título manda desde la reserva)

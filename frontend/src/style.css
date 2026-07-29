@@ -68,6 +68,10 @@
   --tt-chart-grid: rgb(226 232 240 / 0.8);
   --tt-range-inrange-bg: var(--p-primary-100);
   --tt-range-inrange-text: var(--p-primary-800);
+  /* franja de "días del viaje" en los calendarios de los formularios: floja a
+     propósito, por debajo de la selección */
+  --tt-trip-span-bg: color-mix(in srgb, var(--p-primary-500) 8%, transparent);
+  --tt-trip-span-line: color-mix(in srgb, var(--p-primary-500) 45%, transparent);
   --tt-range-preview-bg: color-mix(in srgb, var(--p-primary-500) 55%, transparent);
   --tt-range-preview-text: theme('colors.white');
   /* movimiento */
@@ -162,6 +166,8 @@ html.tt-dark {
   --tt-chart-grid: rgb(51 65 85 / 0.6);
   --tt-range-inrange-bg: color-mix(in srgb, var(--p-primary-900) 55%, transparent);
   --tt-range-inrange-text: var(--p-primary-200);
+  --tt-trip-span-bg: color-mix(in srgb, var(--p-primary-400) 12%, transparent);
+  --tt-trip-span-line: color-mix(in srgb, var(--p-primary-400) 50%, transparent);
   --tt-range-preview-bg: color-mix(in srgb, var(--p-primary-400) 50%, transparent);
   --tt-range-preview-text: var(--p-primary-900);
 }
@@ -757,14 +763,16 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   padding: 0;
 }
 .tt-range-panel td.p-datepicker-day-cell {
-  padding: 2px 0;
+  padding: 0;
 }
+/* la píldora ocupa la celda entera (sin margen ni hueco): así el relleno de la
+   selección forma un área continua entre semanas, como la franja del viaje */
 .tt-range-panel .p-datepicker-day {
   width: 100%;
   min-width: 2.5rem;
-  height: 2.5rem;
+  height: 2.75rem;
   margin: 0;
-  border-radius: theme('borderRadius.full');
+  border-radius: 0;
 }
 .tt-range-panel .tt-day-inner {
   display: flex;
@@ -778,20 +786,106 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   background: transparent;
   color: inherit;
 }
-.tt-range-panel .p-datepicker-day:has(.tt-range-start),
-.tt-range-panel .p-datepicker-day:has(.tt-range-end) {
+/* relleno del lapso elegido: MISMA geometría de área que la franja del viaje,
+   un escalón más fuerte de color y por encima de ella (va en el día, la del
+   viaje en la celda), de modo que las líneas del viaje siguen viéndose */
+.tt-range-panel .p-datepicker-day:has(.tt-sel-day) {
+  background: var(--tt-range-inrange-bg);
+  color: var(--tt-range-inrange-text);
+}
+.tt-range-panel .p-datepicker-day:has(.tt-sel-day-first) {
+  border-start-start-radius: theme('borderRadius.lg');
+  border-end-start-radius: theme('borderRadius.lg');
+}
+.tt-range-panel .p-datepicker-day:has(.tt-sel-day-last) {
+  border-start-end-radius: theme('borderRadius.lg');
+  border-end-end-radius: theme('borderRadius.lg');
+}
+.tt-range-panel .p-datepicker-day:has(.tt-sel-day-open-top) {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+.tt-range-panel .p-datepicker-day:has(.tt-sel-day-open-bottom) {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+/* los extremos, en píldora sólida DENTRO de la casilla (el relleno del área
+   pasa por debajo y no se corta) */
+.tt-range-panel .tt-day-inner.tt-range-start,
+.tt-range-panel .tt-day-inner.tt-range-end,
+.tt-range-panel .tt-day-inner.tt-range-preview {
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: auto;
+  border-radius: theme('borderRadius.full');
+}
+.tt-range-panel .tt-day-inner.tt-range-start,
+.tt-range-panel .tt-day-inner.tt-range-end {
   /* los extremos van en primary-500 pleno en ambos modos */
   background: var(--p-primary-500);
   color: theme('colors.white');
 }
-.tt-range-panel .p-datepicker-day:has(.tt-range-preview) {
+.tt-range-panel .tt-day-inner.tt-range-preview {
   background: var(--tt-range-preview-bg);
   color: var(--tt-range-preview-text);
 }
-.tt-range-panel .p-datepicker-day:has(.tt-in-range) {
-  background: var(--tt-range-inrange-bg);
-  color: var(--tt-range-inrange-text);
-  border-radius: 0;
+
+/* Franja con los días del viaje en los calendarios de los formularios (reserva,
+   actividad, gasto, checklist). Va en la CELDA, no en el día: así el relleno de
+   la selección —el de PrimeVue en un DatePicker suelto, el nuestro en el
+   popover del rango— se pinta encima sin pelear por especificidad.
+   `background-clip: content-box` la deja a la altura exacta de la píldora del
+   día en vez de a la de la celda. */
+td.p-datepicker-day-cell:has(.tt-trip-day) {
+  /* cada lado es una variable para poder apagarlo por separado: con un
+     box-shadow por regla, la última ganaría y no se podrían componer */
+  --tt-span-top: inset 0 1px 0 var(--tt-trip-span-line);
+  --tt-span-bottom: inset 0 -1px 0 var(--tt-trip-span-line);
+  --tt-span-left: 0 0 transparent;
+  --tt-span-right: 0 0 transparent;
+  background: var(--tt-trip-span-bg);
+  /* en box-shadow y no en border: un border movería la rejilla un píxel */
+  box-shadow: var(--tt-span-top), var(--tt-span-bottom), var(--tt-span-left),
+    var(--tt-span-right);
+}
+/* los topes: el primer día cierra por la izquierda y el último por la derecha */
+td.p-datepicker-day-cell:has(.tt-trip-day-first) {
+  --tt-span-left: inset 1px 0 0 var(--tt-trip-span-line);
+  border-start-start-radius: theme('borderRadius.lg');
+  border-end-start-radius: theme('borderRadius.lg');
+}
+td.p-datepicker-day-cell:has(.tt-trip-day-last) {
+  --tt-span-right: inset -1px 0 0 var(--tt-trip-span-line);
+  border-start-end-radius: theme('borderRadius.lg');
+  border-end-end-radius: theme('borderRadius.lg');
+}
+/* la casilla de arriba (o de abajo) también es del viaje: se quita la línea y
+   las semanas dejan de ser franjas sueltas para formar UN área */
+td.p-datepicker-day-cell:has(.tt-trip-day-open-top) {
+  --tt-span-top: 0 0 transparent;
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+}
+td.p-datepicker-day-cell:has(.tt-trip-day-open-bottom) {
+  --tt-span-bottom: 0 0 transparent;
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+/* en un DatePicker suelto el día no lleva el flex de .tt-day-inner del rango */
+.p-datepicker-day .tt-day-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* PrimeIcons fija `font-size: 1rem` en `.pi` y en el bundle acaba DESPUÉS de
+   las utilidades de Tailwind, así que un `text-*` sobre un icono no hace nada.
+   Aquí se rescata SOLO el tamaño 4xs (el chevron de las notas de gastos):
+   arreglarlo para todos los tamaños encogería de golpe media app. */
+.pi.text-4xs {
+  font-size: theme('fontSize.4xs');
 }
 
 /* ---------------------------------------------------------------------------

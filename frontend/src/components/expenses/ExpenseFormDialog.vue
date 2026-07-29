@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
-import DatePicker from 'primevue/datepicker'
+import TripDatePicker from '../ui/TripDatePicker.vue'
 import Select from 'primevue/select'
 import AutoComplete from 'primevue/autocomplete'
 import Button from 'primevue/button'
@@ -206,7 +206,13 @@ const { saving, save } = useFormDialog({
   >
     <div class="grid grid-cols-2 gap-3">
       <FormField :label="$t('expenses.fields.date')" required>
-        <DatePicker v-model="day" showIcon dateFormat="dd/mm/yy" />
+        <TripDatePicker
+          v-model="day"
+          :tripStart="trip.start_date"
+          :tripEnd="trip.end_date"
+          showIcon
+          dateFormat="dd/mm/yy"
+        />
       </FormField>
       <FormField :label="$t('expenses.fields.category')">
         <Select

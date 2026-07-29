@@ -71,6 +71,8 @@ export default {
       fontSize: {
         '2xs': '0.6875rem',
         '3xs': '0.625rem',
+        // un escalón más para iconos decorativos (el chevron de las notas)
+        '4xs': '0.5rem',
       },
       borderRadius: {
         card: 'var(--tt-radius-card)',

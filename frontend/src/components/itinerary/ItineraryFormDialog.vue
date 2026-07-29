@@ -11,6 +11,7 @@ import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import type { GeocodeResult, ItineraryItem, Place } from '../../api/types'
 import { useItineraryStore } from '../../stores/itinerary'
+import { useTripsStore } from '../../stores/trips'
 import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useFormDialog } from '../../composables/useFormDialog'
@@ -25,6 +26,8 @@ const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const notify = useNotify()
 const store = useItineraryStore()
+// el viaje en curso: sus fechas pintan la franja de duración en el calendario
+const trip = computed(() => useTripsStore().current)
 const places = usePlacesStore()
 const bookings = useBookingsStore()
 const { results: geoResults, search: geoSearch } = useGeocodeSearch()
@@ -203,7 +206,14 @@ const { saving, save } = useFormDialog({
       <InputText v-model="title" :placeholder="t('itinerary.form.titlePlaceholder')" />
     </FormField>
     <FormField :label="t('itinerary.form.days')" required>
-      <DateRangePicker v-model:start="day" v-model:end="endDay" :startLabel="t('itinerary.form.from')" :endLabel="t('itinerary.form.to')" />
+      <DateRangePicker
+        v-model:start="day"
+        v-model:end="endDay"
+        :startLabel="t('itinerary.form.from')"
+        :endLabel="t('itinerary.form.to')"
+        :tripStart="trip?.start_date"
+        :tripEnd="trip?.end_date"
+      />
     </FormField>
     <div class="grid grid-cols-2 gap-3">
       <FormField :label="t('itinerary.form.startTime')">

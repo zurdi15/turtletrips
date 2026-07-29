@@ -432,3 +432,48 @@ def test_trip_without_settlements_not_marked_settled(client, trip):
     add_traveler(client, trip["id"], "Ana")
     # sin gastos ni liquidaciones: la pill no debe salir aunque los saldos sean cero
     assert client.get(f"/api/v1/trips/{trip['id']}").json()["debts_settled"] is False
+
+
+def test_reeditar_un_gasto_con_el_mismo_reparto(client):
+    """Regresión: reenviar el MISMO reparto reventaba con UNIQUE constraint.
+
+    Al reemplazar la colección, SQLAlchemy puede emitir los INSERT de las filas
+    nuevas antes de los DELETE de las viejas: con (expense_id, traveler_id)
+    único, editar cualquier campo de un gasto repartido moría en un 500.
+    """
+    trip = client.post("/api/v1/trips", json={"name": "Reparto", "base_currency": "EUR"}).json()
+    a = add_traveler(client, trip["id"], "Ana")
+    b = add_traveler(client, trip["id"], "Beto")
+    shares = [
+        {"traveler_id": a["id"], "value": 34.0},
+        {"traveler_id": b["id"], "value": 66.0},
+    ]
+    expense = client.post(
+        f"/api/v1/trips/{trip['id']}/expenses",
+        json={
+            "description": "Cena",
+            "amount": 100,
+            "currency": "EUR",
+            "day": "2026-05-02",
+            "paid_by_id": a["id"],
+            "split_mode": "amount",
+            "shares": shares,
+        },
+    ).json()
+
+    # editar SOLO la nota, reenviando el reparto tal cual (lo que hace el form)
+    resp = client.patch(
+        f"/api/v1/expenses/{expense['id']}",
+        json={"notes": "Nota nueva", "split_mode": "amount", "shares": shares},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["notes"] == "Nota nueva"
+    assert sorted(s["value"] for s in resp.json()["shares"]) == [34.0, 66.0]
+
+    # y otra vez, que el segundo guardado no acumule filas
+    again = client.patch(
+        f"/api/v1/expenses/{expense['id']}",
+        json={"notes": "Otra", "split_mode": "amount", "shares": shares},
+    )
+    assert again.status_code == 200, again.text
+    assert len(again.json()["shares"]) == 2

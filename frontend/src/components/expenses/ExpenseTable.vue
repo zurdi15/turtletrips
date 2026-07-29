@@ -7,6 +7,7 @@ import Tag from 'primevue/tag'
 import PayerBadge from './PayerBadge.vue'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
+import ExpenseNote from './ExpenseNote.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
 import {
   isGroupSelected,
@@ -40,15 +41,6 @@ function groupLabel(row: ExpenseRow): string {
   if (props.groupBy === 'category') return row.category
   if (props.groupBy === 'place_name') return row.place_name
   return row.payer_name
-}
-
-// --- notas desplegables (en la tabla van a una línea; el chevron las abre) ---
-
-const openNotes = ref(new Set<number>())
-
-function toggleNote(id: number) {
-  if (openNotes.value.has(id)) openNotes.value.delete(id)
-  else openNotes.value.add(id)
 }
 
 // --- resaltar un gasto al llegar enlazado (?expense=id desde reserva/sitio/itinerario) ---
@@ -145,25 +137,7 @@ const { rowClass } = useRowFlash({
             :tooltip="$t('expenses.table.placeTooltip', { name: placeById.get(data.place_id)!.name })"
           />
         </span>
-        <!-- la nota va recortada a una línea; el chevron la despliega entera -->
-        <button
-          v-if="data.notes"
-          type="button"
-          class="mt-1.5 flex items-start gap-1 text-left text-xs text-ink-faint hover:text-ink-secondary transition-colors"
-          v-tooltip.top="openNotes.has(data.id) ? $t('expenses.table.hideNote') : $t('expenses.table.showNote')"
-          @click.stop="toggleNote(data.id)"
-        >
-          <i
-            class="pi pi-chevron-down text-3xs mt-0.5 shrink-0 transition-transform duration-200"
-            :class="{ 'rotate-180': openNotes.has(data.id) }"
-          />
-          <span
-            class="max-w-note"
-            :class="openNotes.has(data.id) ? 'whitespace-pre-line break-words' : 'block truncate'"
-          >
-            {{ data.notes }}
-          </span>
-        </button>
+        <ExpenseNote v-if="data.notes" :text="data.notes" />
       </template>
     </Column>
     <Column :header="$t('expenses.fields.amount')" style="width: 8rem">
