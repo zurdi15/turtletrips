@@ -115,7 +115,9 @@ function dayClass(meta: CalendarDay): string {
   // debajo de todo, la duración del viaje: el relleno de la selección va encima
   const trip = tripSpanClass(meta, props.tripStart, props.tripEnd)
   if (trip) classes.push(trip)
-  const selection = spanClasses(meta, s, e, 'tt-sel-day')
+  // con un solo extremo, el área es de UN día: sin esto el tope se quedaría sin
+  // forma (un bloque cuadrado) hasta elegir el segundo
+  const selection = spanClasses(meta, s ?? e, e ?? s, 'tt-sel-day')
   if (selection) classes.push(selection)
   if (k === startKey.value) classes.push('tt-range-start')
   else if (k === endKey.value) classes.push('tt-range-end')

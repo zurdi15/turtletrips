@@ -809,15 +809,13 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   border-end-start-radius: 0;
   border-end-end-radius: 0;
 }
-/* los extremos, en píldora sólida DENTRO de la casilla (el relleno del área
-   pasa por debajo y no se corta) */
+/* los extremos rellenan su casilla entera y HEREDAN el redondeo del tope del
+   área: así el principio y el final son la misma forma que el resto del área,
+   no dos círculos pegados a ella */
 .tt-range-panel .tt-day-inner.tt-range-start,
 .tt-range-panel .tt-day-inner.tt-range-end,
 .tt-range-panel .tt-day-inner.tt-range-preview {
-  width: 2.25rem;
-  height: 2.25rem;
-  margin: auto;
-  border-radius: theme('borderRadius.full');
+  border-radius: inherit;
 }
 .tt-range-panel .tt-day-inner.tt-range-start,
 .tt-range-panel .tt-day-inner.tt-range-end {
