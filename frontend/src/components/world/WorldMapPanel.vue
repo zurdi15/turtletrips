@@ -121,7 +121,7 @@ async function confirmMark(details: MarkDetails) {
 // por la pantalla (no las de uno elegido a dedo: adivinar "cuál miras" fallaba
 // en cuanto el centro caía en el mar). Cada país es un fichero de ~10 KB que se
 // pide una vez y queda en caché; el tope evita ráfagas al alejarse.
-const REGION_ZOOM = 4
+const REGION_ZOOM = 5
 const REGION_MAX_COUNTRIES = 8
 
 const regionLayers = shallowRef<{ code: string; geometry: RegionGeometry }[]>([])

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import Button from 'primevue/button'
+import ImageZoom from '../ui/ImageZoom.vue'
 import Pill from '../ui/Pill.vue'
 import type { WorldPlace } from '../../api/types'
 import { countryName, flagEmoji } from '../../countries'
@@ -20,6 +22,10 @@ defineProps<{
 }>()
 
 defineEmits<{ close: []; edit: []; remove: [] }>()
+
+// la postal se ve recortada en la ficha: al tocarla vuela a tamaño grande, el
+// mismo zoom que la postal del diario
+const zoom = ref<InstanceType<typeof ImageZoom> | null>(null)
 </script>
 
 <template>
@@ -54,13 +60,20 @@ defineEmits<{ close: []; edit: []; remove: [] }>()
         />
       </div>
 
-      <img
+      <button
         v-if="place?.photo_url"
-        :src="place.photo_url"
-        class="w-full h-24 object-cover rounded-lg mt-2"
-        :style="{ objectPosition: focusStyle(place.photo_focus_x, place.photo_focus_y) }"
-        alt=""
-      />
+        type="button"
+        class="block w-full mt-2 rounded-lg overflow-hidden cursor-zoom-in"
+        :aria-label="$t('world.form.photo')"
+        @click="zoom?.openFrom($event.currentTarget as HTMLElement)"
+      >
+        <img
+          :src="place.photo_url"
+          class="w-full h-24 object-cover"
+          :style="{ objectPosition: focusStyle(place.photo_focus_x, place.photo_focus_y) }"
+          alt=""
+        />
+      </button>
       <p v-if="place?.note" class="mt-2 text-xs text-ink-muted whitespace-pre-wrap">
         {{ place.note }}
       </p>
@@ -89,5 +102,7 @@ defineEmits<{ close: []; edit: []; remove: [] }>()
         />
       </div>
     </div>
+
+    <ImageZoom ref="zoom" :src="place?.photo_url ?? null" :alt="countryName(code)" />
   </div>
 </template>

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Textarea from 'primevue/textarea'
 import ImageFramer from '../ui/ImageFramer.vue'
+import ImageZoom from '../ui/ImageZoom.vue'
 import UploadButton from '../ui/UploadButton.vue'
 import type { Focus } from '../../utils/imageFocus'
 import { focusStyle } from '../../utils/imageFocus'
@@ -97,133 +98,9 @@ async function saveFocus() {
   }
 }
 
-// --- lightbox con zoom FLIP: la postal crece desde su miniatura al abrir y
-// vuelve encogiéndose a su sitio al cerrar (transform/opacity, ver .tt-lightbox*) ---
-const zoomOpen = ref(false)
-const zoomClosing = ref(false)
-// true cuando el clon está listo para pintarse: hasta entonces el overlay va
-// invisible y la miniatura visible; el intercambio es atómico en un solo frame
-const zoomReady = ref(false)
-// la postal grande conserva el aspecto EXACTO de la miniatura: así la escala del
-// vuelo es uniforme (sin deformar la imagen), que es lo que hace el zoom fluido
-const zoomSize = ref<{ width: string; height: string } | null>(null)
-const backdropEl = ref<HTMLElement | null>(null)
-const zoomCard = ref<HTMLElement | null>(null)
-const zoomImg = ref<HTMLImageElement | null>(null)
-let zoomSource: HTMLElement | null = null
-
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-// duración (ms) de un token de motion --tt-dur-* para las animaciones WAAPI
-function durToken(name: string, fallback: number): number {
-  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name))
-  return Number.isFinite(v) && v > 0 ? v : fallback
-}
-
-// rotación aplicada a la miniatura (el marco lleva rotate-1 en modo lectura)
-function sourceAngle(source: HTMLElement): number {
-  const t = getComputedStyle(source).transform
-  if (!t || t === 'none') return 0
-  const m = new DOMMatrixReadOnly(t)
-  return Math.atan2(m.b, m.a) * (180 / Math.PI)
-}
-
-// transform que superpone la tarjeta ampliada sobre la miniatura de origen
-function toSourceTransform(card: HTMLElement, source: HTMLElement): string {
-  const from = source.getBoundingClientRect()
-  const to = card.getBoundingClientRect()
-  const dx = from.left + from.width / 2 - (to.left + to.width / 2)
-  const dy = from.top + from.height / 2 - (to.top + to.height / 2)
-  return `translate(${dx}px, ${dy}px) rotate(${sourceAngle(source)}deg) scale(${from.width / to.width})`
-}
-
-function openZoom(ev: Event) {
-  openZoomFrom(ev.currentTarget as HTMLElement)
-}
-
-/** el zoom vuela desde el elemento que enseña la foto: la miniatura en modo
- *  lectura, el marco de encuadre en modo edición */
-async function openZoomFrom(source: HTMLElement | null) {
-  if (zoomOpen.value || !source) return
-  zoomSource = source
-  // tamaño destino: la miniatura escalada (aspecto idéntico) hasta 85vw/80vh
-  const thumb = zoomSource.querySelector('img')?.getBoundingClientRect()
-  if (!thumb) return
-  const k = Math.min(
-    Math.min(window.innerWidth * 0.85, 896) / thumb.width,
-    (window.innerHeight * 0.8) / thumb.height,
-  )
-  zoomSize.value = {
-    width: `${Math.round(thumb.width * k)}px`,
-    height: `${Math.round(thumb.height * k)}px`,
-  }
-  zoomOpen.value = true
-  document.body.style.overflow = 'hidden'
-  window.addEventListener('keydown', onZoomKey)
-  await nextTick()
-  const backdrop = backdropEl.value
-  const card = zoomCard.value
-  const img = zoomImg.value
-  if (!backdrop || !card || !img) {
-    zoomReady.value = true
-    return
-  }
-  // decodifica con el overlay aún invisible y la miniatura todavía en su sitio
-  await img.decode().catch(() => {})
-  // revelar y animar en el MISMO tick: el clon nace ya en el primer keyframe
-  // (sobre la miniatura), sin ningún frame suelto en estado final que reinicie
-  // la animación (el "crece-encoge-crece")
-  zoomReady.value = true
-  if (reducedMotion()) return
-  card.animate(
-    [{ transform: toSourceTransform(card, zoomSource) }, { transform: 'none' }],
-    { duration: durToken('--tt-dur-300', 300), easing: 'ease' },
-  )
-  backdrop.animate([{ opacity: 0 }, { opacity: 1 }], {
-    duration: durToken('--tt-dur-200', 200),
-    easing: 'ease',
-  })
-}
-
-function closeZoom() {
-  if (!zoomOpen.value || zoomClosing.value) return
-  const backdrop = backdropEl.value
-  const card = zoomCard.value
-  if (!backdrop || !card || !zoomSource || reducedMotion()) {
-    finishZoom()
-    return
-  }
-  zoomClosing.value = true
-  // el rect de la miniatura se recalcula aquí: si hubo scroll, vuelve al sitio correcto
-  const flight = card.animate(
-    [{ transform: 'none' }, { transform: toSourceTransform(card, zoomSource) }],
-    { duration: durToken('--tt-dur-300', 300), easing: 'ease', fill: 'forwards' },
-  )
-  backdrop.animate([{ opacity: 1 }, { opacity: 0 }], {
-    duration: durToken('--tt-dur-300', 300),
-    easing: 'ease',
-    fill: 'forwards',
-  })
-  // al aterrizar, el clon se desmonta y la miniatura reaparece en el mismo frame
-  flight.finished.catch(() => {}).then(finishZoom)
-}
-
-function finishZoom() {
-  zoomOpen.value = false
-  zoomClosing.value = false
-  zoomReady.value = false
-  zoomSize.value = null
-  document.body.style.overflow = ''
-  window.removeEventListener('keydown', onZoomKey)
-}
-
-function onZoomKey(e: KeyboardEvent) {
-  if (e.key === 'Escape') closeZoom()
-}
-
-onBeforeUnmount(() => {
-  if (zoomOpen.value) finishZoom()
-})
+// el zoom de la postal (vuelo FLIP desde la miniatura) vive en ImageZoom: se
+// abre desde la miniatura en modo lectura y desde el marco de encuadre al editar
+const zoom = ref<InstanceType<typeof ImageZoom> | null>(null)
 
 function confirmDeletePhoto() {
   confirmAction({
@@ -273,8 +150,7 @@ function confirmDeletePhoto() {
         v-if="entry?.photo_url"
         type="button"
         class="ml-auto shrink-0 w-32 sm:w-44 rotate-1 rounded bg-white p-0.5 shadow-lift flex cursor-zoom-in"
-        :class="{ invisible: zoomReady }"
-        @click="openZoom"
+        @click="zoom?.openFrom($event.currentTarget as HTMLElement)"
       >
         <img
           :src="entry.photo_url"
@@ -334,7 +210,7 @@ function confirmDeletePhoto() {
               severity="secondary"
               text
               size="small"
-              @click="openZoomFrom(framerBox)"
+              @click="zoom?.openFrom(framerBox)"
             />
             <UploadButton
               :label="t('itinerary.journal.replacePhoto')"
@@ -370,35 +246,10 @@ function confirmDeletePhoto() {
       </div>
     </div>
 
-    <!-- lightbox: la postal ampliada y centrada; click o Esc la devuelven a su sitio -->
-    <Teleport to="body">
-      <div
-        v-if="zoomOpen"
-        role="dialog"
-        aria-modal="true"
-        class="fixed inset-0 z-lightbox flex items-center justify-center p-6 cursor-zoom-out"
-        @click="closeZoom"
-      >
-        <!-- el fundido es SOLO del fondo: el clon va opaco desde el primer frame -->
-        <div
-          ref="backdropEl"
-          class="absolute inset-0 bg-black/70"
-          :class="{ invisible: !zoomReady }"
-        />
-        <div
-          ref="zoomCard"
-          class="relative rounded bg-white p-1.5 shadow-lift"
-          :class="{ invisible: !zoomReady }"
-        >
-          <img
-            ref="zoomImg"
-            :src="entry?.photo_url ?? undefined"
-            :alt="t('itinerary.journal.postcard')"
-            :style="zoomSize ?? undefined"
-            class="tt-lightbox-img block rounded-sm object-cover"
-          />
-        </div>
-      </div>
-    </Teleport>
+    <ImageZoom
+      ref="zoom"
+      :src="entry?.photo_url ?? null"
+      :alt="t('itinerary.journal.postcard')"
+    />
   </div>
 </template>
