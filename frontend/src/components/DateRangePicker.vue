@@ -110,6 +110,12 @@ function dayClass(meta: CalendarDay): string {
   } else if (s == null && active.value === 'start' && e != null && hoverKey.value != null && hoverKey.value < e) {
     s = hoverKey.value
     preview = 'start'
+  } else if (s == null && e == null && hoverKey.value != null) {
+    // sin nada elegido todavía, el día bajo el ratón se previsualiza igual que
+    // el segundo extremo: sin esto el calendario no responde al ratón
+    s = hoverKey.value
+    e = hoverKey.value
+    preview = active.value
   }
   const classes: string[] = []
   // debajo de todo, la duración del viaje: el relleno de la selección va encima
