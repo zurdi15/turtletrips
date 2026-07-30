@@ -35,6 +35,7 @@ function booking(partial: Partial<Booking>): Booking {
     place_id: null,
     paid_by_id: null,
     paid_by_common: false,
+    segments: [],
     ...partial,
   }
 }

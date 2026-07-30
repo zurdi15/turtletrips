@@ -51,6 +51,13 @@ export function usePublicTrip() {
       notes: null,
       paid_by_id: null,
       paid_by_common: false,
+      // tramos: ids sintéticos por índice y sin flight_number (no viaja)
+      segments: b.segments.map((s, index) => ({
+        ...s,
+        id: index,
+        position: index,
+        flight_number: null,
+      })),
     })),
   )
   const places = computed<Place[]>(() =>

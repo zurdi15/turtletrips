@@ -55,6 +55,26 @@ def loaded_trip(client, trip):
             "notes": "Nota privada de la reserva",
         },
     ).json()
+    # la vuelta, con escala: los tramos también son parte de la frontera pública
+    client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "flight",
+            "title": "Tokio → Madrid",
+            "segments": [
+                {
+                    "origin": "HND", "destination": "DOH", "flight_number": "IB9999",
+                    "departure_dt": "2026-02-20T22:00:00",
+                    "arrival_dt": "2026-02-21T04:30:00",
+                },
+                {
+                    "origin": "DOH", "destination": "MAD", "flight_number": "IB9998",
+                    "departure_dt": "2026-02-21T07:45:00",
+                    "arrival_dt": "2026-02-21T13:45:00",
+                },
+            ],
+        },
+    )
     client.post(
         f"/api/v1/trips/{trip['id']}/itinerary",
         json={
@@ -104,9 +124,19 @@ def test_public_trip_never_leaks_private_fields(anon, client, loaded_trip):
     body = anon.get(f"/api/v1/public/trips/{token}").text
     for key in FORBIDDEN_KEYS:
         assert key not in body, f"el enlace público filtra {key}"
-    # ni los valores, no solo los nombres de campo
-    for value in ("SECRETO1", "IB6800", "850", "Nota privada"):
+    # ni los valores, no solo los nombres de campo (IB9999/IB9998 viven en tramos)
+    for value in ("SECRETO1", "IB6800", "IB9999", "IB9998", "850", "Nota privada"):
         assert value not in body, f"el enlace público filtra {value!r}"
+
+
+def test_public_booking_segments_expose_route_and_times(anon, client, loaded_trip):
+    token = share(client, loaded_trip["trip"]["id"])["token"]
+    data = anon.get(f"/api/v1/public/trips/{token}").json()
+    legacy, segmented = data["bookings"]
+    assert legacy["segments"] == []
+    assert [s["origin"] for s in segmented["segments"]] == ["HND", "DOH"]
+    assert segmented["segments"][0]["departure_dt"] == "2026-02-20T22:00:00"
+    assert segmented["segments"][1]["arrival_dt"] == "2026-02-21T13:45:00"
 
 
 def test_scopes_hide_whole_sections(anon, client, loaded_trip):

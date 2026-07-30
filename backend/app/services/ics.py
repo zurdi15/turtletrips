@@ -11,7 +11,7 @@ from datetime import date, datetime, time, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ..models import Booking, BookingType, ItineraryItem, Place, Trip
+from ..models import Booking, BookingSegment, BookingType, ItineraryItem, Place, Trip
 
 PRODID = "-//Turtle Trips//ES"
 UID_DOMAIN = "turtle-trips"
@@ -102,37 +102,70 @@ def _booking_summary(booking: Booking) -> str:
     return f"{label}: {booking.title}" if label else booking.title
 
 
+def _booking_description(booking: Booking, extra: str | None = None) -> str:
+    return "\n".join(
+        part
+        for part in (
+            f"Proveedor: {booking.provider}" if booking.provider else None,
+            f"Código: {booking.confirmation_code}" if booking.confirmation_code else None,
+            extra,
+            booking.notes,
+        )
+        if part
+    )
+
+
+def _event_times(start: datetime, end: datetime | None) -> list[str]:
+    """DTSTART/DTEND con la heurística all-day (00:00 = sin hora)."""
+    all_day = start.time() == time(0, 0) and (end is None or end.time() == time(0, 0))
+    if all_day:
+        end_date = (end.date() if end else start.date()) + timedelta(days=1)
+        return [
+            f"DTSTART;VALUE=DATE:{_ics_date(start.date())}",
+            f"DTEND;VALUE=DATE:{_ics_date(end_date)}",
+        ]
+    lines = [f"DTSTART:{start.strftime('%Y%m%dT%H%M%S')}"]
+    if end is not None and end > start:
+        lines.append(f"DTEND:{end.strftime('%Y%m%dT%H%M%S')}")
+    return lines
+
+
 def _booking_event(booking: Booking) -> list[str]:
     lines = [
         "BEGIN:VEVENT",
         f"UID:booking-{booking.id}@{UID_DOMAIN}",
         f"DTSTAMP:{_dtstamp(booking.updated_at)}",
     ]
-    start = booking.start_dt
-    end = booking.end_dt
-    all_day = start.time() == time(0, 0) and (end is None or end.time() == time(0, 0))
-    if all_day:
-        end_date = (end.date() if end else start.date()) + timedelta(days=1)
-        lines.append(f"DTSTART;VALUE=DATE:{_ics_date(start.date())}")
-        lines.append(f"DTEND;VALUE=DATE:{_ics_date(end_date)}")
-    else:
-        lines.append(f"DTSTART:{start.strftime('%Y%m%dT%H%M%S')}")
-        if end is not None and end > start:
-            lines.append(f"DTEND:{end.strftime('%Y%m%dT%H%M%S')}")
+    lines.extend(_event_times(booking.start_dt, booking.end_dt))
     lines.append(f"SUMMARY:{_escape(_booking_summary(booking))}")
-    description = "\n".join(
-        part
-        for part in (
-            f"Proveedor: {booking.provider}" if booking.provider else None,
-            f"Código: {booking.confirmation_code}" if booking.confirmation_code else None,
-            booking.notes,
-        )
-        if part
-    )
+    description = _booking_description(booking)
     if description:
         lines.append(f"DESCRIPTION:{_escape(description)}")
     if booking.address:
         lines.append(f"LOCATION:{_escape(booking.address)}")
+    lines.append("END:VEVENT")
+    return lines
+
+
+def _segment_event(booking: Booking, seg: BookingSegment) -> list[str]:
+    """Un VEVENT por tramo, con sus horas reales; la escala queda como hueco.
+    UID por position (los ids de tramo se regeneran al editar la reserva)."""
+    label = BOOKING_LABELS.get(booking.type)
+    if seg.origin and seg.destination:
+        summary = f"{label}: {seg.origin} → {seg.destination}"
+    else:
+        summary = f"{label}: {booking.title}" if label else booking.title
+    lines = [
+        "BEGIN:VEVENT",
+        f"UID:booking-{booking.id}-seg-{seg.position}@{UID_DOMAIN}",
+        f"DTSTAMP:{_dtstamp(seg.updated_at or booking.updated_at)}",
+    ]
+    lines.extend(_event_times(seg.departure_dt, seg.arrival_dt))
+    lines.append(f"SUMMARY:{_escape(summary)}")
+    number = f"{label}: {seg.flight_number}" if seg.flight_number and label else None
+    description = _booking_description(booking, number)
+    if description:
+        lines.append(f"DESCRIPTION:{_escape(description)}")
     lines.append("END:VEVENT")
     return lines
 
@@ -174,9 +207,14 @@ def build_calendar(db: Session, trip: Trip, include_bookings: bool = True) -> st
 
     if include_bookings:
         for booking in bookings_by_id.values():
-            if booking.start_dt is None or booking.id in linked_booking_ids:
+            if booking.id in linked_booking_ids:
                 continue
-            lines.extend(_booking_event(booking))
+            dated_segments = [s for s in booking.segments if s.departure_dt is not None]
+            if dated_segments:
+                for seg in dated_segments:
+                    lines.extend(_segment_event(booking, seg))
+            elif booking.start_dt is not None:
+                lines.extend(_booking_event(booking))
 
     lines.append("END:VCALENDAR")
     return "\r\n".join(_fold(line) for line in lines) + "\r\n"

@@ -20,6 +20,8 @@ export default {
     paidFromCommon: 'Pagado del fondo común',
     commonFund: 'Común',
     createExpense: 'Crear gasto',
+    layover: 'Escala',
+    journeyN: 'Trayecto {n}',
   },
   form: {
     editTitle: 'Editar reserva',
@@ -49,6 +51,14 @@ export default {
     paidBy: 'Pagado por',
     payerHint: 'Con coste, la reserva crea su gasto automáticamente y hereda este pagador',
     notes: 'Notas',
+    segments: {
+      segmentN: 'Tramo {n}',
+      add: 'Añadir tramo',
+      addReturn: 'Añadir vuelta',
+      remove: 'Quitar tramo',
+      arrivalBeforeDeparture: 'La llegada de un tramo no puede ser anterior a su salida',
+      overlapWarning: 'Este tramo sale antes de que llegue el anterior',
+    },
     dates: {
       hotel: {
         start: 'Check-in',

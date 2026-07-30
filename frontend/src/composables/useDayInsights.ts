@@ -56,7 +56,10 @@ export function useDayInsights(input: {
         input.days.value.map((day) => [
           day,
           buildDayTransfers(input.lists[day] ?? [], input.placeById.value, transferMode.value, {
-            hasTransport: (input.transportsByDay.value.get(day) ?? []).length > 0,
+            // la espera de escala no es un transporte: no cubre saltos en tierra
+            hasTransport: (input.transportsByDay.value.get(day) ?? []).some(
+              (e) => e.kind !== 'layover',
+            ),
           }),
         ]),
       ),

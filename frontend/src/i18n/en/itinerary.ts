@@ -24,6 +24,8 @@ export default {
     continues: 'continues',
     noActivities: 'No activities',
     arrival: 'Arrival',
+    layover: 'Layover',
+    shortLayover: 'Tight connection: under 1 h to make it',
     checkin: 'Check-in',
     checkout: 'Check-out',
     night: 'night',

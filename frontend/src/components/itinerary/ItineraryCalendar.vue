@@ -13,6 +13,7 @@ import { ALLDAY_EVENT_COLOR, BOOKING_MARKER_COLORS, FALLBACK_COLOR } from '../..
 import { useItineraryStore } from '../../stores/itinerary'
 import { parseIsoDate, toIsoDate } from '../../composables/useMoney'
 import { rangeNights, transportLabel } from '../../utils/itinerary'
+import { segmentLabel } from '../../utils/segments'
 
 const props = defineProps<{ trip: Trip; bookings: Booking[] }>()
 const emit = defineEmits<{ edit: [item: ItineraryItem] }>()
@@ -56,42 +57,56 @@ const calendarOptions = computed<CalendarOptions>(() => ({
         borderColor: 'var(--p-primary-color)',
       }
     }),
-    ...props.bookings
-      .filter((b) => b.start_dt)
-      .map((b) => {
-        // hoteles: banda all-day del check-in al check-out
-        if (b.type === 'hotel' && b.end_dt && b.end_dt.slice(0, 10) > b.start_dt!.slice(0, 10)) {
-          const endExclusive = parseIsoDate(b.end_dt.slice(0, 10))
-          endExclusive.setDate(endExclusive.getDate() + 1)
-          return {
-            id: `b-${b.id}`,
-            title: b.title,
-            start: b.start_dt!.slice(0, 10),
-            end: toIsoDate(endExclusive),
-            allDay: true,
-            editable: false,
-            backgroundColor: BOOKING_MARKER_COLORS.hotel,
-            borderColor: BOOKING_MARKER_COLORS.hotel,
-            extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
-          }
-        }
-        const transport = isTransport(b.type)
-        const color = b.type === 'hotel'
-          ? BOOKING_MARKER_COLORS.hotel
-          : transport
-            ? BOOKING_MARKER_COLORS.transport
-            : FALLBACK_COLOR
-        return {
-          id: `b-${b.id}`,
-          title: transport ? transportLabel({ b, arrival: false }) : b.title,
-          start: b.start_dt!,
-          end: b.end_dt ?? undefined,
+    ...props.bookings.flatMap((b) => {
+      // transporte con tramos: un evento por tramo con sus horas reales
+      // (la escala se ve como el hueco entre eventos)
+      const segs = isTransport(b.type) ? b.segments.filter((s) => s.departure_dt) : []
+      if (segs.length) {
+        return segs.map((seg) => ({
+          id: `b-${b.id}-s${seg.position}`,
+          title: segmentLabel(seg) ?? b.title,
+          start: seg.departure_dt!,
+          end: seg.arrival_dt ?? undefined,
           editable: false,
-          backgroundColor: color,
-          borderColor: color,
+          backgroundColor: BOOKING_MARKER_COLORS.transport,
+          borderColor: BOOKING_MARKER_COLORS.transport,
           extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
-        }
-      }),
+        }))
+      }
+      if (!b.start_dt) return []
+      // hoteles: banda all-day del check-in al check-out
+      if (b.type === 'hotel' && b.end_dt && b.end_dt.slice(0, 10) > b.start_dt.slice(0, 10)) {
+        const endExclusive = parseIsoDate(b.end_dt.slice(0, 10))
+        endExclusive.setDate(endExclusive.getDate() + 1)
+        return [{
+          id: `b-${b.id}`,
+          title: b.title,
+          start: b.start_dt.slice(0, 10),
+          end: toIsoDate(endExclusive),
+          allDay: true,
+          editable: false,
+          backgroundColor: BOOKING_MARKER_COLORS.hotel,
+          borderColor: BOOKING_MARKER_COLORS.hotel,
+          extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
+        }]
+      }
+      const transport = isTransport(b.type)
+      const color = b.type === 'hotel'
+        ? BOOKING_MARKER_COLORS.hotel
+        : transport
+          ? BOOKING_MARKER_COLORS.transport
+          : FALLBACK_COLOR
+      return [{
+        id: `b-${b.id}`,
+        title: transport ? transportLabel({ b, kind: 'departure', dt: b.start_dt }) : b.title,
+        start: b.start_dt,
+        end: b.end_dt ?? undefined,
+        editable: false,
+        backgroundColor: color,
+        borderColor: color,
+        extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
+      }]
+    }),
   ],
   // icono (mdi/pi) delante del título — los eventos de reservas lo declaran
   // en extendedProps.icon; los de itinerario se renderizan igual pero sin él

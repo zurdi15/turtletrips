@@ -12,6 +12,7 @@ import { usePlacesStore } from '../../stores/places'
 import { useBookingsStore } from '../../stores/bookings'
 import { useItineraryStore } from '../../stores/itinerary'
 import { buildRoute } from '../../utils/itinerary'
+import { layoverInfo, segmentLabel, upcomingBookings } from '../../utils/segments'
 import { formatDateTime, formatMoney } from '../../composables/useMoney'
 import { useTripTabData } from '../../composables/useTripTabData'
 import { DAY_MS, daysBetween, daysUntil } from '../../utils/dates'
@@ -48,12 +49,24 @@ const budgetPct = computed(() => budgetPercent(expenses.summary))
 
 const visitedCount = computed(() => places.items.filter((p) => p.visited).length)
 
-const nextBookings = computed(() => {
-  const now = Date.now()
-  return bookings.items
-    .filter((b) => b.start_dt && new Date(b.start_dt).getTime() >= now - DAY_MS)
-    .slice(0, 4)
-})
+// una reserva con tramos aporta una entrada por TRAYECTO: la vuelta sigue
+// saliendo aquí aunque la ida ya haya volado. Solo a 7 días vista: esto es
+// el "qué me toca ya", no la lista entera de reservas
+const nextBookings = computed(() =>
+  upcomingBookings(bookings.items, Date.now(), DAY_MS, 7 * DAY_MS).slice(0, 4),
+)
+
+// horas "10:45" de un tramo para el desglose (00:00 = sin hora, como siempre)
+function segTime(dt: string | null): string | null {
+  if (!dt) return null
+  const time = dt.slice(11, 16)
+  return time !== '00:00' ? time : null
+}
+
+function segPlusDays(seg: { departure_dt: string | null; arrival_dt: string | null }): number {
+  if (!seg.departure_dt || !seg.arrival_dt) return 0
+  return Math.max(0, daysBetween(seg.departure_dt.slice(0, 10), seg.arrival_dt.slice(0, 10)))
+}
 
 // primera visita al viaje: todo cargando y sin datos aún
 const initialLoading = computed(
@@ -147,19 +160,59 @@ const initialLoading = computed(
         </div>
         <div v-if="nextBookings.length" class="tt-stagger flex flex-col gap-2">
           <div
-            v-for="b in nextBookings"
-            :key="b.id"
-            class="flex items-center gap-3 p-2 rounded-lg bg-surface-soft"
+            v-for="entry in nextBookings"
+            :key="`${entry.b.id}-${entry.dt}`"
+            class="flex items-start gap-3 p-2 rounded-lg bg-surface-soft"
           >
-            <i :class="BOOKING_TYPE_ICONS[b.type]" class="text-ink-faint" />
+            <i :class="BOOKING_TYPE_ICONS[entry.b.type]" class="text-ink-faint mt-0.5" />
             <div class="flex-1 min-w-0">
-              <p class="font-medium text-sm text-ink truncate">{{ b.title }}</p>
-              <p class="text-xs text-ink-faint">
-                {{ $t(BOOKING_TYPE_KEYS[b.type]) }} · {{ formatDateTime(b.start_dt) }}
+              <p class="font-medium text-sm text-ink truncate">{{ entry.b.title }}</p>
+              <p class="text-xs text-ink-faint truncate">
+                {{ $t(BOOKING_TYPE_KEYS[entry.b.type])
+                }}<template v-if="entry.route"> · {{ entry.route }}</template>
+                · {{ formatDateTime(entry.dt) }}
               </p>
+              <!-- trayecto con escalas: cada vuelo con sus horas y la espera
+                   entre ellos (en ámbar si la conexión es justa) -->
+              <div v-if="entry.journey.length > 1" class="mt-1 flex flex-col gap-0.5">
+                <template v-for="(seg, i) in entry.journey" :key="seg.id">
+                  <p class="text-xs text-ink-muted truncate">
+                    <span
+                      v-if="segTime(seg.departure_dt) || segTime(seg.arrival_dt)"
+                      class="tabular-nums font-medium"
+                    >
+                      {{ segTime(seg.departure_dt) ?? '' }}<span v-if="segTime(seg.departure_dt) && segTime(seg.arrival_dt)" class="opacity-50">–</span>{{ segTime(seg.arrival_dt) ?? '' }}<sup v-if="segTime(seg.arrival_dt) && segPlusDays(seg)" class="text-3xs">+{{ segPlusDays(seg) }}</sup>
+                    </span>
+                    {{ segmentLabel(seg) }}
+                    <span v-if="seg.flight_number" class="font-mono text-2xs text-ink-faint">
+                      {{ seg.flight_number }}
+                    </span>
+                  </p>
+                  <p
+                    v-if="layoverInfo(entry.journey, i)"
+                    class="text-xs truncate"
+                    :class="layoverInfo(entry.journey, i)!.short ? 'text-warn-strong' : 'text-ink-faint'"
+                    v-tooltip.top="
+                      layoverInfo(entry.journey, i)!.short
+                        ? $t('itinerary.agenda.shortLayover')
+                        : undefined
+                    "
+                  >
+                    <i
+                      :class="
+                        layoverInfo(entry.journey, i)!.short
+                          ? 'mdi mdi-alert-outline'
+                          : 'mdi mdi-timer-sand'
+                      "
+                      class="text-2xs"
+                    />
+                    {{ $t('bookings.card.layover') }} · {{ layoverInfo(entry.journey, i)!.text }}
+                  </p>
+                </template>
+              </div>
             </div>
-            <span v-if="b.confirmation_code" class="text-xs font-mono text-ink-faint">
-              {{ b.confirmation_code }}
+            <span v-if="entry.b.confirmation_code" class="text-xs font-mono text-ink-faint">
+              {{ entry.b.confirmation_code }}
             </span>
           </div>
         </div>

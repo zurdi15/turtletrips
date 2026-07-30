@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import AttachmentList from '../AttachmentList.vue'
@@ -9,8 +10,9 @@ import EntityLink from '../trip/EntityLink.vue'
 import type { Booking, Traveler, Trip } from '../../api/types'
 import { BOOKING_TYPE_ICONS, isTransport } from '../../constants'
 import { formatDateTime, formatMoney } from '../../composables/useMoney'
+import { groupJourneys, layoverInfo, segmentLabel } from '../../utils/segments'
 
-defineProps<{
+const props = defineProps<{
   booking: Booking
   trip: Trip
   /** nombre del sitio enlazado (para el tooltip del chip) */
@@ -22,6 +24,12 @@ defineProps<{
   creatingExpense: boolean
 }>()
 defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: string] }>()
+
+// trayectos derivados de los tramos (ida vs vuelta por hueco); con tramos la
+// fila agregada origen→destino/fechas se calla y hablan ellos
+const journeys = computed(() => groupJourneys(props.booking.segments ?? []))
+const hasSegments = computed(() => (props.booking.segments ?? []).length > 0)
+
 </script>
 
 <template>
@@ -86,15 +94,60 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
               : 'flex flex-wrap gap-x-4 gap-y-1'
           "
         >
-          <span v-if="booking.origin || booking.destination" class="flex items-center gap-1.5">
-            <i :class="BOOKING_TYPE_ICONS[booking.type]" class="text-xs" />
-            {{ booking.origin ?? '?' }} → {{ booking.destination ?? '?' }}
-          </span>
-          <span v-if="booking.start_dt" class="flex items-center gap-1.5">
-            <i class="pi pi-calendar text-xs" />
-            {{ formatDateTime(booking.start_dt) }}
-            <template v-if="booking.end_dt"> → {{ formatDateTime(booking.end_dt) }}</template>
-          </span>
+          <!-- con tramos hablan los trayectos (con sus escalas); sin ellos,
+               la ruta y fechas planas de siempre -->
+          <template v-if="hasSegments">
+            <div
+              v-for="(journey, j) in journeys"
+              :key="j"
+              class="flex flex-col gap-1 items-start"
+              :class="{ 'mt-1': j > 0 }"
+            >
+              <span v-if="journeys.length > 1" class="text-2xs font-medium uppercase tracking-wide text-ink-faint">
+                {{ $t('bookings.card.journeyN', { n: j + 1 }) }}
+              </span>
+              <template v-for="(seg, i) in journey" :key="seg.id">
+                <span class="flex items-center gap-1.5 flex-wrap">
+                  <i :class="BOOKING_TYPE_ICONS[booking.type]" class="text-xs" />
+                  {{ segmentLabel(seg) ?? booking.title }}
+                  <span v-if="seg.departure_dt" class="text-ink-faint">
+                    {{ formatDateTime(seg.departure_dt) }}
+                    <template v-if="seg.arrival_dt"> → {{ formatDateTime(seg.arrival_dt) }}</template>
+                  </span>
+                  <Tag
+                    v-if="seg.flight_number"
+                    :value="seg.flight_number"
+                    severity="info"
+                    class="cursor-pointer font-mono"
+                    v-tooltip.top="$t('bookings.card.copyFlightCode')"
+                    @click="$emit('copy-code', seg.flight_number!)"
+                  />
+                </span>
+                <span
+                  v-if="layoverInfo(journey, i)"
+                  class="flex items-center gap-1.5 text-xs pl-4"
+                  :class="layoverInfo(journey, i)!.short ? 'text-warn-strong' : 'text-ink-faint'"
+                  v-tooltip.top="
+                    layoverInfo(journey, i)!.short ? $t('itinerary.agenda.shortLayover') : undefined
+                  "
+                >
+                  <i :class="layoverInfo(journey, i)!.short ? 'mdi mdi-alert-outline' : 'mdi mdi-timer-sand'" />
+                  {{ $t('bookings.card.layover') }}: {{ layoverInfo(journey, i)!.text }}
+                </span>
+              </template>
+            </div>
+          </template>
+          <template v-else>
+            <span v-if="booking.origin || booking.destination" class="flex items-center gap-1.5">
+              <i :class="BOOKING_TYPE_ICONS[booking.type]" class="text-xs" />
+              {{ booking.origin ?? '?' }} → {{ booking.destination ?? '?' }}
+            </span>
+            <span v-if="booking.start_dt" class="flex items-center gap-1.5">
+              <i class="pi pi-calendar text-xs" />
+              {{ formatDateTime(booking.start_dt) }}
+              <template v-if="booking.end_dt"> → {{ formatDateTime(booking.end_dt) }}</template>
+            </span>
+          </template>
           <span
             v-if="!booking.place_id && booking.address"
             class="flex items-center gap-1 min-w-0"

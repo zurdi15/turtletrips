@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { TransportRowView } from '../../utils/itinerary'
+
 /** Fila derivada de una reserva para las bandas de la agenda. */
 export interface AgendaRow {
   key: string
@@ -11,6 +13,12 @@ export interface AgendaRow {
   expenseId: number | null
   /** el chip de gasto hereda el color (banda ámbar: ámbar sobre ámbar no se ve) */
   expenseInherit?: boolean
+  /** sin chips: los tramos de un trayecto los llevan una sola vez (la primera
+   *  fila); el label sigue enlazando a la reserva */
+  hideChips?: boolean
+  /** transporte: tipo, horas y ruta por separado, cada uno con su tipografía
+   *  (si está, head/label se ignoran) */
+  transport?: TransportRowView
 }
 </script>
 
@@ -56,16 +64,53 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
       class="flex items-center gap-3 px-4 py-1"
       :class="TONE_CLASSES[tone].row"
     >
-      <span class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 opacity-80 truncate">
-        {{ row.head }}
+      <span
+        class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 truncate"
+        :class="row.transport?.layover ? 'opacity-60' : 'opacity-80'"
+      >
+        {{ row.transport ? row.transport.kind : row.head }}
       </span>
+      <!-- transporte: horas en columna propia (salida–llegada, +n si cruza
+           noches), ruta como enlace y número de vuelo aparte -->
+      <template v-if="row.transport">
+        <span class="w-24 sm:w-28 shrink-0 tabular-nums text-xs sm:text-sm font-semibold whitespace-nowrap">
+          <template v-if="row.transport.dep || row.transport.arr">
+            {{ row.transport.dep ?? '' }}<span v-if="row.transport.dep && row.transport.arr" class="opacity-40">–</span>{{ row.transport.arr ?? '' }}<sup v-if="row.transport.arr && row.transport.plusDays" class="text-3xs font-normal opacity-70">+{{ row.transport.plusDays }}</sup>
+          </template>
+        </span>
+        <router-link
+          :to="{ name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
+          class="truncate no-underline hover:underline"
+          :class="
+            row.transport.layover
+              ? row.transport.shortLayover
+                ? 'text-xs font-medium text-warn-strong'
+                : 'text-xs opacity-70 text-inherit'
+              : 'font-medium text-sm text-inherit'
+          "
+        >
+          <i
+            v-if="row.transport.shortLayover"
+            class="mdi mdi-alert-outline text-2xs"
+            v-tooltip.top="$t('itinerary.agenda.shortLayover')"
+          />
+          {{ row.transport.route }}
+        </router-link>
+        <span
+          v-if="row.transport.flightNumber"
+          class="font-mono text-2xs opacity-60 shrink-0 hidden sm:inline"
+        >
+          {{ row.transport.flightNumber }}
+        </span>
+      </template>
       <router-link
+        v-else
         :to="{ name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
         class="font-medium text-sm truncate text-inherit no-underline hover:underline"
       >
         {{ row.label }}
       </router-link>
-      <span class="ml-auto flex items-center gap-2.5 shrink-0">
+      <span v-if="!row.hideChips" class="ml-auto flex items-center gap-2.5 shrink-0">
         <EntityLink
           v-if="row.placeId"
           type="place"

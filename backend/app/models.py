@@ -375,6 +375,37 @@ class Booking(TimestampMixin, Base):
     place: Mapped["Place | None"] = relationship()
     paid_by: Mapped["Traveler | None"] = relationship()
     attachments: Mapped[list["Attachment"]] = relationship(back_populates="booking")
+    segments: Mapped[list["BookingSegment"]] = relationship(
+        back_populates="booking",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="BookingSegment.position",
+    )
+
+
+class BookingSegment(TimestampMixin, Base):
+    """Tramo de una reserva de transporte (vuelo con escalas, ida y vuelta).
+
+    Con tramos, los campos planos de la reserva (start_dt/end_dt/origin/
+    destination) pasan a ser un agregado derivado que recalcula el router;
+    el flight_number vive aquí. Una reserva sin tramos funciona como siempre.
+    """
+
+    __tablename__ = "booking_segments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    booking_id: Mapped[int] = mapped_column(
+        ForeignKey("bookings.id", ondelete="CASCADE"), index=True
+    )
+    # orden canónico 0..n-1 (el router normaliza por hora de salida)
+    position: Mapped[int] = mapped_column(Integer, default=0)
+    origin: Mapped[str | None] = mapped_column(String(200))
+    destination: Mapped[str | None] = mapped_column(String(200))
+    departure_dt: Mapped[datetime | None] = mapped_column(DateTime)
+    arrival_dt: Mapped[datetime | None] = mapped_column(DateTime)
+    flight_number: Mapped[str | None] = mapped_column(String(20))
+
+    booking: Mapped[Booking] = relationship(back_populates="segments")
 
 
 class Expense(TimestampMixin, Base):

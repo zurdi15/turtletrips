@@ -38,6 +38,7 @@ function booking(partial: Partial<Booking>): Booking {
     place_id: null,
     paid_by_id: null,
     paid_by_common: false,
+    segments: [],
     ...partial,
   }
 }
@@ -89,7 +90,7 @@ describe('buildPublicDay', () => {
     const rows = buildPublicDay(
       '2026-09-05',
       [item({ title: 'Subida a las torres', place_id: PLACE.id, start_time: '12:30' })],
-      [{ b: vuelo, arrival: false }],
+      [{ b: vuelo, kind: 'departure' as const, dt: vuelo.start_dt! }],
       [tour],
       [hotel],
       places,
@@ -99,6 +100,78 @@ describe('buildPublicDay', () => {
     expect(rows[0]).toMatchObject({ head: 'Vuelo: 08:30', title: 'MAD → BCN', place: 'Iberia' })
     expect(rows[2]).toMatchObject({ head: '12:30', place: 'Sagrada Família' })
     expect(rows[3].head).toBe('Check-in: 15:00')
+  })
+
+  it('la espera de escala: sin proveedor y con su propio icono', () => {
+    const vuelo = booking({ type: 'flight', title: 'Ida', provider: 'Qatar' })
+    const rows = buildPublicDay(
+      '2026-09-05',
+      [],
+      [
+        {
+          b: vuelo,
+          kind: 'layover' as const,
+          dt: '2026-09-05T18:30:00',
+          layoverPlace: 'DOH',
+          layoverMinutes: 205,
+        },
+      ],
+      [],
+      [],
+      places,
+      t,
+    )
+    expect(rows[0]).toMatchObject({
+      title: 'DOH · 3 h 25 min',
+      place: null,
+      tone: 'info',
+      icon: 'mdi mdi-timer-sand',
+    })
+  })
+
+  it('una escala de <1 h sube a ámbar con icono de aviso', () => {
+    const vuelo = booking({ type: 'flight', title: 'Ida' })
+    const rows = buildPublicDay(
+      '2026-09-05',
+      [],
+      [
+        {
+          b: vuelo,
+          kind: 'layover' as const,
+          dt: '2026-09-05T18:30:00',
+          layoverPlace: 'DOH',
+          layoverMinutes: 45,
+        },
+      ],
+      [],
+      [],
+      places,
+      t,
+    )
+    expect(rows[0]).toMatchObject({ tone: 'warn', icon: 'mdi mdi-alert-outline' })
+  })
+
+  it('las filas de transporte llevan tipo y horas estructuradas', () => {
+    const seg = {
+      id: 1, position: 0, origin: 'MAD', destination: 'HAN', flight_number: null,
+      departure_dt: '2026-09-05T10:45:00', arrival_dt: '2026-09-06T06:40:00',
+    }
+    const vuelo = booking({ type: 'flight', segments: [seg] })
+    const rows = buildPublicDay(
+      '2026-09-05',
+      [],
+      [{ b: vuelo, seg, kind: 'departure' as const, dt: seg.departure_dt }],
+      [],
+      [],
+      places,
+      t,
+    )
+    expect(rows[0].transport).toMatchObject({
+      kind: 'Vuelo',
+      dep: '10:45',
+      arr: '06:40',
+      plusDays: 1,
+    })
   })
 
   it('la actividad sin hora no inventa una', () => {

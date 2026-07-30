@@ -99,7 +99,7 @@ export default {
     noBudgetHint: 'Define un presupuesto al editar el viaje para ver el progreso.',
     nextBookings: 'Próximas reservas',
     viewBookings: 'Ver reservas',
-    noUpcoming: 'Nada próximo en la agenda.',
+    noUpcoming: 'Nada reservado en los próximos 7 días.',
     notes: 'Notas',
   },
   lodging: {

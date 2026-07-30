@@ -38,7 +38,9 @@ import {
   buildTransportsByDay,
   lodgingHead,
   transportHead,
+  transportKey,
   transportLabel,
+  transportRowView,
 } from '../../utils/itinerary'
 
 const props = defineProps<{ trip: Trip }>()
@@ -171,14 +173,24 @@ function bookingTitle(id: number | null): string | null {
 
 // filas de las tres bandas de reservas, ya etiquetadas para AgendaBookingSection
 function transportRows(day: string): AgendaRow[] {
-  return (transportsByDay.value.get(day) ?? []).map((e) => ({
-    key: `t-${e.b.id}-${e.arrival ? 'a' : 's'}`,
-    head: transportHead(e, t),
-    label: transportLabel(e),
-    bookingId: e.b.id,
-    placeId: e.b.place_id,
-    expenseId: expenseByBooking.value.get(e.b.id) ?? null,
-  }))
+  // los chips (sitio/gasto/reserva) van UNA vez por trayecto: en su primera
+  // fila del día; los demás tramos y las escalas se quedan solo con el enlace
+  const seen = new Set<string>()
+  return (transportsByDay.value.get(day) ?? []).map((e) => {
+    const group = `${e.b.id}-j${e.journey ?? 0}`
+    const carrier = e.kind !== 'layover' && !seen.has(group)
+    if (carrier) seen.add(group)
+    return {
+      key: transportKey(e),
+      head: transportHead(e, t),
+      label: transportLabel(e),
+      transport: transportRowView(e, t),
+      bookingId: e.b.id,
+      placeId: carrier ? e.b.place_id : null,
+      expenseId: carrier ? (expenseByBooking.value.get(e.b.id) ?? null) : null,
+      hideChips: !carrier,
+    }
+  })
 }
 
 function otherBookingRows(day: string): AgendaRow[] {

@@ -10,8 +10,11 @@ import {
   fmtTime,
   lodgingHead,
   transportHead,
+  transportKey,
   transportLabel,
+  transportRowView,
   type TransportEntry,
+  type TransportRowView,
   type TranslateFn,
 } from './itinerary'
 
@@ -29,6 +32,9 @@ export interface PublicDayRow {
   note: string | null
   tone: RowTone
   icon: string | null
+  /** transporte: tipo y horas (salida–llegada) por separado para pintarlos
+   *  con tipografía propia; head queda como fallback plano */
+  transport?: TransportRowView
 }
 
 function placeName(id: number | null, placeById: Map<number, Place>): string | null {
@@ -58,14 +64,23 @@ export function buildPublicDay(
   const rows: PublicDayRow[] = []
 
   for (const entry of transports) {
+    const layover = entry.kind === 'layover'
+    const view = transportRowView(entry, t)
     rows.push({
-      key: `t-${entry.b.id}-${entry.arrival ? 'a' : 's'}`,
+      key: transportKey(entry),
       head: transportHead(entry, t),
       title: transportLabel(entry),
-      place: entry.b.provider,
+      // la escala no repite proveedor: solo dónde y cuánto se espera
+      place: layover ? null : entry.b.provider,
       note: null,
-      tone: 'info',
-      icon: BOOKING_TYPE_ICONS[entry.b.type],
+      // una conexión de <1 h se avisa también a quien recibe el enlace
+      tone: view.shortLayover ? 'warn' : 'info',
+      icon: layover
+        ? view.shortLayover
+          ? 'mdi mdi-alert-outline'
+          : 'mdi mdi-timer-sand'
+        : BOOKING_TYPE_ICONS[entry.b.type],
+      transport: view,
     })
   }
 

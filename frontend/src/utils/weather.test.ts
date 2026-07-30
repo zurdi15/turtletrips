@@ -15,7 +15,7 @@ function makeBooking(overrides: Partial<Booking>): Booking {
     confirmation_code: null, flight_number: null, start_dt: null, end_dt: null,
     origin: null, destination: null, address: null, lat: null, lon: null,
     cost_amount: null, cost_currency: null, notes: null, place_id: null,
-    paid_by_id: null, paid_by_common: false,
+    paid_by_id: null, paid_by_common: false, segments: [],
     ...overrides,
   }
 }

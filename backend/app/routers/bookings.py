@@ -9,6 +9,7 @@ from ..auth import CurrentUser
 from ..db import get_db
 from ..models import (
     Booking,
+    BookingSegment,
     BookingType,
     Expense,
     ItineraryItem,
@@ -20,6 +21,7 @@ from ..models import (
 from ..schemas.booking import (
     BookingCreate,
     BookingRead,
+    BookingSegmentInput,
     BookingUpdate,
     CreateExpenseFromBooking,
 )
@@ -65,6 +67,51 @@ def _enforce_common_exclusivity(data: dict) -> None:
         data["paid_by_id"] = None
     elif data.get("paid_by_id") is not None:
         data["paid_by_common"] = False
+
+
+# campos planos que dejan de mandar cuando la reserva tiene tramos
+AGGREGATE_FIELDS = {"start_dt", "end_dt", "origin", "destination", "flight_number"}
+
+
+def _recompute_from_segments(booking: Booking) -> None:
+    """Los tramos mandan: los campos planos de ruta/fechas pasan a ser su
+    agregado (primera salida, última llegada, extremos de la ruta) y el
+    flight_number vive en el tramo."""
+    segs = booking.segments
+    if not segs:
+        return
+    departures = [s.departure_dt for s in segs if s.departure_dt is not None]
+    arrivals = [s.arrival_dt for s in segs if s.arrival_dt is not None]
+    booking.start_dt = min(departures) if departures else None
+    booking.end_dt = max(arrivals) if arrivals else None
+    booking.origin = segs[0].origin
+    booking.destination = segs[-1].destination
+    booking.flight_number = None
+
+
+def _apply_segments(booking: Booking, segments: list[BookingSegmentInput] | None) -> None:
+    """REEMPLAZA el conjunto de tramos: ordena por salida (los sin fecha
+    conservan el orden del payload, al final), reescribe position y deriva
+    los agregados. Con [] solo vacía los tramos (sin tocar campos planos:
+    un hotel no debe perder su check-in por mandar la lista vacía)."""
+    if segments is None:
+        return
+    dated = [s for s in segments if s.departure_dt is not None]
+    ordered = sorted(dated, key=lambda s: s.departure_dt) + [
+        s for s in segments if s.departure_dt is None
+    ]
+    booking.segments = [
+        BookingSegment(
+            position=i,
+            origin=s.origin,
+            destination=s.destination,
+            departure_dt=s.departure_dt,
+            arrival_dt=s.arrival_dt,
+            flight_number=s.flight_number,
+        )
+        for i, s in enumerate(ordered)
+    ]
+    _recompute_from_segments(booking)
 
 
 async def _new_booking_expense(
@@ -146,8 +193,10 @@ async def create_booking(
     ensure_trip_member(db, user, trip_id)
     booking = Booking(trip_id=trip_id)
     data = payload.model_dump()
+    data.pop("segments", None)  # los tramos no van por apply_updates
     _enforce_common_exclusivity(data)
     apply_updates(booking, data)
+    _apply_segments(booking, payload.segments)
     db.add(booking)
     ensure_booking_place(db, booking)
     db.flush()  # id de la reserva para el gasto enlazado
@@ -163,8 +212,14 @@ async def update_booking(
 ):
     booking = get_trip_scoped(db, user, Booking, booking_id)
     data = payload.model_dump(exclude_unset=True)
+    has_segments = data.pop("segments", None) is not None
     _enforce_common_exclusivity(data)
     apply_updates(booking, data)
+    if has_segments:
+        _apply_segments(booking, payload.segments)
+    elif booking.segments and AGGREGATE_FIELDS & data.keys():
+        # tocar los campos planos de una reserva con tramos no los desincroniza
+        _recompute_from_segments(booking)
     # coordenadas nuevas → el sitio enlazado deja de valer y se recalcula
     if "lat" in data or "lon" in data:
         booking.place_id = None

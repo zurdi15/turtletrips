@@ -19,6 +19,7 @@ from ..models import Booking, ItineraryItem, Place, Trip
 from ..schemas.share import (
     SHARE_SCOPES,
     PublicBooking,
+    PublicBookingSegment,
     PublicItineraryItem,
     PublicPlace,
     PublicTraveler,
@@ -154,6 +155,15 @@ def public_trip(token: str, db: Session = Depends(get_db)):
                 lat=b.lat,
                 lon=b.lon,
                 place_id=b.place_id,
+                segments=[
+                    PublicBookingSegment(
+                        origin=s.origin,
+                        destination=s.destination,
+                        departure_dt=s.departure_dt,
+                        arrival_dt=s.arrival_dt,
+                    )
+                    for s in b.segments  # ya ordenados por position
+                ],
             )
             for b in rows
         ]

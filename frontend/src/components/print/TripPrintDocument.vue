@@ -121,7 +121,16 @@ function has(sections: PrintSection[], section: PrintSection) {
             <span class="w-4 shrink-0 mt-0.5 text-xs grid place-items-center">
               <i v-if="row.icon" :class="row.icon" />
             </span>
-            <span class="w-32 shrink-0 text-xs opacity-80 tabular-nums">{{ row.head }}</span>
+            <span class="w-32 shrink-0 text-xs opacity-80 tabular-nums">
+              <!-- transporte: tipo y horas (salida–llegada) en dos líneas -->
+              <template v-if="row.transport">
+                {{ row.transport.kind }}
+                <span v-if="row.transport.dep || row.transport.arr" class="block font-medium">
+                  {{ row.transport.dep ?? '' }}<span v-if="row.transport.dep && row.transport.arr" class="opacity-50">–</span>{{ row.transport.arr ?? '' }}<sup v-if="row.transport.arr && row.transport.plusDays" class="text-3xs">+{{ row.transport.plusDays }}</sup>
+                </span>
+              </template>
+              <template v-else>{{ row.head }}</template>
+            </span>
             <span class="min-w-0">
               <span class="font-medium">{{ row.title }}</span>
               <span v-if="row.place" class="text-xs opacity-70"> · {{ row.place }}</span>
@@ -182,7 +191,19 @@ function has(sections: PrintSection[], section: PrintSection) {
                 · {{ booking.confirmation_code }}
               </template>
             </span>
-            <span v-if="booking.origin || booking.destination" class="block text-xs">
+            <!-- con tramos, una línea por vuelo/tren (el número solo existe en
+                 la versión con sesión: el enlace público no lo trae) -->
+            <template v-if="booking.segments.length">
+              <span v-for="seg in booking.segments" :key="seg.id" class="block text-xs">
+                {{ seg.origin ?? '?' }} → {{ seg.destination ?? '?' }}
+                <template v-if="seg.flight_number"> · {{ seg.flight_number }}</template>
+                <template v-if="seg.departure_dt">
+                  · {{ formatDateTime(seg.departure_dt) }}
+                  <template v-if="seg.arrival_dt"> → {{ formatDateTime(seg.arrival_dt) }}</template>
+                </template>
+              </span>
+            </template>
+            <span v-else-if="booking.origin || booking.destination" class="block text-xs">
               {{ booking.origin ?? '?' }} → {{ booking.destination ?? '?' }}
             </span>
           </div>

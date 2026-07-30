@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { Booking, ItineraryItem, Place } from '../api/types'
+import type { Booking, BookingSegment, ItineraryItem, Place } from '../api/types'
 
 // el módulo i18n real toca localStorage/navigator al importarse; aquí solo se
 // usa intlLocale, así el test sigue siendo puro (sin DOM) y determinista
@@ -19,12 +19,14 @@ import {
   rangeNights,
   transportHead,
   transportLabel,
+  transportRowView,
   type TranslateFn,
 } from './itinerary'
 
 // stub de t: espejo mínimo en español de las claves que usan las etiquetas
 const MESSAGES: Record<string, string> = {
   'itinerary.agenda.arrival': 'Llegada',
+  'itinerary.agenda.layover': 'Escala',
   'itinerary.agenda.checkin': 'Check-in',
   'itinerary.agenda.checkout': 'Check-out',
   'itinerary.agenda.night': 'noche',
@@ -62,6 +64,7 @@ function booking(partial: Partial<Booking>): Booking {
     place_id: null,
     paid_by_id: null,
     paid_by_common: false,
+    segments: [],
     ...partial,
   }
 }
@@ -93,8 +96,12 @@ describe('buildTransportsByDay', () => {
       destination: 'NRT',
     })
     const map = buildTransportsByDay([flight])
-    expect(map.get('2026-08-01')).toEqual([{ b: flight, arrival: false }])
-    expect(map.get('2026-08-02')).toEqual([{ b: flight, arrival: true }])
+    expect(map.get('2026-08-01')).toEqual([
+      { b: flight, kind: 'departure', dt: '2026-08-01T23:50:00' },
+    ])
+    expect(map.get('2026-08-02')).toEqual([
+      { b: flight, kind: 'arrival', dt: '2026-08-02T07:30:00' },
+    ])
   })
 
   it('llegada el mismo día: una sola entrada', () => {
@@ -114,6 +121,128 @@ describe('buildTransportsByDay', () => {
     const sinFecha = booking({ type: 'flight' })
     const map = buildTransportsByDay([late, hotel, early, sinFecha])
     expect(map.get('2026-08-01')!.map((e) => e.b.id)).toEqual([early.id, late.id])
+  })
+
+  it('con tramos: entrada por tramo, escala en el día de la llegada previa', () => {
+    let segId = 1
+    const segment = (partial: Partial<BookingSegment>): BookingSegment => ({
+      id: segId++,
+      position: segId,
+      origin: null,
+      destination: null,
+      departure_dt: null,
+      arrival_dt: null,
+      flight_number: null,
+      ...partial,
+    })
+    const roundTrip = booking({
+      type: 'flight',
+      title: 'Vuelos Japón',
+      segments: [
+        segment({
+          origin: 'MAD', destination: 'DOH', flight_number: 'QR150',
+          departure_dt: '2026-08-01T10:00:00', arrival_dt: '2026-08-01T18:30:00',
+        }),
+        segment({
+          origin: 'DOH', destination: 'NRT',
+          departure_dt: '2026-08-01T21:55:00', arrival_dt: '2026-08-02T13:20:00',
+        }),
+        segment({
+          origin: 'NRT', destination: 'DOH',
+          departure_dt: '2026-08-14T22:00:00', arrival_dt: '2026-08-15T04:30:00',
+        }),
+        segment({
+          origin: 'DOH', destination: 'MAD',
+          departure_dt: '2026-08-15T07:45:00', arrival_dt: '2026-08-15T13:45:00',
+        }),
+      ],
+    })
+    const map = buildTransportsByDay([roundTrip])
+
+    // día de la ida: salida, espera de escala y segunda salida, en orden
+    const day1 = map.get('2026-08-01')!
+    expect(day1.map((e) => e.kind)).toEqual(['departure', 'layover', 'departure'])
+    expect(day1[1]).toMatchObject({ layoverPlace: 'DOH', layoverMinutes: 205 })
+    // el vuelo nocturno aterriza al día siguiente
+    expect(map.get('2026-08-02')!.map((e) => e.kind)).toEqual(['arrival'])
+    // entre ida y vuelta (12 días) NO hay fila de escala
+    expect(map.get('2026-08-14')!.map((e) => e.kind)).toEqual(['departure'])
+    // día de la vuelta: llegada de madrugada, escala y último vuelo (que
+    // aterriza el mismo día: sin fila de llegada)
+    expect(map.get('2026-08-15')!.map((e) => e.kind)).toEqual([
+      'arrival',
+      'layover',
+      'departure',
+    ])
+    // etiquetas: la salida lleva ruta y número de vuelo; la escala, sitio y espera
+    expect(transportLabel(day1[0])).toBe('MAD → DOH · QR150')
+    expect(transportLabel(day1[1])).toBe('DOH · 3 h 25 min')
+    expect(transportHead(day1[1], t)).toBe('Escala: 18:30')
+    // los tramos saben su trayecto: la ida es el 0, la vuelta el 1
+    expect(day1.map((e) => e.journey)).toEqual([0, 0, 0])
+    expect(map.get('2026-08-14')![0].journey).toBe(1)
+    expect(map.get('2026-08-15')!.map((e) => e.journey)).toEqual([1, 1, 1])
+  })
+
+  it('transportRowView: horas de salida Y llegada, +n al cruzar noches', () => {
+    const seg: BookingSegment = {
+      id: 1, position: 0, origin: 'AUH', destination: 'HAN', flight_number: 'EY0432',
+      departure_dt: '2026-09-26T21:05:00', arrival_dt: '2026-09-27T06:40:00',
+    }
+    const b = booking({ type: 'flight', segments: [seg] })
+
+    const salida = transportRowView(
+      { b, seg, journey: 0, kind: 'departure', dt: seg.departure_dt! },
+      t,
+    )
+    expect(salida).toMatchObject({
+      kind: 'Vuelo', dep: '21:05', arr: '06:40', plusDays: 1,
+      route: 'AUH → HAN', flightNumber: 'EY0432', layover: false,
+    })
+
+    const llegada = transportRowView(
+      { b, seg, journey: 0, kind: 'arrival', dt: seg.arrival_dt! },
+      t,
+    )
+    expect(llegada).toMatchObject({ kind: 'Llegada', dep: null, arr: '06:40', plusDays: 0 })
+
+    const escala = transportRowView(
+      {
+        b, seg, journey: 0, kind: 'layover', dt: seg.arrival_dt!,
+        layoverPlace: 'HAN', layoverMinutes: 85,
+      },
+      t,
+    )
+    expect(escala).toMatchObject({
+      kind: 'Escala', dep: null, arr: null, route: 'HAN · 1 h 25 min', layover: true,
+    })
+  })
+
+  it('transportRowView: reserva sin tramos usa los campos planos', () => {
+    const legacy = booking({
+      type: 'train',
+      origin: 'Osaka',
+      destination: 'Tokio',
+      flight_number: null,
+      start_dt: '2026-08-03T09:00:00',
+      end_dt: '2026-08-03T11:30:00',
+    })
+    expect(transportRowView({ b: legacy, kind: 'departure', dt: legacy.start_dt! }, t)).toMatchObject(
+      { kind: 'Tren', dep: '09:00', arr: '11:30', plusDays: 0, route: 'Osaka → Tokio' },
+    )
+  })
+
+  it('tramos sin fecha de salida no generan entradas', () => {
+    const b = booking({
+      type: 'train',
+      segments: [
+        {
+          id: 1, position: 0, origin: 'Osaka', destination: 'Tokio',
+          departure_dt: null, arrival_dt: null, flight_number: null,
+        },
+      ],
+    })
+    expect(buildTransportsByDay([b]).size).toBe(0)
   })
 })
 
@@ -166,20 +295,23 @@ describe('etiquetas', () => {
   })
 
   it('transportHead: tipo + hora (Llegada usa la hora de fin)', () => {
-    expect(transportHead({ b: flight, arrival: false }, t)).toBe('Vuelo: 23:50')
-    expect(transportHead({ b: flight, arrival: true }, t)).toBe('Llegada: 07:30')
+    expect(transportHead({ b: flight, kind: 'departure', dt: flight.start_dt! }, t)).toBe(
+      'Vuelo: 23:50',
+    )
+    expect(transportHead({ b: flight, kind: 'arrival', dt: flight.end_dt! }, t)).toBe(
+      'Llegada: 07:30',
+    )
   })
 
   it('transportHead omite la medianoche (sin hora real)', () => {
     const sinHora = booking({ type: 'train', start_dt: '2026-08-01T00:00:00' })
-    expect(transportHead({ b: sinHora, arrival: false }, t)).toBe('Tren')
+    expect(transportHead({ b: sinHora, kind: 'departure', dt: sinHora.start_dt! }, t)).toBe('Tren')
   })
 
   it('transportLabel: ruta si hay origen/destino, título si no', () => {
-    expect(transportLabel({ b: flight, arrival: false })).toBe('MAD → NRT')
-    expect(transportLabel({ b: booking({ type: 'bus', title: 'Bus JR' }), arrival: false })).toBe(
-      'Bus JR',
-    )
+    expect(transportLabel({ b: flight, kind: 'departure', dt: flight.start_dt! })).toBe('MAD → NRT')
+    const bus = booking({ type: 'bus', title: 'Bus JR', start_dt: '2026-08-01T10:00:00' })
+    expect(transportLabel({ b: bus, kind: 'departure', dt: bus.start_dt! })).toBe('Bus JR')
   })
 
   it('lodgingHead: check-in/check-out con hora, noche sin ella', () => {

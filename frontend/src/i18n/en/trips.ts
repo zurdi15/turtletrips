@@ -99,7 +99,7 @@ export default {
     noBudgetHint: 'Set a budget when editing the trip to track progress.',
     nextBookings: 'Upcoming bookings',
     viewBookings: 'View bookings',
-    noUpcoming: 'Nothing coming up.',
+    noUpcoming: 'Nothing booked in the next 7 days.',
     notes: 'Notes',
   },
   lodging: {

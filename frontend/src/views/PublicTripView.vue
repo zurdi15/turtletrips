@@ -170,7 +170,17 @@ const has = (scope: string) => !!trip.value?.scopes.includes(scope as never)
                 <template v-if="booking.start_dt"> · {{ formatDateTime(booking.start_dt) }}</template>
                 <template v-if="booking.provider"> · {{ booking.provider }}</template>
               </p>
-              <p v-if="booking.origin || booking.destination" class="text-xs text-ink-muted">
+              <!-- con tramos, una línea por vuelo/tren con sus horas -->
+              <template v-if="booking.segments.length">
+                <p v-for="seg in booking.segments" :key="seg.id" class="text-xs text-ink-muted">
+                  {{ seg.origin ?? '?' }} → {{ seg.destination ?? '?' }}
+                  <template v-if="seg.departure_dt">
+                    · {{ formatDateTime(seg.departure_dt) }}
+                    <template v-if="seg.arrival_dt"> → {{ formatDateTime(seg.arrival_dt) }}</template>
+                  </template>
+                </p>
+              </template>
+              <p v-else-if="booking.origin || booking.destination" class="text-xs text-ink-muted">
                 {{ booking.origin ?? '?' }} → {{ booking.destination ?? '?' }}
               </p>
             </div>

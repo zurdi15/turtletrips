@@ -220,7 +220,8 @@ async def update_expense(
             if "description" in data:
                 booking.title = data["description"]
             # mover el día del gasto desplaza entrada/salida conservando la
-            # duración de la estancia (y las horas)
+            # duración de la estancia (y las horas); con tramos, viajan todos
+            # (también la vuelta: el conjunto conserva su forma)
             if "day" in data:
                 new_day: date = data["day"]
                 if booking.start_dt is not None:
@@ -229,7 +230,13 @@ async def update_expense(
                         booking.start_dt += delta
                         if booking.end_dt is not None:
                             booking.end_dt += delta
-                else:
+                        for seg in booking.segments:
+                            if seg.departure_dt is not None:
+                                seg.departure_dt += delta
+                            if seg.arrival_dt is not None:
+                                seg.arrival_dt += delta
+                elif not booking.segments:
+                    # sin fecha ni tramos: estrena start_dt en el día del gasto
                     booking.start_dt = datetime.combine(new_day, time(0, 0))
 
     return save_updates(db, expense, data)

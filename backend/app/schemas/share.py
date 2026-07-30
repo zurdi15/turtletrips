@@ -54,6 +54,16 @@ class PublicItineraryItem(BaseModel):
     booking_id: int | None
 
 
+class PublicBookingSegment(BaseModel):
+    """Tramo de un transporte: ruta y horas, nada más (el flight_number es
+    privado como el de la reserva; sin id — nada lo referencia)."""
+
+    origin: str | None
+    destination: str | None
+    departure_dt: datetime | None
+    arrival_dt: datetime | None
+
+
 class PublicBooking(BaseModel):
     id: int
     type: str
@@ -67,6 +77,7 @@ class PublicBooking(BaseModel):
     lat: float | None
     lon: float | None
     place_id: int | None
+    segments: list[PublicBookingSegment] = []
 
 
 class PublicTrip(BaseModel):

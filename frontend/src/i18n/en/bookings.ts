@@ -20,6 +20,8 @@ export default {
     paidFromCommon: 'Paid from the common fund',
     commonFund: 'Common',
     createExpense: 'Create expense',
+    layover: 'Layover',
+    journeyN: 'Journey {n}',
   },
   form: {
     editTitle: 'Edit booking',
@@ -49,6 +51,14 @@ export default {
     paidBy: 'Paid by',
     payerHint: 'With a cost, the booking creates its expense automatically and it inherits this payer',
     notes: 'Notes',
+    segments: {
+      segmentN: 'Leg {n}',
+      add: 'Add leg',
+      addReturn: 'Add return',
+      remove: 'Remove leg',
+      arrivalBeforeDeparture: "A leg's arrival cannot be earlier than its departure",
+      overlapWarning: 'This leg departs before the previous one lands',
+    },
     dates: {
       hotel: {
         start: 'Check-in',

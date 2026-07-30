@@ -24,6 +24,8 @@ export default {
     continues: 'sigue',
     noActivities: 'Sin actividades',
     arrival: 'Llegada',
+    layover: 'Escala',
+    shortLayover: 'Escala justa: menos de 1 h para la conexión',
     checkin: 'Check-in',
     checkout: 'Check-out',
     night: 'noche',

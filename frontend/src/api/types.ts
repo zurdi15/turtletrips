@@ -209,6 +209,18 @@ export interface DayJournal {
   photo_focus_y: number
 }
 
+// tramo de un transporte (vuelo con escalas, ida y vuelta en una reserva);
+// con tramos, los campos planos de la reserva son un agregado derivado
+export interface BookingSegment {
+  id: number
+  position: number
+  origin: string | null
+  destination: string | null
+  departure_dt: string | null
+  arrival_dt: string | null
+  flight_number: string | null
+}
+
 export interface Booking {
   id: number
   trip_id: number
@@ -230,6 +242,7 @@ export interface Booking {
   place_id: number | null
   paid_by_id: number | null
   paid_by_common: boolean
+  segments: BookingSegment[]
 }
 
 export type SplitMode = 'equal' | 'amount' | 'percent'
@@ -386,8 +399,13 @@ export type TripInput = Partial<
   Omit<Trip, 'id' | 'status' | 'travelers' | 'created_at' | 'updated_at' | 'cover_url' | 'budget_amount'>
 > & { budget_amount?: number | string | null; traveler_ids?: number[] }
 export type PlaceInput = Partial<Omit<Place, 'id' | 'trip_id'>>
-export type BookingInput = Partial<Omit<Booking, 'id' | 'trip_id' | 'cost_amount'>> & {
+export type BookingSegmentInput = Omit<BookingSegment, 'id' | 'position'>
+export type BookingInput = Partial<
+  Omit<Booking, 'id' | 'trip_id' | 'cost_amount' | 'segments'>
+> & {
   cost_amount?: number | string | null
+  // ausente = no tocar; [] = sin tramos; lista = reemplaza el conjunto entero
+  segments?: BookingSegmentInput[]
 }
 export type ExpenseInput = Partial<
   Omit<Expense, 'id' | 'trip_id' | 'amount' | 'exchange_rate' | 'amount_base'>
@@ -452,6 +470,14 @@ export interface PublicItineraryItem {
   booking_id: number | null
 }
 
+// ruta y horas del tramo, nada más: el flight_number es privado
+export interface PublicBookingSegment {
+  origin: string | null
+  destination: string | null
+  departure_dt: string | null
+  arrival_dt: string | null
+}
+
 export interface PublicBooking {
   id: number
   type: BookingType
@@ -465,6 +491,7 @@ export interface PublicBooking {
   lat: number | null
   lon: number | null
   place_id: number | null
+  segments: PublicBookingSegment[]
 }
 
 export interface PublicTrip {

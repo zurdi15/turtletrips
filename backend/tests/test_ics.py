@@ -119,6 +119,77 @@ def test_all_day_booking_heuristic(client, trip):
     assert "LOCATION:Kioto" in body
 
 
+def test_segmented_booking_event_per_segment(client, trip):
+    booking = _booking(
+        client,
+        trip["id"],
+        type="flight",
+        title="Vuelos Japón",
+        provider="Qatar Airways",
+        confirmation_code="XYZ789",
+        segments=[
+            {
+                "origin": "MAD", "destination": "DOH", "flight_number": "QR150",
+                "departure_dt": "2026-02-10T10:00:00", "arrival_dt": "2026-02-10T18:30:00",
+            },
+            {
+                "origin": "DOH", "destination": "NRT", "flight_number": "QR806",
+                "departure_dt": "2026-02-10T21:55:00", "arrival_dt": "2026-02-11T13:20:00",
+            },
+        ],
+    )
+    unfolded = _ics(client, trip["id"]).text.replace("\r\n ", "")
+    # un VEVENT por tramo con UID estable por position, no el agregado
+    assert f"UID:booking-{booking['id']}-seg-0@" in unfolded
+    assert f"UID:booking-{booking['id']}-seg-1@" in unfolded
+    assert f"UID:booking-{booking['id']}@" not in unfolded
+    assert "SUMMARY:Vuelo: MAD → DOH" in unfolded
+    assert "SUMMARY:Vuelo: DOH → NRT" in unfolded
+    assert "DTSTART:20260210T100000" in unfolded
+    assert "DTSTART:20260210T215500" in unfolded
+    assert "DTEND:20260211T132000" in unfolded
+    # la descripción común viaja en cada tramo, con su número de vuelo
+    assert "Vuelo: QR150" in unfolded
+    assert "Vuelo: QR806" in unfolded
+    assert unfolded.count("Proveedor: Qatar Airways") == 2
+
+
+def test_segmented_all_day_heuristic_per_segment(client, trip):
+    _booking(
+        client,
+        trip["id"],
+        type="train",
+        title="Tren nocturno",
+        segments=[
+            {
+                "origin": "Osaka", "destination": "Tokio",
+                "departure_dt": "2026-02-10T00:00:00", "arrival_dt": "2026-02-11T00:00:00",
+            }
+        ],
+    )
+    body = _ics(client, trip["id"]).text
+    assert "DTSTART;VALUE=DATE:20260210" in body
+    assert "DTEND;VALUE=DATE:20260212" in body  # inclusivo -> exclusivo +1
+
+
+def test_segmented_linked_booking_not_duplicated(client, trip):
+    booking = _booking(
+        client,
+        trip["id"],
+        type="flight",
+        title="Vuelo",
+        segments=[
+            {
+                "origin": "MAD", "destination": "NRT",
+                "departure_dt": "2026-02-10T10:00:00",
+            }
+        ],
+    )
+    _item(client, trip["id"], title="Vuelo de ida", booking_id=booking["id"])
+    body = _ics(client, trip["id"]).text
+    assert f"UID:booking-{booking['id']}-seg-" not in body
+
+
 def test_headers_structure_and_404(client, trip):
     _item(client, trip["id"], title="Algo")
     resp = _ics(client, trip["id"])

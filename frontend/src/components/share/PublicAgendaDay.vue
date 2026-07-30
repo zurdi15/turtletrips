@@ -32,7 +32,15 @@ const TONE_CLASSES: Record<RowTone, string> = {
         <i v-if="row.icon" :class="row.icon" />
       </span>
       <span class="w-24 sm:w-32 shrink-0 text-xs sm:text-sm opacity-80 tabular-nums truncate">
-        {{ row.head }}
+        <!-- transporte: tipo y horas (salida–llegada, +n si cruza noches) en
+             dos líneas, como en la agenda de la app -->
+        <template v-if="row.transport">
+          {{ row.transport.kind }}
+          <span v-if="row.transport.dep || row.transport.arr" class="block font-medium">
+            {{ row.transport.dep ?? '' }}<span v-if="row.transport.dep && row.transport.arr" class="opacity-50">–</span>{{ row.transport.arr ?? '' }}<sup v-if="row.transport.arr && row.transport.plusDays" class="text-3xs">+{{ row.transport.plusDays }}</sup>
+          </span>
+        </template>
+        <template v-else>{{ row.head }}</template>
       </span>
       <span class="min-w-0">
         <span class="font-medium text-sm">{{ row.title }}</span>
