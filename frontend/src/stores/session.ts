@@ -4,6 +4,7 @@ import { api, ApiError } from '../api/client'
 import type {
   BootstrapInput,
   Me,
+  ResetTokenInfo,
   SettingsInput,
   Traveler,
 } from '../api/types'
@@ -127,6 +128,25 @@ export const useSessionStore = defineStore('session', () => {
     })
   }
 
+  /** Pide el enlace de recuperación (el backend lo escribe en sus logs). */
+  function requestPasswordReset(username: string) {
+    return api.post('/auth/forgot-password', { username })
+  }
+
+  /** Comprueba el enlace y devuelve de quién es la cuenta. */
+  function checkResetToken(token: string) {
+    return api.get<ResetTokenInfo>(
+      `/auth/reset-password?token=${encodeURIComponent(token)}`,
+    )
+  }
+
+  /** Estrena la contraseña del enlace; la respuesta ya trae la sesión abierta. */
+  async function resetPassword(token: string, newPassword: string) {
+    setMe(await api.post<Me>('/auth/reset-password', { token, new_password: newPassword }))
+    bootstrapped.value = true
+    loaded.value = true
+  }
+
   /** Espeja en la sesión las ediciones del propio viajero (perfil). */
   function setTraveler(traveler: Traveler) {
     if (me.value && traveler.id === me.value.traveler.id) {
@@ -151,6 +171,9 @@ export const useSessionStore = defineStore('session', () => {
     clearSession,
     updateSettings,
     changePassword,
+    requestPasswordReset,
+    checkResetToken,
+    resetPassword,
     setTraveler,
   }
 })

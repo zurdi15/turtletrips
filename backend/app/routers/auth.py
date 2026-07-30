@@ -1,3 +1,6 @@
+import logging
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -5,15 +8,19 @@ from sqlalchemy.orm import Session
 from ..auth import (
     SESSION_COOKIE,
     CurrentUser,
+    clear_password_resets,
     clear_session_cookie,
+    create_password_reset,
     create_session,
     dummy_password_check,
     hash_password,
+    resolve_reset_token,
     revoke_other_sessions,
     revoke_session,
     set_session_cookie,
     verify_password,
 )
+from ..config import get_settings
 from ..db import get_db
 from ..models import Family, Traveler, User
 from ..schemas.auth import (
@@ -22,11 +29,19 @@ from ..schemas.auth import (
     LoginRequest,
     MeRead,
     PasswordChange,
+    PasswordResetConfirm,
+    PasswordResetInfo,
+    PasswordResetRequest,
     UserSettingsUpdate,
 )
 from ..services.categories import ensure_default_categories
 
 router = APIRouter(tags=["auth"])
+logger = logging.getLogger("tt.auth")
+
+# el enlace de recuperación es la única "notificación" de la app y sale por los
+# logs: enmarcado para encontrarlo de un vistazo en `docker logs`
+_BANNER = "─" * 64
 
 
 def _me(user: User) -> dict:
@@ -94,6 +109,86 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
     if not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
+    set_session_cookie(response, create_session(db, user))
+    return _me(user)
+
+
+def _reset_link(request: Request, token: str) -> str:
+    """URL absoluta del formulario de contraseña nueva.
+
+    El Origin de la petición es la URL pública real con la que se está usando
+    la app; detrás de un reverse proxy `base_url` solo conoce el puerto
+    interno, así que queda de respaldo (peticiones sin cabecera).
+    """
+    origin = request.headers.get("origin") or str(request.base_url).rstrip("/")
+    return f"{origin}/reset-password?token={token}"
+
+
+def _log_reset_link(username: str, link: str, expires_at: datetime) -> None:
+    logger.warning(
+        "\n%s\n Turtle Trips · recuperación de contraseña\n"
+        " Usuario: %s\n Enlace:  %s\n Caduca:  %s UTC (%d min)\n%s",
+        _BANNER,
+        username,
+        link,
+        expires_at.strftime("%Y-%m-%d %H:%M"),
+        get_settings().password_reset_ttl_minutes,
+        _BANNER,
+    )
+
+
+@router.post("/auth/forgot-password", status_code=204)
+def forgot_password(
+    payload: PasswordResetRequest, request: Request, db: Session = Depends(get_db)
+):
+    """Genera el enlace de recuperación y lo escribe EN LOS LOGS del servidor.
+
+    No hay correo saliente: en una instancia self-hosted el admin lee el
+    enlace (`docker logs`) y se lo pasa al usuario. La respuesta es siempre la
+    misma exista o no la cuenta, para no filtrar qué usuarios hay.
+    """
+    user = _find_user(db, payload.username)
+    if user is None:
+        logger.info(
+            "Recuperación de contraseña pedida para un usuario inexistente (%r)",
+            payload.username.strip()[:50],
+        )
+        return
+    token, expires_at = create_password_reset(db, user)
+    _log_reset_link(user.username, _reset_link(request, token), expires_at)
+
+
+@router.get("/auth/reset-password", response_model=PasswordResetInfo)
+def check_reset_token(token: str, db: Session = Depends(get_db)):
+    """Valida el enlace ANTES de pedir la contraseña nueva: uno caducado da un
+    mensaje claro en vez de un formulario que falla al enviarlo."""
+    entry = resolve_reset_token(db, token)
+    if entry is None:
+        raise HTTPException(
+            status_code=400, detail="El enlace no es válido o ha caducado"
+        )
+    return {"username": entry.user.username}
+
+
+@router.post("/auth/reset-password", response_model=MeRead)
+def reset_password(
+    payload: PasswordResetConfirm, response: Response, db: Session = Depends(get_db)
+):
+    """Estrena la contraseña y deja la sesión abierta (el usuario ya se ha
+    identificado con el enlace: pedirle el login otra vez sobra)."""
+    entry = resolve_reset_token(db, payload.token)
+    if entry is None:
+        raise HTTPException(
+            status_code=400, detail="El enlace no es válido o ha caducado"
+        )
+    user = entry.user
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+    clear_password_resets(db, user.id)
+    # fuera TODAS las sesiones anteriores: quien recupera la contraseña puede
+    # estar echando a alguien que le entró en la cuenta
+    revoke_other_sessions(db, user.id, None)
+    logger.info("Contraseña restablecida para %r", user.username)
     set_session_cookie(response, create_session(db, user))
     return _me(user)
 

@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     cookie_secure: bool = False
     # coste de bcrypt (los tests lo bajan a 4 para no pagar ~0,3 s por hash)
     bcrypt_rounds: int = 12
+    # validez del enlace de recuperación de contraseña (viaja por los logs:
+    # el admin tiene que leerlo y pasárselo al usuario, pero no eterno)
+    password_reset_ttl_minutes: int = 60
 
     @property
     def db_path(self) -> Path:

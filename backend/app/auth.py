@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .db import get_db
-from .models import User, UserSession
+from .models import PasswordResetToken, User, UserSession
 
 SESSION_COOKIE = "tt_session"
 
@@ -102,6 +102,52 @@ def resolve_session_user(db: Session, raw_token: str) -> User | None:
         session.expires_at = now + ttl
         db.commit()
     return db.get(User, session.user_id)
+
+
+def create_password_reset(db: Session, user: User) -> tuple[str, datetime]:
+    """Enlace de recuperación: devuelve el token en claro y cuándo caduca.
+
+    Cada petición invalida los anteriores del usuario (solo vale el último que
+    se le haya pasado) y aprovecha para barrer los caducados de todos.
+    """
+    now = _utcnow()
+    db.execute(
+        delete(PasswordResetToken).where(
+            (PasswordResetToken.user_id == user.id)
+            | (PasswordResetToken.expires_at < now)
+        )
+    )
+    token = secrets.token_urlsafe(32)
+    expires_at = now + timedelta(minutes=get_settings().password_reset_ttl_minutes)
+    db.add(
+        PasswordResetToken(
+            user_id=user.id, token_hash=_token_hash(token), expires_at=expires_at
+        )
+    )
+    db.commit()
+    return token, expires_at
+
+
+def resolve_reset_token(db: Session, raw_token: str) -> PasswordResetToken | None:
+    """Token válido (existe y no ha caducado) o None; el caducado se borra."""
+    entry = db.scalar(
+        select(PasswordResetToken).where(
+            PasswordResetToken.token_hash == _token_hash(raw_token)
+        )
+    )
+    if entry is None:
+        return None
+    if entry.expires_at < _utcnow():
+        db.delete(entry)
+        db.commit()
+        return None
+    return entry
+
+
+def clear_password_resets(db: Session, user_id: int) -> None:
+    """Quema los enlaces del usuario (tras usar uno: son de un solo uso)."""
+    db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id))
+    db.commit()
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:

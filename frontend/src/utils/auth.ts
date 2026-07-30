@@ -16,6 +16,17 @@ export function validatePassword(
   return null
 }
 
+/**
+ * Token del enlace de recuperación. El admin lo copia de los logs y puede
+ * llegar entero ("https://…/reset-password?token=abc") o pelado, así que se
+ * acepta cualquiera de los dos.
+ */
+export function extractResetToken(raw: string): string {
+  const value = raw.trim()
+  const match = value.match(/[?&]token=([^&#\s]+)/)
+  return match ? decodeURIComponent(match[1]) : value
+}
+
 /** Solo rutas internas como destino post-login (evita open redirects). */
 export function safeRedirect(raw: unknown): string {
   if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/'

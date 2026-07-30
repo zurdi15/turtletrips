@@ -6,6 +6,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import AppNav from './components/app/AppNav.vue'
 import AppBottomNav from './components/app/AppBottomNav.vue'
 import { useMediaQuery } from './composables/useMediaQuery'
+import { AUTH_ROUTES } from './router'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +18,7 @@ const isDesktop = useMediaQuery('(min-width: 640px)')
 // Transition, no una clase en el root: ver nota en style.css); tt-splash =
 // transición especial al cruzar el login (entrar o salir de la app).
 const transitionName = ref('tt-view')
+const isAuthRoute = (name: unknown) => typeof name === 'string' && AUTH_ROUTES.has(name)
 
 // la nav es sticky: si apareciera al confirmarse la ruta empujaría el layout
 // con el login aún despidiéndose. Se muestra justo antes de entrar la vista
@@ -24,7 +26,10 @@ const transitionName = ref('tt-view')
 const navVisible = ref(!route.meta.bare)
 
 router.afterEach((to, from) => {
-  transitionName.value = to.name === 'login' || from.name === 'login' ? 'tt-splash' : 'tt-view'
+  // el splash es la frontera acceso ⇄ app; entre pantallas de acceso
+  // (login → recuperar contraseña) va la transición de siempre
+  transitionName.value =
+    isAuthRoute(to.name) !== isAuthRoute(from.name) ? 'tt-splash' : 'tt-view'
   if (to.meta.bare) navVisible.value = false
 })
 

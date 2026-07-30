@@ -78,3 +78,23 @@ class PasswordChange(BaseModel):
     @classmethod
     def check_password(cls, v: str) -> str:
         return _check_password_bytes(v)
+
+
+class PasswordResetRequest(BaseModel):
+    username: str = Field(min_length=1, max_length=50)
+
+
+class PasswordResetInfo(BaseModel):
+    """Respuesta al validar el enlace: para quién es la contraseña nueva."""
+
+    username: str
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=8)
+
+    @field_validator("new_password")
+    @classmethod
+    def check_password(cls, v: str) -> str:
+        return _check_password_bytes(v)

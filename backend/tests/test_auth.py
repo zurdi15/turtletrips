@@ -1,8 +1,9 @@
+import re
 from datetime import datetime, timedelta
 
 from fastapi.testclient import TestClient
 
-from app.models import Family, Traveler, UserSession
+from app.models import Family, PasswordResetToken, Traveler, UserSession
 from conftest import ADMIN, bootstrap, login, make_user
 
 
@@ -134,6 +135,98 @@ def test_sliding_expiry_renews(app, client, db_session):
     db_session.expire_all()
     renewed = db_session.query(UserSession).first()
     assert renewed.expires_at > datetime.now() + timedelta(days=25)
+
+
+def _reset_token(caplog) -> str:
+    """Token del enlace que el endpoint acaba de escribir en los logs."""
+    match = re.search(r"reset-password\?token=(\S+)", caplog.text)
+    assert match, caplog.text
+    return match.group(1)
+
+
+def test_forgot_password_logs_link_and_resets(app, client, anon, caplog):
+    make_user(client, "ana")
+    old = login(app, "ana")
+
+    with caplog.at_level("INFO"):
+        assert anon.post(
+            "/api/v1/auth/forgot-password", json={"username": "ANA"}
+        ).status_code == 204
+    token = _reset_token(caplog)
+
+    # el enlace dice para quién es antes de pedir la contraseña nueva
+    info = anon.get("/api/v1/auth/reset-password", params={"token": token})
+    assert info.status_code == 200
+    assert info.json() == {"username": "ana"}
+
+    resp = anon.post(
+        "/api/v1/auth/reset-password", json={"token": token, "new_password": "nueva1234"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["user"]["username"] == "ana"
+    # queda logueado con la contraseña nueva…
+    assert anon.get("/api/v1/auth/me").status_code == 200
+    assert login(app, "ana", "nueva1234").get("/api/v1/auth/me").status_code == 200
+    # …y las sesiones anteriores y la contraseña vieja quedan fuera
+    assert old.get("/api/v1/auth/me").status_code == 401
+    assert TestClient(app).post(
+        "/api/v1/auth/login", json={"username": "ana", "password": "secret123"}
+    ).status_code == 401
+
+    # el enlace es de un solo uso
+    assert anon.post(
+        "/api/v1/auth/reset-password", json={"token": token, "new_password": "otra12345"}
+    ).status_code == 400
+
+
+def test_forgot_password_hides_unknown_user(app, client, anon, caplog, db_session):
+    with caplog.at_level("INFO"):
+        # misma respuesta que con un usuario real: no filtra quién tiene cuenta
+        assert anon.post(
+            "/api/v1/auth/forgot-password", json={"username": "nadie"}
+        ).status_code == 204
+    assert "reset-password?token=" not in caplog.text
+    assert db_session.query(PasswordResetToken).count() == 0
+
+
+def test_reset_token_expires_and_rotates(app, client, anon, caplog, db_session):
+    make_user(client, "ana")
+
+    with caplog.at_level("INFO"):
+        anon.post("/api/v1/auth/forgot-password", json={"username": "ana"})
+    first = _reset_token(caplog)
+    caplog.clear()
+    with caplog.at_level("INFO"):
+        anon.post("/api/v1/auth/forgot-password", json={"username": "ana"})
+    second = _reset_token(caplog)
+
+    # pedir otro enlace invalida el anterior (solo vale el último entregado)
+    assert first != second
+    assert anon.get(
+        "/api/v1/auth/reset-password", params={"token": first}
+    ).status_code == 400
+
+    entry = db_session.query(PasswordResetToken).one()
+    entry.expires_at = datetime(2020, 1, 1)
+    db_session.commit()
+    assert anon.get(
+        "/api/v1/auth/reset-password", params={"token": second}
+    ).status_code == 400
+    assert anon.post(
+        "/api/v1/auth/reset-password", json={"token": second, "new_password": "nueva1234"}
+    ).status_code == 400
+    # el caducado se barre al tropezar con él
+    assert db_session.query(PasswordResetToken).count() == 0
+
+
+def test_reset_password_rejects_short_password(app, client, anon, caplog):
+    make_user(client, "ana")
+    with caplog.at_level("INFO"):
+        anon.post("/api/v1/auth/forgot-password", json={"username": "ana"})
+    token = _reset_token(caplog)
+    assert anon.post(
+        "/api/v1/auth/reset-password", json={"token": token, "new_password": "corta"}
+    ).status_code == 422
 
 
 def test_ics_feed_public(app, client, trip):

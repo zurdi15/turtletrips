@@ -1,3 +1,4 @@
+import logging
 import threading
 from pathlib import Path
 
@@ -39,8 +40,25 @@ STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 API_PREFIX = "/api/v1"
 
 
+def _configure_logging() -> None:
+    """Logger propio ("tt.*") a stderr con el formato de uvicorn.
+
+    Uvicorn solo configura sus loggers, así que sin esto los mensajes de la
+    app saldrían por el handler de último recurso (sin formato y solo a partir
+    de WARNING) — y el enlace de recuperación vive precisamente ahí.
+    """
+    logger = logging.getLogger("tt")
+    if logger.handlers:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(levelname)s:     %(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+
 def create_app(engine: Engine | None = None) -> FastAPI:
     settings = get_settings()
+    _configure_logging()
     if engine is None:
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         engine = make_engine(settings.db_url)

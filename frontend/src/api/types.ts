@@ -62,6 +62,11 @@ export interface BootstrapInput {
   language?: UiLanguage
 }
 
+/** Dueño del enlace de recuperación (GET /auth/reset-password). */
+export interface ResetTokenInfo {
+  username: string
+}
+
 export interface SettingsInput {
   theme?: ThemePref
   language?: UiLanguage

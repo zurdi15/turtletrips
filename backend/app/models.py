@@ -267,6 +267,29 @@ class UserSession(Base):
     user: Mapped[User] = relationship()
 
 
+class PasswordResetToken(Base):
+    """Enlace de recuperación de contraseña, de un solo uso.
+
+    Sin correo saliente en una app self-hosted: el enlace se escribe en los
+    LOGS del servidor y el admin se lo pasa al usuario. Mismo trato que la
+    sesión (en DB solo el sha256) pero con caducidad corta.
+    """
+
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+
+    user: Mapped[User] = relationship()
+
+
 class Place(TimestampMixin, Base):
     __tablename__ = "places"
 

@@ -12,6 +12,12 @@ declare module 'vue-router' {
   }
 }
 
+/**
+ * Pantallas de acceso (sin sesión). El splash de App.vue cruza SU frontera con
+ * la app; entre ellas la transición es la normal.
+ */
+export const AUTH_ROUTES = new Set(['login', 'forgot-password', 'reset-password'])
+
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -19,6 +25,19 @@ export const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
+      meta: { public: true, bare: true },
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('../views/ForgotPasswordView.vue'),
+      meta: { public: true, bare: true },
+    },
+    {
+      // el enlace que el admin saca de los logs: /reset-password?token=…
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('../views/ResetPasswordView.vue'),
       meta: { public: true, bare: true },
     },
     {
