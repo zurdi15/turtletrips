@@ -9,11 +9,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..auth import AdminUser
+from ..auth import AdminUser, CurrentUser
 from ..db import get_db
-from ..models import Family, Traveler, Trip
+from ..models import BagEditRevoke, Family, Traveler, Trip
 from ..schemas.admin import FamilyCreate, FamilyReorder, FamilyUpdate
 from ..schemas.auth import FamilyRead
+from ..schemas.packing import BagPermissionsRead, BagPermissionUpdate
 from ..services.categories import ensure_default_categories
 from .common import get_or_404
 
@@ -82,4 +83,57 @@ def delete_family(family_id: int, _admin: AdminUser, db: Session = Depends(get_d
     if has_trips is not None:
         raise HTTPException(status_code=409, detail="La familia tiene viajes asociados")
     db.delete(family)
+    db.commit()
+
+
+# --- permisos de maletas (página Familia) ---
+# Por defecto toda tu familia gestiona tus maletas; aquí cada usuario revoca
+# (o devuelve) ese permiso miembro a miembro. Solo el dueño toca sus filas.
+
+
+@router.get("/family/bag-permissions", response_model=BagPermissionsRead)
+def my_bag_permissions(user: CurrentUser, db: Session = Depends(get_db)):
+    revoked = db.scalars(
+        select(BagEditRevoke.editor_traveler_id).where(
+            BagEditRevoke.owner_traveler_id == user.traveler_id
+        )
+    ).all()
+    restricted_by = db.scalars(
+        select(BagEditRevoke.owner_traveler_id).where(
+            BagEditRevoke.editor_traveler_id == user.traveler_id
+        )
+    ).all()
+    return BagPermissionsRead(revoked=list(revoked), restricted_by=list(restricted_by))
+
+
+@router.put("/family/bag-permissions/{traveler_id}", status_code=204)
+def set_bag_permission(
+    traveler_id: int,
+    payload: BagPermissionUpdate,
+    user: CurrentUser,
+    db: Session = Depends(get_db),
+):
+    if traveler_id == user.traveler_id:
+        raise HTTPException(status_code=400, detail="Tus maletas ya son tuyas")
+    target = get_or_404(db, Traveler, traveler_id)
+    family_id = user.traveler.family_id
+    if family_id is None or target.family_id != family_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Solo puedes gestionar permisos de miembros de tu familia",
+        )
+    revoke = db.scalar(
+        select(BagEditRevoke).where(
+            BagEditRevoke.owner_traveler_id == user.traveler_id,
+            BagEditRevoke.editor_traveler_id == traveler_id,
+        )
+    )
+    if payload.allowed and revoke is not None:
+        db.delete(revoke)
+    elif not payload.allowed and revoke is None:
+        db.add(
+            BagEditRevoke(
+                owner_traveler_id=user.traveler_id, editor_traveler_id=traveler_id
+            )
+        )
     db.commit()

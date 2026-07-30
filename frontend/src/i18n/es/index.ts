@@ -9,6 +9,7 @@ import checklist from './checklist'
 import world from './world'
 import settings from './settings'
 import travelers from './travelers'
+import family from './family'
 import auth from './auth'
 import profile from './profile'
 import share from './share'
@@ -26,6 +27,7 @@ export default {
   world,
   settings,
   travelers,
+  family,
   auth,
   profile,
   share,

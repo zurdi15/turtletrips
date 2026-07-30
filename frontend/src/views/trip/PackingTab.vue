@@ -17,6 +17,7 @@ import PackingCategoryCard from '../../components/packing/PackingCategoryCard.vu
 import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
+import { useBagPermissionsStore } from '../../stores/bagPermissions'
 import { useCategoriesStore } from '../../stores/categories'
 import { useSessionStore } from '../../stores/session'
 import { useTravelersStore } from '../../stores/travelers'
@@ -27,6 +28,7 @@ import { groupPackingItems } from '../../utils/packing'
 
 const props = defineProps<{ trip: Trip }>()
 const store = usePackingStore()
+const bagPerms = useBagPermissionsStore()
 const categories = useCategoriesStore()
 const session = useSessionStore()
 const travelers = useTravelersStore()
@@ -44,6 +46,15 @@ const myFamilyId = computed(() => session.me?.traveler.family_id ?? null)
 function bagVisible(traveler: Trip['travelers'][number]): boolean {
   if (session.isAdmin || traveler.id === session.travelerId) return true
   return traveler.family_id != null && traveler.family_id === myFamilyId.value
+}
+
+// la maleta de otro USUARIO se ve siempre, pero su dueño puede haberte
+// revocado la gestión (página Familia): entonces queda en solo-consulta
+function canEditBag(travelerId: number | null): boolean {
+  if (travelerId === null || travelerId === session.travelerId || session.isAdmin) return true
+  const traveler = props.trip.travelers.find((trav) => trav.id === travelerId)
+  if (traveler && !traveler.has_user) return true
+  return !bagPerms.restrictedBy.has(travelerId)
 }
 
 // puede nacer una plantilla de esta maleta (el dueño sería tú o un virtual tuyo)
@@ -86,6 +97,7 @@ useTripTabData(() => props.trip, {
     store.load(tripId).then(syncSelectedTemplate)
     categories.load('packing')
     travelers.load() // para resolver dueños de plantillas que no viajan
+    bagPerms.load().catch(() => {}) // best-effort: el servidor manda igualmente
   },
 })
 
@@ -127,6 +139,7 @@ const bags = computed<BagOption[]>(() => {
 
 const canTemplateActive = computed(() => canTemplateBag(activeTraveler.value))
 const canSyncSelected = computed(() => canEditTemplate(selectedTemplate.value))
+const canEditActive = computed(() => canEditBag(activeTraveler.value))
 
 const activeItems = computed(() => store.itemsFor(activeTraveler.value))
 
@@ -143,9 +156,11 @@ const categoryOptions = computed(() =>
   categories.packing.map((c) => ({ value: c.name, label: c.name })),
 )
 
-// mover elementos: cualquier maleta visible (visible = editable)
+// mover elementos: cualquier maleta visible que además puedas editar
 const bagMoveOptions = computed(() =>
-  bags.value.map((b) => ({ value: b.travelerId, label: b.label })),
+  bags.value
+    .filter((b) => canEditBag(b.travelerId))
+    .map((b) => ({ value: b.travelerId, label: b.label })),
 )
 
 // cada plantilla lleva el chip de su dueño (dot o avatar) para distinguirlas
@@ -279,12 +294,21 @@ async function saveTemplate() {
         <span class="text-sm font-semibold text-ink-secondary mr-1">
           {{ $t('packing.bagOf', { bag: activeBagLabel }) }}
         </span>
+        <!-- el dueño de esta maleta te ha revocado la gestión: solo consulta -->
+        <span
+          v-if="!canEditActive"
+          class="tt-pop-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-muted text-ink-muted"
+          v-tooltip.bottom="$t('packing.bagReadOnlyHint')"
+        >
+          <i class="pi pi-lock text-3xs" /> {{ $t('packing.readOnly') }}
+        </span>
         <span
           v-if="activeTemplateName"
           class="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-info-tint text-info-strong"
         >
           <i class="pi pi-briefcase text-3xs" /> {{ $t('packing.templateBadge', { name: activeTemplateName }) }}
           <button
+            v-if="canEditActive"
             type="button"
             class="flex items-center opacity-70 hover:opacity-100 cursor-pointer"
             v-tooltip.bottom="$t('packing.unlinkTemplate')"
@@ -300,6 +324,7 @@ async function saveTemplate() {
         >
           <i class="pi pi-briefcase text-3xs" /> {{ $t('packing.templateForeign') }}
           <button
+            v-if="canEditActive"
             type="button"
             class="flex items-center opacity-70 hover:opacity-100 cursor-pointer"
             v-tooltip.bottom="$t('packing.unlinkTemplate')"
@@ -355,7 +380,7 @@ async function saveTemplate() {
           </template>
         </Select>
         <Button
-          v-if="selectedTemplate != null"
+          v-if="selectedTemplate != null && canEditActive"
           :label="$t('packing.apply')"
           icon="pi pi-download"
           severity="secondary"
@@ -365,7 +390,7 @@ async function saveTemplate() {
         />
         <!-- sincronizar escribe la plantilla: solo si es tuya o de un virtual tuyo -->
         <Button
-          v-if="selectedTemplate != null && activeItems.length && canSyncSelected"
+          v-if="selectedTemplate != null && activeItems.length && canSyncSelected && canEditActive"
           icon="pi pi-sync"
           severity="secondary"
           outlined
@@ -392,8 +417,9 @@ async function saveTemplate() {
       </div>
     </div>
 
-    <!-- añadir elemento a la maleta activa -->
+    <!-- añadir elemento a la maleta activa (en solo-consulta ni se ofrece) -->
     <PackingAddBar
+      v-if="canEditActive"
       :placeholder="$t('packing.addToBagPlaceholder', { bag: activeBagLabel })"
       :categoryOptions="categoryOptions"
       :onAdd="addItem"
@@ -422,7 +448,12 @@ async function saveTemplate() {
           :key="item.id"
           class="flex items-center gap-3 px-4 py-2 border-b border-line-faint last:border-b-0 hover:bg-surface-hover group/item"
         >
-          <Checkbox :modelValue="item.checked" binary @update:modelValue="store.toggle(item)" />
+          <Checkbox
+            :modelValue="item.checked"
+            binary
+            :disabled="!canEditActive"
+            @update:modelValue="store.toggle(item)"
+          />
           <span
             class="flex-1 transition-colors duration-200"
             :class="{ 'line-through text-ink-faint': item.checked }"
@@ -440,7 +471,7 @@ async function saveTemplate() {
               <i class="pi pi-shopping-cart" />
             </a>
           </span>
-          <RowActions @edit="openEdit(item)" @remove="removeItem(item)" />
+          <RowActions v-if="canEditActive" @edit="openEdit(item)" @remove="removeItem(item)" />
         </li>
       </PackingCategoryCard>
     </div>

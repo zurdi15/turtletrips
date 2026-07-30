@@ -19,13 +19,14 @@ export default {
     trips: 'Trips',
     map: 'Map',
     packing: 'Packing',
-    travelers: 'Travelers',
+    family: 'Family',
     settings: 'Settings',
   },
   userMenu: {
     profile: 'Profile',
+    admin: 'Admin panel',
     settings: 'Settings',
-    logout: 'Sign out',
+    logout: 'Log out',
   },
   payer: {
     unassigned: 'Unassigned',

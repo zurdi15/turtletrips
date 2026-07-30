@@ -6,6 +6,7 @@ export default {
   templateForeign: "another family's template",
   unlinkTemplate: 'Unlink the template from this bag (items are kept)',
   readOnly: 'View-only',
+  bagReadOnlyHint: 'The owner of this bag does not share its management with you',
   chooseTemplate: 'Choose a template…',
   apply: 'Apply',
   applyTooltip: 'Copies the items into this bag; the template is left untouched',

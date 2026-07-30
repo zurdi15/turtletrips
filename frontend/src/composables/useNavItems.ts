@@ -1,7 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useSessionStore } from '../stores/session'
 
 export interface NavItem {
   to: string
@@ -18,7 +17,6 @@ export interface NavItem {
 export function useNavItems() {
   const { t } = useI18n()
   const route = useRoute()
-  const session = useSessionStore()
 
   const items = computed<NavItem[]>(() => [
     // solo la lista: dentro del detalle de un viaje (/trips/:id) ninguna
@@ -31,17 +29,14 @@ export function useNavItems() {
       icon: 'pi pi-briefcase',
       match: (p) => p.startsWith('/packing'),
     },
-    // el hub de viajeros/familias/cuentas es gestión: solo lo ve el admin
-    ...(session.isAdmin
-      ? [
-          {
-            to: '/travelers',
-            label: t('common.nav.travelers'),
-            icon: 'pi pi-users',
-            match: (p: string) => p.startsWith('/travelers'),
-          },
-        ]
-      : []),
+    // tu familia y los permisos que le das (el panel de administración vive
+    // en el menú del avatar, no aquí)
+    {
+      to: '/family',
+      label: t('common.nav.family'),
+      icon: 'pi pi-users',
+      match: (p) => p.startsWith('/family'),
+    },
   ])
 
   // la sección clicada se marca activa al momento (optimista), sin esperar al router

@@ -104,3 +104,16 @@ class CategoryRead(BaseModel):
     name: str
     color: str | None
     position: int
+
+
+class BagPermissionsRead(BaseModel):
+    """Permisos de gestión de maletas del usuario actual (default: permitido)."""
+
+    # viajeros de tu familia a los que has quitado el permiso sobre TUS maletas
+    revoked: list[int]
+    # dueños que te lo han quitado a ti (sus maletas se pintan solo-consulta)
+    restricted_by: list[int]
+
+
+class BagPermissionUpdate(BaseModel):
+    allowed: bool

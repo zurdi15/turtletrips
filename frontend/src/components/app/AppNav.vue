@@ -92,6 +92,10 @@ const menu = ref<InstanceType<typeof Popover> | null>(null)
 
 const menuItems = computed(() => [
   { to: '/profile', label: t('common.userMenu.profile'), icon: 'pi pi-user' },
+  // el panel de administración (usuarios, viajeros, familias): solo admin
+  ...(session.isAdmin
+    ? [{ to: '/admin', label: t('common.userMenu.admin'), icon: 'pi pi-shield' }]
+    : []),
   { to: '/settings', label: t('common.userMenu.settings'), icon: 'pi pi-cog' },
 ])
 

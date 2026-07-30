@@ -1,6 +1,8 @@
 export default {
   title: 'Travelers',
   info: 'Everything about people in one place: travelers grouped by family, with or without a user account (virtual ones fit kids, guests…). The administrator can create accounts, move travelers between families and manage the families from here.',
+  adminTitle: 'Administration',
+  adminInfo: 'Users, travelers and families of the instance: travelers grouped by family, with or without an account (virtual ones fit kids, guests…). Create accounts, move travelers between families and manage the families from here.',
   empty: 'No travelers yet: add the first one below',
   newAction: 'New traveler',
   form: {

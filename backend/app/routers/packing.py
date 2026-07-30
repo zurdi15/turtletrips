@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, selectinload
 from ..auth import CurrentUser
 from ..db import get_db
 from ..models import (
+    BagEditRevoke,
     PackingItem,
     PackingSelection,
     PackingTemplate,
@@ -38,11 +39,12 @@ router = APIRouter(tags=["packing"])
 
 
 # --- matriz de permisos (por FAMILIA) ---
-# Maletas de viaje: ver = poder editar. La común es de todos; las de tu familia
-# (con o sin cuenta) las editáis todos; las de otras familias NI SE VEN (la
-# lista de items y selecciones se filtra en el servidor). Plantillas: las de
-# toda tu familia se VEN; se EDITAN solo las tuyas y las de virtuales de tu
-# familia. El admin conserva el bypass total en ambas.
+# Maletas de viaje: la común es de todos; las de tu familia (con o sin cuenta)
+# se VEN siempre, y se editan salvo que su dueño te haya REVOCADO el permiso
+# (BagEditRevoke, gestionado desde la página Familia: default permitido); las
+# de otras familias NI SE VEN (la lista de items y selecciones se filtra en el
+# servidor). Plantillas: las de toda tu familia se VEN; se EDITAN solo las
+# tuyas y las de virtuales de tu familia. El admin conserva el bypass total.
 
 
 def _bag_visible(user: User, traveler: Traveler | None, traveler_id: int | None) -> bool:
@@ -56,6 +58,25 @@ def _ensure_bag_editable(db: Session, user: User, traveler_id: int | None) -> No
     traveler = db.get(Traveler, traveler_id) if traveler_id is not None else None
     if not _bag_visible(user, traveler, traveler_id):
         raise HTTPException(status_code=403, detail="Esa maleta es de otra familia")
+    # la maleta de otro USUARIO de tu familia: editable salvo revocación expresa
+    # de su dueño (los virtuales no tienen dueño que revoque; el admin pasa)
+    if (
+        traveler is not None
+        and traveler.id != user.traveler_id
+        and not user.is_admin
+        and traveler.has_user
+    ):
+        revoked = db.scalar(
+            select(BagEditRevoke.id).where(
+                BagEditRevoke.owner_traveler_id == traveler.id,
+                BagEditRevoke.editor_traveler_id == user.traveler_id,
+            )
+        )
+        if revoked is not None:
+            raise HTTPException(
+                status_code=403,
+                detail="El dueño de esa maleta no comparte su gestión contigo",
+            )
 
 
 def _visible_items(user: User, trip: Trip, items: list[PackingItem]) -> list[PackingItem]:

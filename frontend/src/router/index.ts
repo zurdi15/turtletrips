@@ -85,12 +85,19 @@ export const router = createRouter({
       component: () => import('../views/PackingTemplatesView.vue'),
     },
     {
-      path: '/travelers',
-      name: 'travelers',
-      component: () => import('../views/TravelersView.vue'),
-      // hub de gestión de personas (familias, cuentas): solo admin
+      path: '/family',
+      name: 'family',
+      component: () => import('../views/FamilyView.vue'),
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('../views/AdminView.vue'),
+      // panel de administración (usuarios, viajeros y familias): solo admin
       meta: { admin: true },
     },
+    // la URL vieja del hub sigue funcionando (marcadores, memoria muscular)
+    { path: '/travelers', redirect: '/admin' },
     {
       path: '/settings',
       name: 'settings',

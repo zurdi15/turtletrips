@@ -9,6 +9,7 @@ import { useConfirmDelete } from '../../composables/useConfirmDelete'
 import { useNotify } from '../../composables/useNotify'
 import { useFamiliesStore } from '../../stores/families'
 import { useSessionStore } from '../../stores/session'
+import { useUsersStore } from '../../stores/users'
 
 // family=null agrupa a los viajeros sin familia (solo se pinta si hay alguno)
 const props = defineProps<{ family: Family | null; travelers: Traveler[] }>()
@@ -65,6 +66,14 @@ function removeFamily() {
 function canEdit(traveler: Traveler): boolean {
   return session.isAdmin || !traveler.has_user || traveler.id === session.travelerId
 }
+
+// nombre de cuenta: del listado de usuarios (solo lo carga el admin) o el
+// propio de la sesión; para el resto queda oculto a propósito
+const users = useUsersStore()
+function usernameOf(traveler: Traveler): string | null {
+  if (traveler.id === session.travelerId) return session.me?.user.username ?? null
+  return users.items.find((user) => user.traveler.id === traveler.id)?.username ?? null
+}
 </script>
 
 <template>
@@ -109,6 +118,7 @@ function canEdit(traveler: Traveler): boolean {
         :key="traveler.id"
         :traveler="traveler"
         :is-self="traveler.id === session.travelerId"
+        :username="usernameOf(traveler)"
         :can-edit="canEdit(traveler)"
         :can-remove="canEdit(traveler) && !traveler.has_user"
         :show-admin-menu="session.isAdmin"

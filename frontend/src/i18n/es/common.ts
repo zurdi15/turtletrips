@@ -21,12 +21,13 @@ export default {
     trips: 'Viajes',
     map: 'Mapa',
     packing: 'Maletas',
-    travelers: 'Viajeros',
+    family: 'Familia',
     settings: 'Ajustes',
   },
   // menú de usuario (AppNav, derecha)
   userMenu: {
     profile: 'Perfil',
+    admin: 'Administración',
     settings: 'Ajustes',
     logout: 'Cerrar sesión',
   },

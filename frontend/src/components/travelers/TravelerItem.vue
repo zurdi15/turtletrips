@@ -16,6 +16,8 @@ const props = defineProps<{
   canRemove: boolean
   /** menú de administración (cuenta y familia), solo admin */
   showAdminMenu: boolean
+  /** nombre de la cuenta: solo lo ven el admin (panel) y uno mismo */
+  username?: string | null
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -76,7 +78,12 @@ function confirmEdit() {
       <Button icon="pi pi-times" text size="small" severity="secondary" @click="editing = false" />
     </template>
     <template v-else>
-      <span class="flex-1 text-ink font-medium truncate">{{ traveler.name }}</span>
+      <span class="flex-1 min-w-0 flex items-baseline gap-2">
+        <span class="text-ink font-medium truncate">{{ traveler.name }}</span>
+        <span v-if="username" class="text-xs text-ink-faint font-mono truncate">
+          @{{ username }}
+        </span>
+      </span>
       <Pill v-if="isSelf" color="info" pop-in>{{ $t('travelers.badges.you') }}</Pill>
       <Pill
         v-else-if="traveler.has_user"
@@ -87,6 +94,8 @@ function confirmEdit() {
       >
         {{ $t('travelers.badges.account') }}
       </Pill>
+      <!-- extras del contexto (p. ej. el toggle de permiso de maletas en Familia) -->
+      <slot />
       <div class="flex gap-1">
         <Button
           v-if="canEdit"

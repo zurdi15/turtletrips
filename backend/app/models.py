@@ -227,6 +227,28 @@ class Traveler(TimestampMixin, Base):
         return self.user is not None
 
 
+class BagEditRevoke(TimestampMixin, Base):
+    """Revocación puntual del permiso familiar sobre una maleta.
+
+    Por defecto toda tu familia puede gestionar tus maletas (matriz por
+    familia); una fila aquí dice que `editor` NO puede tocar las maletas de
+    `owner`. Solo el dueño gestiona sus filas (PUT /family/bag-permissions).
+    """
+
+    __tablename__ = "bag_edit_revokes"
+    __table_args__ = (
+        UniqueConstraint("owner_traveler_id", "editor_traveler_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    owner_traveler_id: Mapped[int] = mapped_column(
+        ForeignKey("travelers.id", ondelete="CASCADE"), index=True
+    )
+    editor_traveler_id: Mapped[int] = mapped_column(
+        ForeignKey("travelers.id", ondelete="CASCADE"), index=True
+    )
+
+
 class User(TimestampMixin, Base):
     """Cuenta de acceso. Siempre vinculada 1:1 a un viajero (su identidad)."""
 

@@ -1,6 +1,8 @@
 export default {
   title: 'Viajeros',
   info: 'Todo lo de personas en un sitio: viajeros agrupados por familia, con o sin cuenta de usuario (los virtuales sirven para niños, invitados…). El administrador puede crear cuentas, moverlos de familia y gestionar las familias desde aquí.',
+  adminTitle: 'Administración',
+  adminInfo: 'Usuarios, viajeros y familias de la instancia: viajeros agrupados por familia, con o sin cuenta (los virtuales sirven para niños, invitados…). Desde aquí se crean cuentas, se mueven viajeros de familia y se gestionan las familias.',
   empty: 'Sin viajeros todavía: añade el primero abajo',
   newAction: 'Nuevo viajero',
   form: {

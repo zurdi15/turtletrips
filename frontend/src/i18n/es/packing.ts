@@ -6,6 +6,7 @@ export default {
   templateForeign: 'plantilla de otra familia',
   unlinkTemplate: 'Desvincular la plantilla de esta maleta (los elementos se quedan)',
   readOnly: 'Solo lectura',
+  bagReadOnlyHint: 'El dueño de esta maleta no comparte su gestión contigo',
   chooseTemplate: 'Elegir plantilla…',
   apply: 'Aplicar',
   applyTooltip: 'Copia los elementos a esta maleta; la plantilla no se toca',

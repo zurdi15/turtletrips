@@ -186,7 +186,7 @@ async function moveFamily(familyId: number | null) {
 
 <template>
   <div class="max-w-2xl mx-auto">
-    <PageHeader :title="t('travelers.title')" :info="t('travelers.info')" class="mb-6" />
+    <PageHeader :title="t('travelers.adminTitle')" :info="t('travelers.adminInfo')" class="mb-6" />
 
     <div class="flex flex-col gap-4">
       <!-- tarjetas de familia: cascada al montar y drag & drop para ordenarlas (admin) -->
