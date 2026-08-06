@@ -98,10 +98,34 @@
 }
 
 /* scrollbar siempre presente (desactivada si no hace falta): evita el salto
-   de anchura al navegar entre vistas con y sin scroll */
+   de anchura al navegar entre vistas con y sin scroll. Color en verde brand
+   (Firefox hereda scrollbar-width/color, así que fijarlo aquí ya alcanza a
+   los scrollers internos sin repetir la regla en cada uno). */
 html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-brand) transparent;
+}
+
+/* WebKit no hereda su pseudo-elemento de scrollbar: va por selector universal
+   para alcanzar tanto el scroller raíz como los contenedores internos con su
+   propio overflow. .no-scrollbar de más abajo gana por especificidad (clase +
+   pseudo-elemento > universal + pseudo-elemento), así que sigue ocultándola
+   donde toca. */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--tt-brand);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--tt-brand-strong);
 }
 
 /* Bloqueo de scroll de PrimeVue con modales abiertos: como el gutter del
