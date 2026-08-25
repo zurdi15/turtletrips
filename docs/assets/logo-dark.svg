@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-180 -200 360 360" aria-label="Turtle Trips">
   <!-- La tortuga del lockup (docs/assets/lockup-*.svg), sola: marca para README y docs. -->
   <defs>
-    <mask id="tt-logo-scutes">
+    <mask id="tt-logo-dark-scutes">
       <rect x="-180" y="-200" width="360" height="360" fill="white" />
       <!-- anillo que separa caparazón de cabeza/aletas/cola -->
       <ellipse cx="0" cy="18" rx="94" ry="106" fill="none" stroke="black" stroke-width="10" />
@@ -18,8 +18,8 @@
       </g>
     </mask>
   </defs>
-  <g mask="url(#tt-logo-scutes)">
-    <g fill="#0F172A">
+  <g mask="url(#tt-logo-dark-scutes)">
+    <g fill="#E2E8F0">
       <ellipse cx="0" cy="0" rx="62" ry="23" transform="translate(-94,-62) rotate(40)" />
       <ellipse cx="0" cy="0" rx="62" ry="23" transform="translate(94,-62) rotate(-40)" />
       <ellipse cx="0" cy="0" rx="44" ry="18" transform="translate(-72,102) rotate(-45)" />
