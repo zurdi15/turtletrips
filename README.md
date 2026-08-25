@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="https://github.com/zurdi15/turtletrips/actions/workflows/ci.yml"><img src="https://github.com/zurdi15/turtletrips/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
-  <a href="https://github.com/zurdi15/turtletrips/releases"><img src="https://img.shields.io/github/v/release/zurdi15/turtletrips?sort=semver" alt="Release" /></a>
+  <a href="https://github.com/zurdi15/turtletrips/releases"><img src="https://img.shields.io/github/v/release/zurdi15/turtletrips?sort=semver&amp;color=orange" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/zurdi15/turtletrips" alt="License" /></a>
 </p>
 
