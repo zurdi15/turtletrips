@@ -2,6 +2,10 @@
 
 Multi-usuario con login propio (cookie de sesión). Vue 3 + FastAPI + SQLite, una sola imagen Docker donde FastAPI sirve la SPA compilada desde `backend/static/`. UI multi-idioma (es/en) con vue-i18n; los comentarios del código siguen en español.
 
+## Tareas
+
+El tablero de tareas del proyecto vive en Vikunja (proyecto "Turtletrips"), accesible por el servidor MCP `vikunja` que declara `.mcp.json` (`zurdi15/vikunja-mcp`, se ejecuta con `uvx`; el token sale de la variable de entorno `VIKUNJA_TOKEN` de cada máquina, nunca del repo). Cuando pidan "las tasks": `list_tasks`, hacerlas en el orden dado, `update_task done=true` SOLO tras push + release + despliegue, y `add_comment` con la versión que la cerró.
+
 ## Comandos
 
 ```bash
