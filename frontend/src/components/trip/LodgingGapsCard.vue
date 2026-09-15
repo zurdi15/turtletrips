@@ -13,7 +13,8 @@ const props = defineProps<{ trip: Trip; bookings: Booking[] }>()
 const coverage = computed(() => lodgingCoverage(props.trip, props.bookings))
 const tracked = computed(() => hasLodgingBookings(props.bookings))
 
-const uncovered = computed(() => coverage.value.totalNights - coverage.value.covered)
+// las noches a bordo (vuelo nocturno) no son huecos: se cuentan las de los tramos
+const uncovered = computed(() => coverage.value.gaps.reduce((n, gap) => n + gap.nights, 0))
 const show = computed(
   () => tracked.value && (coverage.value.gaps.length > 0 || coverage.value.overlapNights.length > 0),
 )

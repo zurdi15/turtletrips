@@ -5,8 +5,10 @@
 //
 // ⚠️ No sirve `buildLodgingByDay` de itinerary.ts: aquella incluye a propósito
 // el día del check-out porque la agenda quiere enseñar la salida.
-import type { Booking } from '../api/types'
+import type { Booking, BookingSegment } from '../api/types'
+import { isTransport } from '../constants'
 import { addDays, eachDayInclusive } from './dates'
+import { groupJourneys } from './segments'
 
 /** Tramo consecutivo de noches sin alojamiento */
 export interface LodgingGap {
@@ -20,6 +22,8 @@ export interface LodgingGap {
 export interface LodgingCoverage {
   totalNights: number
   covered: number
+  /** noches pasadas a bordo (vuelo nocturno, tren cama): ni cama ni hueco */
+  transit: number
   gaps: LodgingGap[]
   /** noches sin alojamiento sueltas, para marcar el día en la agenda */
   gapNights: Set<string>
@@ -61,6 +65,34 @@ export function coveredNights(bookings: Booking[]): Map<string, Booking[]> {
   return map
 }
 
+/**
+ * Noches que se pasan A BORDO: un trayecto (tramos con escalas de < 24 h, o
+ * la reserva plana) que sale el día D y llega otro día cubre las noches
+ * [D .. llegada − 1]. Esa noche no hay cama que reservar — sin esto, el vuelo
+ * de ida nocturno dejaba el primer día del viaje marcado para siempre.
+ */
+export function transitNights(bookings: Booking[]): Set<string> {
+  const nights = new Set<string>()
+  for (const b of bookings) {
+    if (!isTransport(b.type)) continue
+    const segs = (b.segments ?? []).filter((s) => s.departure_dt)
+    const journeys: { dep: string | null; arr: string | null }[] = segs.length
+      ? groupJourneys(segs).map((legs: BookingSegment[]) => ({
+          dep: legs[0].departure_dt,
+          arr: legs[legs.length - 1].arrival_dt,
+        }))
+      : [{ dep: b.start_dt, arr: b.end_dt }]
+    for (const { dep, arr } of journeys) {
+      if (!dep || !arr) continue
+      const depDay = dep.slice(0, 10)
+      const arrDay = arr.slice(0, 10)
+      if (arrDay <= depDay) continue
+      for (const night of eachDayInclusive(depDay, addDays(arrDay, -1))) nights.add(night)
+    }
+  }
+  return nights
+}
+
 /** ¿Se lleva el alojamiento en la app? Sin ninguna reserva no hay nada que avisar. */
 export function hasLodgingBookings(bookings: Booking[]): boolean {
   return bookings.some((b) => b.type === 'hotel' && b.start_dt)
@@ -73,10 +105,12 @@ export function lodgingCoverage(
 ): LodgingCoverage {
   const nights = tripNights(trip)
   const index = coveredNights(bookings)
+  const aboard = transitNights(bookings)
   const gaps: LodgingGap[] = []
   const gapNights = new Set<string>()
   const overlapNights: string[] = []
   let covered = 0
+  let transit = 0
   // las noches vienen consecutivas, así que basta con cortar el tramo en cuanto
   // aparece una noche cubierta
   let run: LodgingGap | null = null
@@ -86,6 +120,12 @@ export function lodgingCoverage(
     if (booked > 1) overlapNights.push(night)
     if (booked) {
       covered += 1
+      run = null
+      continue
+    }
+    // noche a bordo: no es un hueco, pero tampoco una cama
+    if (aboard.has(night)) {
+      transit += 1
       run = null
       continue
     }
@@ -99,5 +139,5 @@ export function lodgingCoverage(
     }
   }
 
-  return { totalNights: nights.length, covered, gaps, gapNights, overlapNights }
+  return { totalNights: nights.length, covered, transit, gaps, gapNights, overlapNights }
 }

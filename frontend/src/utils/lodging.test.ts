@@ -5,6 +5,7 @@ import {
   coveredNights,
   hasLodgingBookings,
   lodgingCoverage,
+  transitNights,
   tripNights,
 } from './lodging'
 
@@ -145,6 +146,96 @@ describe('lodgingCoverage', () => {
   it('viaje sin fechas: nada que avisar', () => {
     const c = lodgingCoverage({ start_date: null, end_date: null }, [hotel('2026-04-10T15:00')])
     expect(c).toMatchObject({ totalNights: 0, covered: 0, gaps: [] })
+  })
+})
+
+describe('transitNights', () => {
+  const seg = (position: number, departure_dt: string | null, arrival_dt: string | null) => ({
+    id: position,
+    position,
+    origin: null,
+    destination: null,
+    departure_dt,
+    arrival_dt,
+    flight_number: null,
+  })
+
+  it('un vuelo nocturno cubre la noche de salida', () => {
+    const flight = booking({
+      type: 'flight',
+      segments: [seg(0, '2026-04-10T22:00:00', '2026-04-11T06:30:00')],
+    })
+    expect([...transitNights([flight])]).toEqual(['2026-04-10'])
+  })
+
+  it('con escala, la noche entre tramos del mismo trayecto también va a bordo', () => {
+    const flight = booking({
+      type: 'flight',
+      segments: [
+        seg(0, '2026-04-10T15:00:00', '2026-04-10T23:00:00'),
+        seg(1, '2026-04-11T06:00:00', '2026-04-11T12:00:00'),
+      ],
+    })
+    expect([...transitNights([flight])]).toEqual(['2026-04-10'])
+  })
+
+  it('la vuelta (hueco ≥ 24 h) es otro trayecto: no tapa las noches de en medio', () => {
+    const flight = booking({
+      type: 'flight',
+      segments: [
+        seg(0, '2026-04-10T22:00:00', '2026-04-11T06:00:00'),
+        seg(1, '2026-04-15T23:00:00', '2026-04-16T07:00:00'),
+      ],
+    })
+    expect([...transitNights([flight])].sort()).toEqual(['2026-04-10', '2026-04-15'])
+  })
+
+  it('reserva plana sin tramos: salida y llegada de la reserva', () => {
+    const train = booking({ type: 'train', start_dt: '2026-04-10T21:00:00', end_dt: '2026-04-11T08:00:00' })
+    expect([...transitNights([train])]).toEqual(['2026-04-10'])
+  })
+
+  it('llegar el mismo día no es una noche a bordo; los hoteles no cuentan', () => {
+    const flight = booking({
+      type: 'flight',
+      segments: [seg(0, '2026-04-10T08:00:00', '2026-04-10T12:00:00')],
+    })
+    expect(transitNights([flight, hotel('2026-04-10T15:00', '2026-04-12T11:00')]).size).toBe(0)
+  })
+})
+
+describe('lodgingCoverage con noches a bordo', () => {
+  const trip = { start_date: '2026-04-10', end_date: '2026-04-16' } // 6 noches
+  const outbound = booking({
+    type: 'flight',
+    segments: [
+      {
+        id: 1,
+        position: 0,
+        origin: 'MAD',
+        destination: 'NRT',
+        departure_dt: '2026-04-10T22:00:00',
+        arrival_dt: '2026-04-11T17:00:00',
+        flight_number: null,
+      },
+    ],
+  })
+
+  it('la noche del vuelo de ida no es un hueco ni una cama', () => {
+    const c = lodgingCoverage(trip, [outbound, hotel('2026-04-11T15:00', '2026-04-16T11:00')])
+    expect(c).toMatchObject({ totalNights: 6, covered: 5, transit: 1, gaps: [] })
+    expect(c.gapNights.size).toBe(0)
+  })
+
+  it('una noche a bordo corta el tramo de huecos como lo haría un hotel', () => {
+    const c = lodgingCoverage(trip, [outbound, hotel('2026-04-13T15:00', '2026-04-16T11:00')])
+    expect(c.transit).toBe(1)
+    expect(c.gaps).toEqual([{ from: '2026-04-11', to: '2026-04-12', nights: 2 }])
+  })
+
+  it('un hotel esa misma noche sigue contando como cama', () => {
+    const c = lodgingCoverage(trip, [outbound, hotel('2026-04-10T15:00', '2026-04-16T11:00')])
+    expect(c).toMatchObject({ covered: 6, transit: 0 })
   })
 })
 
