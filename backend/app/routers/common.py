@@ -22,6 +22,8 @@ NOT_FOUND_LABELS = {
     "Category": "Categoría",
     "PackingItem": "Elemento de maleta",
     "ChecklistItem": "Tarea",
+    "LinkGroup": "Bloque de enlaces",
+    "TripLink": "Enlace",
     "PackingTemplate": "Plantilla de maleta",
     "PackingTemplateItem": "Elemento de plantilla",
     "WorldPlace": "Lugar del mapa",

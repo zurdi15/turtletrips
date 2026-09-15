@@ -42,6 +42,7 @@ export default {
     expenses: 'Gastos',
     packing: 'Maleta',
     checklist: 'Checklist',
+    links: 'Enlaces',
     files: 'Ficheros',
     share: 'Compartir',
     settings: 'Ajustes',

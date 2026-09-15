@@ -42,6 +42,7 @@ export default {
     expenses: 'Expenses',
     packing: 'Packing',
     checklist: 'Checklist',
+    links: 'Links',
     files: 'Files',
     share: 'Share',
     settings: 'Settings',

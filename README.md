@@ -32,6 +32,7 @@ Turtle Trips is a **self-hosted, multi-user** app to plan your trips: manage you
 - **CSV import/export** — migrate from Excel, with Spanish/English headers and a dry-run preview.
 - **Packing lists** — one per traveler (plus a shared one) with progress and categories. Families pack together: everyone from your family on the trip can edit each other's bags, while other families' bags stay private.
 - **Packing templates** — reusable, per traveler: visible to your whole family and appliable to any bag you can edit; each template is edited only by its owner (kids' templates are managed by the whole family).
+- **Links board** — a per-trip tab for loose links (candidate hotels, the visa website, that eSIM blog post…) with notes, grouped into drag & drop blocks.
 - **Multi-user with login** — session cookies with no secrets to configure, per-user theme and language stored in the database, and a profile page (name, color, photo, password). The admin-only Travelers page is the single hub for people: travelers grouped by family with everything inline — manage families, move travelers and handle accounts (a new account can claim an existing virtual traveler).
 - **World map** — a per-family journal of visited countries, cities and places that **fills itself in** from finished trips where the family took part, and lets you add everything from before the app by hand.
 - **ES/EN** — full Spanish and English UI, switchable from Settings.

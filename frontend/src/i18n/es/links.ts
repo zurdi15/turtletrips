@@ -1,0 +1,42 @@
+export default {
+  newLink: 'Nuevo enlace',
+  newGroup: 'Nuevo bloque',
+  noGroup: 'Sin bloque',
+  openLink: 'Abrir enlace',
+  dragHint: 'Arrastra para ordenar',
+  count: '{n} enlace | {n} enlaces',
+  groupEmpty: 'Arrastra enlaces aquí o crea uno en este bloque',
+  addHere: 'Añadir enlace aquí',
+  empty: {
+    title: 'Sin enlaces todavía',
+    subtitle:
+      'Guarda aquí lo que vas encontrando: alojamientos candidatos, la web del visado, un blog sobre la eSIM… y agrúpalos por bloques.',
+  },
+  dialog: {
+    newTitle: 'Nuevo enlace',
+    editTitle: 'Editar enlace',
+    title: 'Nombre',
+    url: 'Enlace',
+    group: 'Bloque',
+    notes: 'Notas',
+    titleRequired: 'El nombre es obligatorio',
+    urlRequired: 'El enlace es obligatorio',
+  },
+  groupDialog: {
+    newTitle: 'Nuevo bloque',
+    name: 'Nombre',
+    namePlaceholder: 'Alojamientos, Visados, eSIM…',
+    nameRequired: 'El nombre es obligatorio',
+  },
+  confirm: {
+    header: 'Eliminar enlace',
+    message: '¿Eliminar "{name}"?',
+    groupHeader: 'Eliminar bloque',
+    groupMessage: '¿Eliminar el bloque "{name}"? Sus enlaces se quedan, sin bloque.',
+  },
+  toast: {
+    reorderError: 'No se pudo guardar el orden',
+    renameError: 'No se pudo renombrar el bloque',
+    deleteError: 'No se pudo eliminar',
+  },
+}

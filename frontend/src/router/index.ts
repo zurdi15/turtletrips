@@ -146,6 +146,11 @@ export const router = createRouter({
           component: () => import('../views/trip/ChecklistTab.vue'),
         },
         {
+          path: 'links',
+          name: 'trip-links',
+          component: () => import('../views/trip/LinksTab.vue'),
+        },
+        {
           path: 'files',
           name: 'trip-files',
           component: () => import('../views/trip/FilesTab.vue'),

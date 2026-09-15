@@ -150,6 +150,12 @@ class Trip(TimestampMixin, Base):
     checklist_items: Mapped[list["ChecklistItem"]] = relationship(
         back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
     )
+    link_groups: Mapped[list["LinkGroup"]] = relationship(
+        back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
+    )
+    links: Mapped[list["TripLink"]] = relationship(
+        back_populates="trip", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     @property
     def debts_settled(self) -> bool:
@@ -586,6 +592,46 @@ class ChecklistItem(TimestampMixin, Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
     trip: Mapped[Trip] = relationship(back_populates="checklist_items")
+
+
+class LinkGroup(TimestampMixin, Base):
+    """Bloque de enlaces de un viaje (alojamientos candidatos, visados, eSIM…)."""
+
+    __tablename__ = "link_groups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trip_id: Mapped[int] = mapped_column(
+        ForeignKey("trips.id", ondelete="CASCADE"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(120))
+    position: Mapped[int] = mapped_column(Integer, default=0)  # orden manual
+
+    trip: Mapped[Trip] = relationship(back_populates="link_groups")
+    # borrar el bloque NO borra sus enlaces: quedan "sin bloque" (SET NULL)
+    links: Mapped[list["TripLink"]] = relationship(
+        back_populates="group", passive_deletes=True
+    )
+
+
+class TripLink(TimestampMixin, Base):
+    """Enlace suelto de un viaje (web del visado, blog, hotel candidato…)."""
+
+    __tablename__ = "trip_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    trip_id: Mapped[int] = mapped_column(
+        ForeignKey("trips.id", ondelete="CASCADE"), index=True
+    )
+    group_id: Mapped[int | None] = mapped_column(
+        ForeignKey("link_groups.id", ondelete="SET NULL"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    url: Mapped[str] = mapped_column(String(2000))
+    notes: Mapped[str | None] = mapped_column(Text)
+    position: Mapped[int] = mapped_column(Integer, default=0)  # orden dentro del bloque
+
+    trip: Mapped[Trip] = relationship(back_populates="links")
+    group: Mapped[LinkGroup | None] = relationship(back_populates="links")
 
 
 class Category(TimestampMixin, Base):

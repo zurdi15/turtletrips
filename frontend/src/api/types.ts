@@ -143,6 +143,23 @@ export interface ChecklistItem {
   notes: string | null
 }
 
+export interface LinkGroup {
+  id: number
+  trip_id: number
+  name: string
+  position: number
+}
+
+export interface TripLink {
+  id: number
+  trip_id: number
+  group_id: number | null
+  title: string
+  url: string
+  notes: string | null
+  position: number
+}
+
 export interface PackingSelection {
   traveler_id: number | null
   template_id: number
@@ -413,6 +430,13 @@ export type ExpenseInput = Partial<
 export type ItineraryInput = Partial<Omit<ItineraryItem, 'id' | 'trip_id'>>
 export type PackingInput = Partial<Omit<PackingItem, 'id' | 'trip_id'>>
 export type ChecklistInput = Partial<Omit<ChecklistItem, 'id' | 'trip_id'>>
+export type LinkGroupInput = Partial<Omit<LinkGroup, 'id' | 'trip_id' | 'position'>>
+export type TripLinkInput = Partial<Omit<TripLink, 'id' | 'trip_id' | 'position'>>
+/** disposición completa tras un drag & drop: bloque (null = sin bloque) → ids en orden */
+export interface TripLinkBucket {
+  group_id: number | null
+  ids: number[]
+}
 export type WorldPlaceInput = Partial<Omit<WorldPlace, 'id' | 'auto' | 'origin'>>
 
 export interface ImportRowError { row: number; error: string }
