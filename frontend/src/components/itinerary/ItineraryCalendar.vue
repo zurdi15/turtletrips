@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -20,6 +21,13 @@ const emit = defineEmits<{ edit: [item: ItineraryItem] }>()
 
 const store = useItineraryStore()
 const { locale } = useI18n()
+const router = useRouter()
+
+// id de evento → reserva: `b-{id}` o `b-{id}-s{tramo}`; null si es un item
+function bookingIdOf(eventId: string): number | null {
+  const m = /^b-(\d+)/.exec(eventId)
+  return m ? Number(m[1]) : null
+}
 
 // options en computed: al leer locale aquí, el calendario se re-localiza en caliente
 const calendarOptions = computed<CalendarOptions>(() => ({
@@ -68,6 +76,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
           start: seg.departure_dt!,
           end: seg.arrival_dt ?? undefined,
           editable: false,
+          classNames: ['cursor-pointer'],
           backgroundColor: BOOKING_MARKER_COLORS.transport,
           borderColor: BOOKING_MARKER_COLORS.transport,
           extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
@@ -85,6 +94,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
           end: toIsoDate(endExclusive),
           allDay: true,
           editable: false,
+          classNames: ['cursor-pointer'],
           backgroundColor: BOOKING_MARKER_COLORS.hotel,
           borderColor: BOOKING_MARKER_COLORS.hotel,
           extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
@@ -102,6 +112,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
         start: b.start_dt,
         end: b.end_dt ?? undefined,
         editable: false,
+        classNames: ['cursor-pointer'],
         backgroundColor: color,
         borderColor: color,
         extendedProps: { icon: BOOKING_TYPE_ICONS[b.type] },
@@ -126,7 +137,18 @@ const calendarOptions = computed<CalendarOptions>(() => ({
     return { domNodes: [wrap] }
   },
   eventDrop: onEventDrop,
+  // items: abrir su formulario; reservas: a la pestaña Reservas, resaltada
+  // (como los chips de reserva de la agenda)
   eventClick: (info) => {
+    const bookingId = bookingIdOf(info.event.id)
+    if (bookingId != null) {
+      router.push({
+        name: 'trip-bookings',
+        params: { id: props.trip.id },
+        query: { booking: bookingId },
+      })
+      return
+    }
     if (!info.event.id.startsWith('i-')) return
     const item = store.items.find((i) => i.id === Number(info.event.id.slice(2)))
     if (item) emit('edit', item)
