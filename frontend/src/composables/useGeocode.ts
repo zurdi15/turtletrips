@@ -29,3 +29,15 @@ export function useGeocodeSearch() {
 
   return { results, loading, search }
 }
+
+/**
+ * Lugar más cercano a un punto fijado a mano en el mapa; null si no hay nada
+ * (alta mar) o falla la red — el pin vale igual, solo se queda sin dirección.
+ */
+export async function reverseGeocode(lat: number, lon: number): Promise<GeocodeResult | null> {
+  try {
+    return await api.get<GeocodeResult>(`/geocode/reverse?lat=${lat}&lon=${lon}`)
+  } catch {
+    return null
+  }
+}

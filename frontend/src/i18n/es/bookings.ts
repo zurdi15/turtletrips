@@ -36,6 +36,8 @@ export default {
     destinationPlaceholder: 'Tokio',
     address: 'Dirección',
     addressPlaceholder: 'Busca un lugar o dirección…',
+    pickOnMap: 'O marca el punto en el mapa',
+    mapHint: 'Toca el mapa para fijar la ubicación exacta y arrastra el marcador para ajustarla: la dirección se rellena con el lugar más cercano.',
     title: 'Título',
     titlePlaceholder: 'Hotel Gracery Shinjuku',
     provider: 'Proveedor',

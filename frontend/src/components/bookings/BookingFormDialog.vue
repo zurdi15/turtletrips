@@ -11,6 +11,7 @@ import DateRangePicker from '../DateRangePicker.vue'
 import PayerSelect, { type PayerValue } from '../PayerSelect.vue'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
+import LocationPicker from '../places/LocationPicker.vue'
 import BookingSegmentsEditor, {
   emptySegmentRow,
   rowFromFlatBooking,
@@ -28,8 +29,9 @@ import {
 } from '../../constants'
 import { intlLocale } from '../../i18n'
 import { useBookingsStore } from '../../stores/bookings'
+import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useFormDialog } from '../../composables/useFormDialog'
-import { useGeocodeSearch } from '../../composables/useGeocode'
+import { reverseGeocode, useGeocodeSearch } from '../../composables/useGeocode'
 import { toIsoDate } from '../../composables/useMoney'
 
 const props = defineProps<{ trip: Trip; booking?: Booking | null }>()
@@ -39,6 +41,9 @@ const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const store = useBookingsStore()
 const { results: geoResults, search: geoSearch } = useGeocodeSearch()
+// sin coordenadas, el mapa arranca en el primer país del viaje
+const { centerFor } = useCountryCenter()
+const fallbackCenter = computed(() => centerFor(props.trip.countries[0]))
 
 const type = ref<BookingType>('hotel')
 const title = ref('')
@@ -81,6 +86,22 @@ watch(address, () => {
     locatedAddress.value = null
   }
 })
+
+// pin a mano en el mapa: el punto manda (retocar luego el texto no lo borra,
+// por eso NO se apunta como locatedAddress) y la dirección se rellena con el
+// lugar más cercano que conozca el geocoder
+let pickSeq = 0
+async function onPick(newLat: number, newLon: number) {
+  lat.value = newLat
+  lon.value = newLon
+  locatedAddress.value = null
+  const seq = ++pickSeq
+  const near = await reverseGeocode(newLat, newLon)
+  // un toque posterior (o cerrar el diálogo) invalida esta respuesta
+  if (!near || seq !== pickSeq || lat.value !== newLat || lon.value !== newLon) return
+  address.value = near.display_name
+  if (!title.value.trim()) title.value = near.display_name.split(',')[0].trim()
+}
 
 const typeOptions = computed(() => toSelectOptions(BOOKING_TYPE_KEYS, t))
 const numberLocale = computed(() => intlLocale())
@@ -164,6 +185,7 @@ const { saving, save } = useFormDialog({
     lat.value = b?.lat ?? null
     lon.value = b?.lon ?? null
     locatedAddress.value = b?.lat != null ? (b?.address ?? null) : null
+    pickSeq += 1 // un reverse en vuelo del formulario anterior ya no pinta nada
     costAmount.value = b?.cost_amount ?? null
     costCurrency.value = b?.cost_currency ?? props.trip.base_currency
     paidById.value = b?.paid_by_common ? 'common' : (b?.paid_by_id ?? null)
@@ -237,6 +259,15 @@ const { saving, save } = useFormDialog({
         <p v-if="lat != null && lon != null" class="text-xs text-ink-faint">
           <i class="pi pi-map-marker text-3xs" /> {{ lat.toFixed(5) }}, {{ lon.toFixed(5) }}
         </p>
+      </template>
+    </FormField>
+    <!-- el buscador no siempre da con el sitio exacto: un toque en el mapa
+         fija el punto y la dirección se rellena con el lugar más cercano
+         (se monta con el diálogo abierto, así Leaflet mide bien) -->
+    <FormField v-if="!isTransport && visible" :label="$t('bookings.form.pickOnMap')">
+      <LocationPicker :lat="lat" :lon="lon" :fallbackCenter="fallbackCenter" @pick="onPick" />
+      <template #hint>
+        <p class="text-xs text-ink-faint">{{ $t('bookings.form.mapHint') }}</p>
       </template>
     </FormField>
 

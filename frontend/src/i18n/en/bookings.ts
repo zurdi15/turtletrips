@@ -36,6 +36,8 @@ export default {
     destinationPlaceholder: 'Tokyo',
     address: 'Address',
     addressPlaceholder: 'Search for a place or address…',
+    pickOnMap: 'Or mark the point on the map',
+    mapHint: 'Tap the map to set the exact location and drag the marker to fine-tune it: the address is filled in with the nearest place.',
     title: 'Title',
     titlePlaceholder: 'Hotel Gracery Shinjuku',
     provider: 'Provider',

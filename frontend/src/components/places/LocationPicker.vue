@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { LMap, LTileLayer, LMarker } from '@vue-leaflet/vue-leaflet'
 import type { LeafletMouseEvent, Map as LeafletMap, Marker } from 'leaflet'
 import { useMapTiles } from '../../composables/useMapTiles'
@@ -27,14 +27,33 @@ function round(n: number): number {
   return Math.round(n * 1e6) / 1e6
 }
 
+// último punto que salió de AQUÍ: cuando vuelve por props no hay que recentrar
+// (el mapa saltaría a cada toque); si viene de fuera (el buscador), sí
+let picked: [number, number] | null = null
+
+function pick(lat: number, lon: number) {
+  picked = [round(lat), round(lon)]
+  emit('pick', picked[0], picked[1])
+}
+
 function onClick(event: LeafletMouseEvent) {
-  emit('pick', round(event.latlng.lat), round(event.latlng.lng))
+  pick(event.latlng.lat, event.latlng.lng)
 }
 
 function onDragEnd(event: { target: Marker }) {
   const pos = event.target.getLatLng()
-  emit('pick', round(pos.lat), round(pos.lng))
+  pick(pos.lat, pos.lng)
 }
+
+watch(
+  () => [props.lat, props.lon] as const,
+  ([lat, lon]) => {
+    if (lat == null || lon == null) return
+    if (picked && picked[0] === lat && picked[1] === lon) return
+    center.value = [lat, lon]
+    zoom.value = Math.max(zoom.value, 14)
+  },
+)
 
 function onReady(map: LeafletMap) {
   // dentro de un diálogo el contenedor se mide antes de estar visible del
