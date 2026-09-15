@@ -3,6 +3,8 @@ export default {
   newGroup: 'New block',
   noGroup: 'No block',
   openLink: 'Open link',
+  fetchImage: 'Fetch thumbnail',
+  refreshImage: 'Refresh thumbnail',
   dragHint: 'Drag to reorder',
   reorder: 'Reorder',
   reorderDone: 'Done',
@@ -41,6 +43,10 @@ export default {
   },
   toast: {
     reorderError: 'Could not save the order',
+    imageUpdated: 'Thumbnail updated',
+    noImage: 'No thumbnail',
+    noImageDetail: 'This site offers no preview image (or blocks the download).',
+    imageError: 'Could not fetch the thumbnail',
     deleteError: 'Could not delete',
   },
 }

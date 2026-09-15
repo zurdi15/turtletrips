@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Button from 'primevue/button'
 import CoverImage from '../ui/CoverImage.vue'
 import RowActions from '../ui/RowActions.vue'
 import type { TripLink } from '../../api/types'
@@ -8,8 +9,10 @@ defineProps<{
   link: TripLink
   /** modo Ordenar: aparece el asa del drag & drop */
   reorderable?: boolean
+  /** reintento de miniatura en curso */
+  refreshing?: boolean
 }>()
-defineEmits<{ edit: []; remove: [] }>()
+defineEmits<{ edit: []; remove: []; refreshImage: [] }>()
 </script>
 
 <template>
@@ -57,6 +60,20 @@ defineEmits<{ edit: []; remove: [] }>()
         </p>
       </div>
     </a>
-    <RowActions always class="justify-end shrink-0" @edit="$emit('edit')" @remove="$emit('remove')" />
+    <RowActions always class="justify-end shrink-0" @edit="$emit('edit')" @remove="$emit('remove')">
+      <template #before>
+        <!-- reintento de la miniatura: enlaces anteriores a la función o webs
+             que fallaron la primera vez -->
+        <Button
+          icon="pi pi-image"
+          text
+          size="small"
+          severity="secondary"
+          :loading="refreshing"
+          v-tooltip.top="$t(link.image_url ? 'links.refreshImage' : 'links.fetchImage')"
+          @click="$emit('refreshImage')"
+        />
+      </template>
+    </RowActions>
   </div>
 </template>

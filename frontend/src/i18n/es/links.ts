@@ -3,6 +3,8 @@ export default {
   newGroup: 'Nuevo bloque',
   noGroup: 'Sin bloque',
   openLink: 'Abrir enlace',
+  fetchImage: 'Buscar miniatura',
+  refreshImage: 'Actualizar miniatura',
   dragHint: 'Arrastra para ordenar',
   reorder: 'Ordenar',
   reorderDone: 'Listo',
@@ -41,6 +43,10 @@ export default {
   },
   toast: {
     reorderError: 'No se pudo guardar el orden',
+    imageUpdated: 'Miniatura actualizada',
+    noImage: 'Sin miniatura',
+    noImageDetail: 'Esta web no ofrece imagen de previsualización (o bloquea la descarga).',
+    imageError: 'No se pudo buscar la miniatura',
     deleteError: 'No se pudo eliminar',
   },
 }

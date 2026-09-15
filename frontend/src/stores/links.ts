@@ -18,6 +18,14 @@ export const useLinksStore = defineStore('links', () => {
     )
   }
 
+  /** Reintenta la miniatura OG en el servidor; devuelve si la hay. */
+  async function refreshImage(id: number): Promise<boolean> {
+    const item = await api.post<TripLink>(`/links/${id}/refresh-image`)
+    const idx = base.items.value.findIndex((i) => i.id === id)
+    if (idx >= 0) base.items.value[idx] = item
+    return item.image_url !== null
+  }
+
   /** Un bloque borrado deja sus enlaces sin bloque (espejo del SET NULL). */
   function detachGroup(groupId: number) {
     for (const link of base.items.value) {
@@ -25,5 +33,5 @@ export const useLinksStore = defineStore('links', () => {
     }
   }
 
-  return { ...base, reorder, detachGroup }
+  return { ...base, reorder, refreshImage, detachGroup }
 })

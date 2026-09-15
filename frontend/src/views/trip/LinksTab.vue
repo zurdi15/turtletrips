@@ -96,6 +96,23 @@ function openNewIn(groupId: number | null) {
   openNew()
 }
 
+// reintento de miniatura (uno a la vez: el servidor tarda lo que tarde la web)
+const refreshingId = ref<number | null>(null)
+
+async function refreshImage(link: TripLink) {
+  if (refreshingId.value !== null) return
+  refreshingId.value = link.id
+  try {
+    const found = await links.refreshImage(link.id)
+    if (found) notify.success(t('links.toast.imageUpdated'))
+    else notify.info(t('links.toast.noImage'), t('links.toast.noImageDetail'))
+  } catch (err) {
+    notify.error(t('links.toast.imageError'), err)
+  } finally {
+    refreshingId.value = null
+  }
+}
+
 // ---- bloques ----
 
 const showGroupForm = ref(false)
@@ -183,11 +200,13 @@ function removeGroup(group: LinkGroup) {
             :group="element"
             :links="lists[bucketKey(element.id)] ?? []"
             :reorderable="reordering"
+            :refreshingId="refreshingId"
             @edit="openGroupForm(element)"
             @remove="removeGroup(element)"
             @add="openNewIn(element.id)"
             @edit-link="openEdit"
             @remove-link="removeItem"
+            @refresh-image="refreshImage"
             @reorder="persistLinkOrder"
           />
         </template>
@@ -199,9 +218,11 @@ function removeGroup(group: LinkGroup) {
         :links="lists[NO_GROUP_KEY] ?? []"
         :bare="!groupList.length"
         :reorderable="reordering"
+        :refreshingId="refreshingId"
         @add="openNewIn(null)"
         @edit-link="openEdit"
         @remove-link="removeItem"
+        @refresh-image="refreshImage"
         @reorder="persistLinkOrder"
       />
     </div>
