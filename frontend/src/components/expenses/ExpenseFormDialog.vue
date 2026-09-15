@@ -14,8 +14,8 @@ import PayerSelect from '../PayerSelect.vue'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
 import ClusterBtn from '../ui/ClusterBtn.vue'
-import ToggleSwitch from 'primevue/toggleswitch'
 import UploadButton from '../ui/UploadButton.vue'
+import ToggleField from '../ui/ToggleField.vue'
 import { api } from '../../api/client'
 import type { Expense, Place, RateRead, Trip } from '../../api/types'
 import { CURRENCIES } from '../../constants'
@@ -334,13 +334,7 @@ const { saving, save } = useFormDialog({
     </div>
     <!-- pendiente de pago (reserva que se paga in situ): cuenta en el total
          y el presupuesto, pero no en los saldos hasta que alguien lo pague -->
-    <label class="flex items-center gap-3 text-sm cursor-pointer">
-      <ToggleSwitch v-model="paid" />
-      <span>
-        {{ $t('expenses.form.paid') }}
-        <span class="block text-xs text-ink-faint">{{ $t('expenses.form.paidHint') }}</span>
-      </span>
-    </label>
+    <ToggleField v-model="paid" :label="$t('expenses.form.paid')" />
     <ExpenseSplitEditor
       v-if="paidById !== 'common'"
       v-model="split"

@@ -124,7 +124,6 @@ export default {
   form: {
     otherCurrency: 'Otra',
     paid: 'Pagado',
-    paidHint: 'Desactívalo si se paga in situ: cuenta en el total, pero no en los saldos hasta que se pague',
     newTitle: 'Nuevo gasto',
     editTitle: 'Editar gasto',
     addLabel: 'Añadir gasto',
