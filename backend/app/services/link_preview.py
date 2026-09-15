@@ -22,8 +22,10 @@ import ipaddress
 import logging
 import re
 import socket
+import ssl
 from urllib.parse import urljoin, urlsplit
 
+import certifi
 import httpx
 
 log = logging.getLogger("tt.links")
@@ -130,6 +132,22 @@ def _get(client: httpx.Client, url: str, limit: int) -> tuple[str, bytes, str] |
     return None
 
 
+def _ssl_context() -> ssl.SSLContext:
+    """Contexto TLS con lista de cifrados explícita.
+
+    ⚠️ No es cosmético: el WAF de Booking (AWS WAF en CloudFront) clasifica
+    por huella TLS y al ClientHello por defecto de Python/OpenSSL 3.5 en la
+    imagen le devuelve un reto (202 vacío) sea cual sea el User-Agent; con
+    cualquier contexto propio (otra lista de cifrados, sin tickets, TLS 1.2)
+    sirve la ficha entera. Verificado desde el pod: mismo código, misma IP,
+    202 con el contexto por defecto y 200 con este.
+    """
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    ctx.set_ciphers("ECDHE+AESGCM:ECDHE+CHACHA20:!aNULL")
+    ctx.options |= ssl.OP_NO_TICKET
+    return ctx
+
+
 def fetch_preview_image(url: str) -> tuple[bytes, str] | None:
     """Descarga la imagen OG de `url`; devuelve (bytes, sufijo) o None."""
     try:
@@ -137,6 +155,7 @@ def fetch_preview_image(url: str) -> tuple[bytes, str] | None:
             timeout=PAGE_TIMEOUT,
             follow_redirects=False,
             headers={"User-Agent": USER_AGENT, "Accept-Language": "es,en;q=0.8"},
+            verify=_ssl_context(),
         ) as client:
             page = _get(client, url, MAX_PAGE_BYTES)
             if page is None or not page[2].startswith("text/html"):
