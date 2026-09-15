@@ -18,6 +18,7 @@ import BalancesPanel from '../../components/expenses/BalancesPanel.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import CollapsePanel from '../../components/ui/CollapsePanel.vue'
 import FilterToggleButton from '../../components/ui/FilterToggleButton.vue'
+import CurrencyConverterDialog from '../../components/expenses/CurrencyConverterDialog.vue'
 import type { Expense, Trip } from '../../api/types'
 import { useExpensesStore } from '../../stores/expenses'
 import { useAttachmentsStore } from '../../stores/attachments'
@@ -56,6 +57,7 @@ function catColor(name: string): string {
 }
 
 const showImport = ref(false)
+const showConverter = ref(false)
 
 // bajo `sm` la tabla se sustituye por la lista apilada (sin scroll lateral)
 const isDesktop = useMediaQuery('(min-width: 640px)')
@@ -297,6 +299,13 @@ const {
           v-tooltip.bottom="$t('expenses.actions.exportCsv')"
         />
       </a>
+      <Button
+        icon="pi pi-arrow-right-arrow-left"
+        severity="secondary"
+        outlined
+        v-tooltip.bottom="$t('expenses.actions.converter')"
+        @click="showConverter = true"
+      />
     </div>
 
     <EmptyState
@@ -369,6 +378,7 @@ const {
     </template>
 
     <ExpenseFormDialog v-model:visible="showForm" :trip="trip" :expense="editing" />
+    <CurrencyConverterDialog v-model:visible="showConverter" :baseCurrency="trip.base_currency" />
     <ExpenseImportDialog v-model:visible="showImport" :trip="trip" />
   </div>
 </template>

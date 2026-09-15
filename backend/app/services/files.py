@@ -112,6 +112,14 @@ def delete_world_photo(stored_name: str) -> None:
         pass
 
 
+async def save_link_image(trip_id: int, upload: UploadFile) -> str:
+    """Guarda la foto subida a mano de un enlace (solo imágenes); devuelve stored_name."""
+    if not (upload.content_type or "").startswith("image/"):
+        raise FileValidationError("La imagen del enlace debe ser una imagen")
+    stored_name, _size = await _write_upload(_trip_dir(trip_id), upload)
+    return stored_name
+
+
 def save_bytes(trip_id: int, content: bytes, suffix: str) -> str:
     """Guarda contenido ya descargado (p. ej. portada desde URL); devuelve stored_name."""
     if len(content) > MAX_SIZE_BYTES:

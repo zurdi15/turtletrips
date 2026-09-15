@@ -102,7 +102,7 @@ async function createExpense(booking: Booking) {
     const expense = await store.createExpense(booking.id, rate)
     notify.success(
       t('bookings.toast.expenseCreated'),
-      `${expense.description}: ${formatMoney(expense.amount_base, props.trip.base_currency)}`,
+      `${expense.description}: ${formatMoney(expense.amount, expense.currency)}`,
     )
     expenses.load(props.trip.id) // refresca el enlace reserva → gasto
   } catch (err) {

@@ -79,7 +79,7 @@ defineEmits<{ select: []; edit: []; remove: []; 'toggle-visited': [] }>()
               :tooltip="
                 t('places.card.expenseTooltip', {
                   description: e.description,
-                  amount: formatMoney(e.amount_base, baseCurrency),
+                  amount: formatMoney(e.amount, e.currency),
                 })
               "
             />

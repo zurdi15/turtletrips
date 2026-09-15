@@ -291,6 +291,8 @@ export interface Expense {
   paid_by_common: boolean
   split_mode: SplitMode
   shares: ExpenseShare[]
+  // false = pendiente de pago (se paga in situ): cuenta en totales, no en saldos
+  paid: boolean
   notes: string | null
 }
 
@@ -376,6 +378,8 @@ export interface TripBalances {
   unassigned_total_base: number
   common_count: number
   common_total_base: number
+  pending_count: number
+  pending_total_base: number
 }
 
 export type WorldPlaceKind = 'country' | 'region' | 'city' | 'place'

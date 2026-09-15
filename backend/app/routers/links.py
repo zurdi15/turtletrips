@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -201,6 +201,38 @@ def refresh_link_image(link_id: int, user: CurrentUser, db: Session = Depends(ge
     _refresh_image(link)
     db.commit()
     db.refresh(link)
+    return link
+
+
+@router.post("/links/{link_id}/image", response_model=TripLinkRead)
+async def upload_link_image(
+    link_id: int,
+    user: CurrentUser,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """Foto subida a mano: sustituye a la miniatura automática (o a la anterior)."""
+    link = get_trip_scoped(db, user, TripLink, link_id)
+    try:
+        stored_name = await files.save_link_image(link.trip_id, file)
+    except files.FileValidationError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    if link.image_path:
+        files.delete_stored_file(link.trip_id, link.image_path)
+    link.image_path = stored_name
+    db.commit()
+    db.refresh(link)
+    return link
+
+
+@router.delete("/links/{link_id}/image", response_model=TripLinkRead)
+def delete_link_image(link_id: int, user: CurrentUser, db: Session = Depends(get_db)):
+    link = get_trip_scoped(db, user, TripLink, link_id)
+    if link.image_path:
+        files.delete_stored_file(link.trip_id, link.image_path)
+        link.image_path = None
+        db.commit()
+        db.refresh(link)
     return link
 
 

@@ -180,16 +180,18 @@ const hasSegments = computed(() => (props.booking.segments ?? []).length > 0)
       <div
         class="row-start-3 col-span-2 sm:row-start-2 sm:col-start-2 sm:col-span-1 flex flex-col items-end shrink-0"
       >
+        <!-- en móvil el pagador se calla: la fila de iconos ya enlaza al
+             gasto, que es quien lleva el pagador -->
         <Pill
           v-if="booking.paid_by_common"
           color="warn"
           icon="pi pi-wallet"
-          class="mt-0.5"
+          class="mt-0.5 hidden sm:inline-flex"
           v-tooltip.left="$t('bookings.card.paidFromCommon')"
         >
           {{ $t('bookings.card.commonFund') }}
         </Pill>
-        <MemberChip v-else-if="payer" :member="payer" class="mt-0.5" />
+        <MemberChip v-else-if="payer" :member="payer" class="mt-0.5 hidden sm:inline-flex" />
         <!-- normalmente el gasto nace solo con la reserva; este botón es
              la vía de regeneración (gasto borrado o tasa no disponible) -->
         <Button

@@ -272,3 +272,31 @@ def test_is_public_host_rejects_internal_targets():
     assert not is_public_host("169.254.169.254")
     assert not is_public_host("host.that.does.not.exist.invalid")
     assert is_public_host("1.1.1.1")
+
+
+def test_link_image_manual_upload_and_delete(client):
+    trip_id = _make_trip(client)
+    link = client.post(
+        f"/api/v1/trips/{trip_id}/links", json={"title": "Hotel", "url": "https://x.example"}
+    ).json()
+    assert link["image_url"] is None
+
+    resp = client.post(
+        f"/api/v1/links/{link['id']}/image",
+        files={"file": ("foto.png", PNG, "image/png")},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["image_url"] is not None
+    assert client.get(f"/api/v1/links/{link['id']}/image").content == PNG
+
+    # solo imágenes
+    resp = client.post(
+        f"/api/v1/links/{link['id']}/image",
+        files={"file": ("doc.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    assert resp.status_code == 415
+
+    resp = client.delete(f"/api/v1/links/{link['id']}/image")
+    assert resp.status_code == 200
+    assert resp.json()["image_url"] is None
+    assert client.get(f"/api/v1/links/{link['id']}/image").status_code == 404

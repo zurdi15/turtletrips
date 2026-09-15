@@ -9,8 +9,14 @@ import { useNotify } from '../composables/useNotify'
 import { fileIcon, formatSize } from '../utils/files'
 
 const props = withDefaults(
-  defineProps<{ bookingId?: number | null; expenseId?: number | null; showList?: boolean }>(),
-  { showList: true },
+  defineProps<{
+    bookingId?: number | null
+    expenseId?: number | null
+    showList?: boolean
+    /** texto del botón: "Adjuntar" por defecto (recibos), "Añadir fichero" en Ficheros */
+    label?: string
+  }>(),
+  { showList: true, label: undefined },
 )
 const store = useAttachmentsStore()
 const confirmAction = useConfirmDelete()
@@ -78,7 +84,7 @@ function remove(id: number, name: string) {
         </div>
       </template>
       <UploadButton
-        :label="$t('common.attachments.attach')"
+        :label="label ?? $t('common.attachments.attach')"
         icon="pi pi-paperclip"
         severity="secondary"
         outlined

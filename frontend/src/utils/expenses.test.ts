@@ -33,6 +33,7 @@ function makeExpense(overrides: Partial<Expense> = {}): Expense {
     amount_base: 10,
     paid_by_id: null,
     paid_by_common: false,
+    paid: true,
     split_mode: 'equal',
     shares: [],
     notes: null,

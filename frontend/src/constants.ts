@@ -116,11 +116,17 @@ export const TRANSFER_MODE_ICONS: Record<TransferMode, string> = {
   car: 'mdi mdi-car',
 }
 
-// Monedas soportadas por frankfurter (BCE) más las habituales
+// Monedas del BCE (frankfurter) más las de destinos habituales: para estas
+// últimas la tasa sale del proveedor de respaldo (services/rates.py)
 export const CURRENCIES = [
   'EUR', 'USD', 'GBP', 'JPY', 'CHF', 'AUD', 'BGN', 'BRL', 'CAD', 'CNY',
   'CZK', 'DKK', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'KRW', 'MXN',
   'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'ZAR',
+  // fuera del BCE
+  'AED', 'ARS', 'BDT', 'BOB', 'CLP', 'COP', 'CRC', 'DOP', 'EGP', 'GEL',
+  'GTQ', 'JOD', 'KES', 'KHR', 'KZT', 'LAK', 'LKR', 'MAD', 'MMK', 'MNT',
+  'MUR', 'MVR', 'NPR', 'OMR', 'PEN', 'PKR', 'QAR', 'RSD', 'SAR', 'TWD',
+  'TZS', 'UAH', 'UYU', 'UZS', 'VND',
 ]
 
 /** Opciones para selects a partir de un mapa de claves i18n (t traduce el label) */

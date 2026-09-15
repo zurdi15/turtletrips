@@ -81,8 +81,7 @@ export default {
     },
   },
   files: {
-    intro:
-      'Trip files (tickets, insurance, documents…). Booking attachments also show up here.',
+    add: 'Add file',
     empty: {
       title: 'No files',
       subtitle: 'Upload booking PDFs, tickets or any trip document',

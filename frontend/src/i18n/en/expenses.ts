@@ -5,6 +5,14 @@ export default {
     unassigned: 'Unassigned',
   },
   noPlace: 'No place',
+  converter: {
+    title: 'Currency converter',
+    amount: 'Amount',
+    from: 'From',
+    to: 'To',
+    swap: 'Swap',
+    unavailable: 'No exchange rate {from} → {to} available',
+  },
   fields: {
     date: 'Date',
     category: 'Category',
@@ -16,6 +24,7 @@ export default {
     notes: 'Notes',
   },
   actions: {
+    converter: 'Currency converter',
     newExpense: 'New expense',
     importCsv: 'Import CSV',
     exportCsv: 'Export CSV',
@@ -83,6 +92,8 @@ export default {
     clearSelection: 'Clear selection',
   },
   table: {
+    pendingPill: 'Unpaid',
+    pendingTooltip: 'Not paid yet: left out of the balances',
     paid: 'Paid',
     selectGroup: 'Select the whole group',
     groupCount: '{n} expenses',
@@ -111,6 +122,8 @@ export default {
     excluding: '· excluding {list}',
   },
   form: {
+    paid: 'Paid',
+    paidHint: 'Turn it off if it is paid on site: it counts towards the total, but not the balances until paid',
     newTitle: 'New expense',
     editTitle: 'Edit expense',
     addLabel: 'Add expense',
@@ -154,6 +167,8 @@ export default {
     },
   },
   balances: {
+    pendingInfo:
+      '{n} unpaid expense ({amount}) stays out of the balances until it is paid. | {n} unpaid expenses ({amount}) stay out of the balances until they are paid.',
     unassignedWarning:
       '{n} expense without a payer ({amount}) is left out of the balances. | {n} expenses without a payer ({amount}) are left out of the balances.',
     commonInfo:

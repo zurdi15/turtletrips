@@ -13,6 +13,7 @@ import ExpenseSplitEditor, { type SplitState } from '../ExpenseSplitEditor.vue'
 import PayerSelect from '../PayerSelect.vue'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
+import ToggleSwitch from 'primevue/toggleswitch'
 import UploadButton from '../ui/UploadButton.vue'
 import { api } from '../../api/client'
 import type { Expense, Place, RateRead, Trip } from '../../api/types'
@@ -53,6 +54,8 @@ const paidById = ref<number | 'common' | null>(null)
 const placeValue = ref<string | Place>('')
 const placeSuggestions = ref<Place[]>([])
 const notes = ref('')
+// false = se paga in situ: cuenta en el total pero nadie lo ha adelantado
+const paid = ref(true)
 const split = ref<SplitState>({ split_mode: 'equal', shares: [] })
 const fetchingRate = ref(false)
 const rateSource = ref<string | null>(null)
@@ -118,6 +121,7 @@ const { saving, save } = useFormDialog({
     paidById.value = e?.paid_by_common ? 'common' : (e?.paid_by_id ?? null)
     placeValue.value = (e?.place_id != null && places.items.find((p) => p.id === e.place_id)) || ''
     notes.value = e?.notes ?? ''
+    paid.value = e?.paid ?? true
     split.value = {
       split_mode: e?.split_mode ?? 'equal',
       shares: e?.shares.map((s) => ({ ...s })) ?? [],
@@ -178,6 +182,7 @@ const { saving, save } = useFormDialog({
       // del fondo común no hay reparto que hacer: se resetea al implícito
       split_mode: paidById.value === 'common' ? ('equal' as const) : split.value.split_mode,
       shares: paidById.value === 'common' ? [] : split.value.shares,
+      paid: paid.value,
       notes: notes.value || null,
     }
     if (props.expense) return store.update(props.expense.id, payload)
@@ -290,6 +295,15 @@ const { saving, save } = useFormDialog({
         />
       </FormField>
     </div>
+    <!-- pendiente de pago (reserva que se paga in situ): cuenta en el total
+         y el presupuesto, pero no en los saldos hasta que alguien lo pague -->
+    <label class="flex items-center gap-3 text-sm cursor-pointer">
+      <ToggleSwitch v-model="paid" />
+      <span>
+        {{ $t('expenses.form.paid') }}
+        <span class="block text-xs text-ink-faint">{{ $t('expenses.form.paidHint') }}</span>
+      </span>
+    </label>
     <ExpenseSplitEditor
       v-if="paidById !== 'common'"
       v-model="split"

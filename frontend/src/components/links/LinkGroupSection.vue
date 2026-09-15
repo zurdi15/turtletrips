@@ -15,8 +15,6 @@ defineProps<{
   bare?: boolean
   /** modo Ordenar: asas visibles y drag & drop activo */
   reorderable?: boolean
-  /** id del enlace cuya miniatura se está reintentando */
-  refreshingId?: number | null
 }>()
 defineEmits<{
   edit: []
@@ -24,7 +22,6 @@ defineEmits<{
   add: []
   editLink: [link: TripLink]
   removeLink: [link: TripLink]
-  refreshImage: [link: TripLink]
   /** fin de un arrastre de enlaces (el padre persiste la disposición entera) */
   reorder: []
 }>()
@@ -86,10 +83,8 @@ const DEFAULT_ICON = LINK_GROUP_ICONS[0]
           <LinkRow
             :link="element"
             :reorderable="reorderable"
-            :refreshing="refreshingId === element.id"
             @edit="$emit('editLink', element)"
             @remove="$emit('removeLink', element)"
-            @refresh-image="$emit('refreshImage', element)"
           />
         </template>
       </draggable>

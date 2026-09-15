@@ -61,7 +61,7 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
     <div
       v-for="row in rows"
       :key="row.key"
-      class="flex items-center gap-3 px-4 py-1"
+      class="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-0.5 px-4 py-1"
       :class="TONE_CLASSES[tone].row"
     >
       <span
@@ -80,7 +80,7 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
         </span>
         <router-link
           :to="{ name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
-          class="truncate no-underline hover:underline"
+          class="flex-1 min-w-0 truncate no-underline hover:underline"
           :class="
             row.transport.layover
               ? row.transport.shortLayover
@@ -106,11 +106,16 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
       <router-link
         v-else
         :to="{ name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
-        class="font-medium text-sm truncate text-inherit no-underline hover:underline"
+        class="flex-1 min-w-0 font-medium text-sm truncate text-inherit no-underline hover:underline"
       >
         {{ row.label }}
       </router-link>
-      <span v-if="!row.hideChips" class="ml-auto flex items-center gap-2.5 shrink-0">
+      <!-- chips de sitio/gasto/reserva: en móvil bajan a su propia fila,
+           alineados con el texto (si no, truncaban el origen → destino) -->
+      <span
+        v-if="!row.hideChips"
+        class="basis-full sm:basis-auto sm:ml-auto flex items-center gap-2.5 shrink-0 pl-[6.75rem] sm:pl-0"
+      >
         <EntityLink
           v-if="row.placeId"
           type="place"

@@ -18,6 +18,14 @@ const member = computed(() =>
 
 <template>
   <Pill
+    v-if="!expense.paid"
+    color="warn"
+    icon="pi pi-clock"
+    v-tooltip.top="$t('expenses.table.pendingTooltip')"
+  >
+    {{ $t('expenses.table.pendingPill') }}
+  </Pill>
+  <Pill
     v-if="expense.paid_by_common"
     color="warn"
     icon="pi pi-wallet"

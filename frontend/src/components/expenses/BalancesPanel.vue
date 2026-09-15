@@ -95,6 +95,16 @@ async function undo(settlementId: number) {
         )
       }}
     </p>
+    <p v-if="data.pending_count > 0" class="text-xs text-ink-faint flex items-center gap-1.5">
+      <i class="pi pi-clock" />
+      {{
+        $t(
+          'expenses.balances.pendingInfo',
+          { n: data.pending_count, amount: money(data.pending_total_base) },
+          data.pending_count,
+        )
+      }}
+    </p>
 
     <p v-if="!data.balances.length" class="text-center text-sm text-ink-faint py-10">
       {{ $t('expenses.balances.empty') }}

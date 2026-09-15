@@ -67,6 +67,22 @@ async def get_rate(db: Session, base: str, quote: str, day: date) -> tuple[Decim
     if cached is not None:
         return cached, "cache"
 
+    rate = await _fetch_frankfurter(base, quote, day)
+    if rate is None:
+        # frankfurter (BCE) solo cubre ~30 monedas: VND, KHR, LAK… salen del
+        # segundo proveedor
+        rate = await _fetch_fallback(base, quote, day)
+    if rate is None:
+        raise RateUnavailableError(
+            f"No se pudo obtener el tipo de cambio {base}->{quote} para {day}"
+        )
+
+    db.add(ExchangeRateCache(base=base, quote=quote, day=day, rate=rate))
+    db.commit()
+    return rate, "api"
+
+
+async def _fetch_frankfurter(base: str, quote: str, day: date) -> Decimal | None:
     settings = get_settings()
     # frankfurter no tiene datos de fines de semana: /{date} devuelve el día hábil anterior
     url = f"{settings.rates_url}/{day.isoformat()}"
@@ -75,12 +91,29 @@ async def get_rate(db: Session, base: str, quote: str, day: date) -> tuple[Decim
             resp = await client.get(url, params={"base": base, "symbols": quote})
             resp.raise_for_status()
             data = resp.json()
-        rate = Decimal(str(data["rates"][quote]))
-    except (httpx.HTTPError, KeyError, ValueError) as exc:
-        raise RateUnavailableError(
-            f"No se pudo obtener el tipo de cambio {base}->{quote} para {day}"
-        ) from exc
+        return Decimal(str(data["rates"][quote]))
+    except (httpx.HTTPError, KeyError, ValueError, TypeError):
+        return None
 
-    db.add(ExchangeRateCache(base=base, quote=quote, day=day, rate=rate))
-    db.commit()
-    return rate, "api"
+
+async def _fetch_fallback(base: str, quote: str, day: date) -> Decimal | None:
+    """currency-api de fawazahmed0: /@{fecha}/v1/currencies/{base}.json → {base: {quote: rate}}.
+
+    El histórico se publica por día; un día sin fichero (hoy antes de la
+    publicación, futuro) cae a @latest.
+    """
+    settings = get_settings()
+    path = f"/v1/currencies/{base.lower()}.json"
+    try:
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+            for version in (day.isoformat(), "latest"):
+                resp = await client.get(f"{settings.rates_fallback_url}@{version}{path}")
+                if resp.status_code != 200:
+                    continue
+                data = resp.json()
+                value = data.get(base.lower(), {}).get(quote.lower())
+                if value is not None:
+                    return Decimal(str(value))
+    except (httpx.HTTPError, ValueError, TypeError, AttributeError):
+        return None
+    return None

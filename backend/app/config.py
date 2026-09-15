@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     data_dir: Path = Path("/data")
     nominatim_url: str = "https://nominatim.openstreetmap.org"
     rates_url: str = "https://api.frankfurter.dev/v1"
+    # segundo proveedor para monedas fuera del BCE (VND, KHR, LAK…): sin clave,
+    # servido por jsDelivr, con histórico por día desde 2024-03
+    rates_fallback_url: str = "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api"
     default_currency: str = "EUR"
     # en dev (dev.sh) se pone a 0 para que :8000 no sirva una SPA compilada obsoleta
     serve_static: bool = True

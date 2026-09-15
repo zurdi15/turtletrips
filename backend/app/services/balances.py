@@ -120,7 +120,7 @@ def trip_debts_settled(trip: Trip) -> bool:
     trip_traveler_ids = [t.id for t in trip.travelers]
     nets: dict[int, Decimal] = defaultdict(lambda: Decimal(0))
     for expense in trip.expenses:
-        if expense.paid_by_common or expense.paid_by_id is None:
+        if expense.paid_by_common or expense.paid_by_id is None or not expense.paid:
             continue
         amount_base = Decimal(str(expense.amount_base))
         nets[expense.paid_by_id] += amount_base
@@ -149,9 +149,16 @@ def trip_balances(db: Session, trip: Trip) -> TripBalances:
     unassigned_total = Decimal(0)
     common_count = 0
     common_total = Decimal(0)
+    pending_count = 0
+    pending_total = Decimal(0)
 
     for expense in expenses:
         amount_base = Decimal(str(expense.amount_base))
+        if not expense.paid:
+            # aún no lo ha adelantado nadie: no hay deuda que repartir
+            pending_count += 1
+            pending_total += amount_base
+            continue
         if expense.paid_by_common:
             # sale del monedero común: no genera deuda entre viajeros
             common_count += 1
@@ -233,4 +240,6 @@ def trip_balances(db: Session, trip: Trip) -> TripBalances:
         unassigned_total_base=float(unassigned_total),
         common_count=common_count,
         common_total_base=float(common_total),
+        pending_count=pending_count,
+        pending_total_base=float(pending_total),
     )

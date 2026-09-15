@@ -467,6 +467,9 @@ class Expense(TimestampMixin, Base):
     split_mode: Mapped[str] = mapped_column(
         String(10), default=SplitMode.equal.value, server_default=SplitMode.equal.value
     )
+    # False = pendiente de pago (reserva que se paga in situ): cuenta en los
+    # totales y el presupuesto, pero nadie lo ha adelantado → fuera de los saldos
+    paid: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     notes: Mapped[str | None] = mapped_column(Text)
 
     trip: Mapped[Trip] = relationship(back_populates="expenses")

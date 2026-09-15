@@ -5,6 +5,14 @@ export default {
     unassigned: 'Sin asignar',
   },
   noPlace: 'Sin sitio',
+  converter: {
+    title: 'Conversor de divisas',
+    amount: 'Importe',
+    from: 'De',
+    to: 'A',
+    swap: 'Invertir',
+    unavailable: 'No hay tipo de cambio {from} → {to} disponible',
+  },
   fields: {
     date: 'Fecha',
     category: 'Categoría',
@@ -16,6 +24,7 @@ export default {
     notes: 'Notas',
   },
   actions: {
+    converter: 'Conversor de divisas',
     newExpense: 'Nuevo gasto',
     importCsv: 'Importar CSV',
     exportCsv: 'Exportar CSV',
@@ -83,6 +92,8 @@ export default {
     clearSelection: 'Quitar selección',
   },
   table: {
+    pendingPill: 'Pendiente',
+    pendingTooltip: 'Pendiente de pago: no entra en los saldos',
     paid: 'Pagó',
     selectGroup: 'Seleccionar todo el grupo',
     groupCount: '{n} gastos',
@@ -111,6 +122,8 @@ export default {
     excluding: '· sin {list}',
   },
   form: {
+    paid: 'Pagado',
+    paidHint: 'Desactívalo si se paga in situ: cuenta en el total, pero no en los saldos hasta que se pague',
     newTitle: 'Nuevo gasto',
     editTitle: 'Editar gasto',
     addLabel: 'Añadir gasto',
@@ -154,6 +167,8 @@ export default {
     },
   },
   balances: {
+    pendingInfo:
+      '{n} gasto pendiente de pago ({amount}) no entra en los saldos hasta que se pague. | {n} gastos pendientes de pago ({amount}) no entran en los saldos hasta que se paguen.',
     unassignedWarning:
       '{n} gasto sin pagador ({amount}) no se incluye en los saldos. | {n} gastos sin pagador ({amount}) no se incluyen en los saldos.',
     commonInfo:

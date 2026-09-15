@@ -81,8 +81,7 @@ export default {
     },
   },
   files: {
-    intro:
-      'Ficheros del viaje (billetes, seguros, documentación…). Los adjuntos de reservas también aparecen aquí.',
+    add: 'Añadir fichero',
     empty: {
       title: 'Sin ficheros',
       subtitle: 'Sube PDFs de reservas, billetes o cualquier documento del viaje',

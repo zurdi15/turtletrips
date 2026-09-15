@@ -26,6 +26,22 @@ export const useLinksStore = defineStore('links', () => {
     return item.image_url !== null
   }
 
+  /** Foto subida a mano: sustituye a la miniatura (automática o anterior). */
+  async function uploadImage(id: number, file: File): Promise<TripLink> {
+    const form = new FormData()
+    form.append('file', file)
+    const item = await api.upload<TripLink>(`/links/${id}/image`, form)
+    const idx = base.items.value.findIndex((i) => i.id === id)
+    if (idx >= 0) base.items.value[idx] = item
+    return item
+  }
+
+  async function removeImage(id: number) {
+    await api.delete(`/links/${id}/image`)
+    const item = base.items.value.find((i) => i.id === id)
+    if (item) item.image_url = null
+  }
+
   /** Un bloque borrado deja sus enlaces sin bloque (espejo del SET NULL). */
   function detachGroup(groupId: number) {
     for (const link of base.items.value) {
@@ -33,5 +49,5 @@ export const useLinksStore = defineStore('links', () => {
     }
   }
 
-  return { ...base, reorder, refreshImage, detachGroup }
+  return { ...base, reorder, refreshImage, uploadImage, removeImage, detachGroup }
 })

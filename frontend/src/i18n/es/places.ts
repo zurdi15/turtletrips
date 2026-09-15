@@ -10,6 +10,8 @@ export default {
     namePlaceholder: 'Fushimi Inari',
     nameRequired: 'El nombre es obligatorio',
     category: 'Categoría',
+    pickOnMap: 'O marca el punto en el mapa',
+    mapHint: 'Toca el mapa para fijar la ubicación y arrastra el marcador para ajustarla.',
     lat: 'Latitud',
     lon: 'Longitud',
     link: 'Enlace',

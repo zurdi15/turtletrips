@@ -39,6 +39,8 @@ class ExpenseCreate(ExpenseBase):
     amount: Decimal = Field(gt=0)
     split_mode: SplitMode = SplitMode.equal
     shares: list[ExpenseShareInput] = []
+    # por defecto pagado; False = se paga in situ (fuera de los saldos)
+    paid: bool = True
 
 
 class ExpenseUpdate(ExpenseBase):
@@ -49,6 +51,7 @@ class ExpenseUpdate(ExpenseBase):
     split_mode: SplitMode | None = None
     # None = no tocar; [] + equal = volver al reparto implícito entre todos
     shares: list[ExpenseShareInput] | None = None
+    paid: bool | None = None
 
 
 class ExpenseRead(BaseModel):
@@ -69,6 +72,7 @@ class ExpenseRead(BaseModel):
     paid_by_common: bool
     split_mode: str
     shares: list[ExpenseShareRead]
+    paid: bool
     notes: str | None
 
 

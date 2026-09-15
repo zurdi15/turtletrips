@@ -9,9 +9,12 @@ import AutoComplete from 'primevue/autocomplete'
 import Checkbox from 'primevue/checkbox'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
+import LocationPicker from './LocationPicker.vue'
 import type { GeocodeResult, Place, PlaceCategory } from '../../api/types'
 import { PLACE_CATEGORY_KEYS, toSelectOptions } from '../../constants'
 import { usePlacesStore } from '../../stores/places'
+import { useTripsStore } from '../../stores/trips'
+import { useCountryCenter } from '../../composables/useCountryCenter'
 import { useFormDialog } from '../../composables/useFormDialog'
 import { useGeocodeSearch } from '../../composables/useGeocode'
 
@@ -22,6 +25,10 @@ const emit = defineEmits<{ saved: [] }>()
 const { t } = useI18n()
 const store = usePlacesStore()
 const { results, search } = useGeocodeSearch()
+// sin coordenadas, el mapa arranca en el primer país del viaje
+const trips = useTripsStore()
+const { centerFor } = useCountryCenter()
+const fallbackCenter = computed(() => centerFor(trips.current?.countries[0]))
 
 const name = ref('')
 const category = ref<PlaceCategory>('sight')
@@ -68,6 +75,11 @@ const { saving, save } = useFormDialog({
   },
   onSaved: () => emit('saved'),
 })
+
+function onPick(newLat: number, newLon: number) {
+  lat.value = newLat
+  lon.value = newLon
+}
 
 function onGeocodeSelect(event: { value: GeocodeResult }) {
   const r = event.value
@@ -127,6 +139,15 @@ function onGeocodeSelect(event: { value: GeocodeResult }) {
         <InputNumber v-model="lon" :minFractionDigits="0" :maxFractionDigits="6" locale="en-US" />
       </FormField>
     </div>
+
+    <!-- el buscador no siempre da con el sitio: un toque en el mapa fija el
+         punto (se monta con el diálogo abierto, así Leaflet mide bien) -->
+    <FormField v-if="visible" :label="t('places.form.pickOnMap')">
+      <LocationPicker :lat="lat" :lon="lon" :fallbackCenter="fallbackCenter" @pick="onPick" />
+      <template #hint>
+        <p class="text-xs text-ink-faint">{{ t('places.form.mapHint') }}</p>
+      </template>
+    </FormField>
 
     <FormField :label="t('places.form.link')">
       <InputText v-model="url" placeholder="https://…" />

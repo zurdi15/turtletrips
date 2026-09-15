@@ -114,3 +114,6 @@ class TripBalances(BaseModel):
     # gastos del fondo común: fuera del cálculo por diseño (info, no aviso)
     common_count: int
     common_total_base: float
+    # gastos pendientes de pago (in situ): nadie los ha adelantado todavía
+    pending_count: int
+    pending_total_base: float
