@@ -41,6 +41,7 @@ import {
   transportKey,
   transportLabel,
   transportRowView,
+  type TransportEntry,
 } from '../../utils/itinerary'
 
 const props = defineProps<{ trip: Trip }>()
@@ -173,13 +174,16 @@ function bookingTitle(id: number | null): string | null {
 
 // filas de las tres bandas de reservas, ya etiquetadas para AgendaBookingSection
 function transportRows(day: string): AgendaRow[] {
-  // los chips (sitio/gasto/reserva) van UNA vez por trayecto: en su primera
-  // fila del día; los demás tramos y las escalas se quedan solo con el enlace
-  const seen = new Set<string>()
-  return (transportsByDay.value.get(day) ?? []).map((e) => {
-    const group = `${e.b.id}-j${e.journey ?? 0}`
-    const carrier = e.kind !== 'layover' && !seen.has(group)
-    if (carrier) seen.add(group)
+  // los chips (sitio/gasto/reserva) van UNA vez por trayecto: en su ÚLTIMA
+  // fila del día, que en móvil bajan a una fila propia y en mitad de un vuelo
+  // con escalas partían el bloque; los demás tramos y las escalas se quedan
+  // solo con el enlace
+  const entries = transportsByDay.value.get(day) ?? []
+  const groupOf = (e: TransportEntry) => `${e.b.id}-j${e.journey ?? 0}`
+  const lastOfGroup = new Map<string, number>()
+  entries.forEach((e, i) => lastOfGroup.set(groupOf(e), i))
+  return entries.map((e, i) => {
+    const carrier = lastOfGroup.get(groupOf(e)) === i
     return {
       key: transportKey(e),
       head: transportHead(e, t),
