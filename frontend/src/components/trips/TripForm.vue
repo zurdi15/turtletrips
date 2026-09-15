@@ -50,6 +50,9 @@ const travelerIds = ref<number[]>(
 const startDate = ref<Date | null>(props.trip?.start_date ? parseIsoDate(props.trip.start_date) : null)
 const endDate = ref<Date | null>(props.trip?.end_date ? parseIsoDate(props.trip.end_date) : null)
 const baseCurrency = ref(props.trip?.base_currency ?? 'EUR')
+const secondaryCurrency = ref<string | null>(props.trip?.secondary_currency ?? null)
+// la secundaria no puede ser la base (sería la misma opción dos veces)
+const secondaryOptions = computed(() => CURRENCIES.filter((c) => c !== baseCurrency.value))
 const budget = ref<number | null>(props.trip?.budget_amount ?? null)
 const albumUrl = ref(props.trip?.album_url ?? '')
 // 'auto' como centinela: con null PrimeVue mostraba el placeholder vacío
@@ -166,6 +169,10 @@ async function submit(): Promise<Trip> {
     start_date: startDate.value ? toIsoDate(startDate.value) : null,
     end_date: endDate.value ? toIsoDate(endDate.value) : null,
     base_currency: baseCurrency.value,
+    secondary_currency:
+      secondaryCurrency.value && secondaryCurrency.value !== baseCurrency.value
+        ? secondaryCurrency.value
+        : null,
     budget_amount: budget.value,
     album_url: albumUrl.value.trim() || null,
     status_override: statusOverride.value === 'auto' ? null : statusOverride.value,
@@ -242,17 +249,29 @@ defineExpose({ validate, submit })
       <FormField :label="t('trips.form.baseCurrency')">
         <Select v-model="baseCurrency" :options="CURRENCIES" filter />
       </FormField>
-      <FormField :label="t('trips.form.budget')">
-        <InputNumber
-          v-model="budget"
-          mode="currency"
-          :currency="baseCurrency"
-          :locale="numberLocale"
-          :min="0"
-          :placeholder="t('trips.form.budgetPlaceholder')"
+      <FormField :label="t('trips.form.secondaryCurrency')">
+        <Select
+          v-model="secondaryCurrency"
+          :options="secondaryOptions"
+          filter
+          showClear
+          :placeholder="t('trips.form.secondaryNone')"
         />
+        <template #hint>
+          <p class="text-xs text-ink-faint">{{ t('trips.form.secondaryCurrencyHint') }}</p>
+        </template>
       </FormField>
     </div>
+    <FormField :label="t('trips.form.budget')">
+      <InputNumber
+        v-model="budget"
+        mode="currency"
+        :currency="baseCurrency"
+        :locale="numberLocale"
+        :min="0"
+        :placeholder="t('trips.form.budgetPlaceholder')"
+      />
+    </FormField>
     <FormField :label="t('trips.form.status')">
       <Select
         v-model="statusOverride"

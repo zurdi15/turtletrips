@@ -133,3 +133,15 @@ def test_delete_trip_cascades(client, trip):
     )
     assert client.delete(f"/api/v1/trips/{trip_id}").status_code == 204
     assert client.get(f"/api/v1/trips/{trip_id}/places").status_code == 404
+
+
+def test_trip_secondary_currency(client):
+    trip = client.post(
+        "/api/v1/trips", json={"name": "Vietnam", "base_currency": "EUR", "secondary_currency": "VND"}
+    ).json()
+    assert trip["secondary_currency"] == "VND"
+    # ausente en el patch = no se toca; null = se quita
+    assert client.patch(f"/api/v1/trips/{trip['id']}", json={"name": "Viet"}).json()["secondary_currency"] == "VND"
+    assert client.patch(f"/api/v1/trips/{trip['id']}", json={"secondary_currency": None}).json()["secondary_currency"] is None
+    # por defecto no hay secundaria
+    assert client.post("/api/v1/trips", json={"name": "Sin"}).json()["secondary_currency"] is None

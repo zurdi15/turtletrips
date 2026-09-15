@@ -161,14 +161,15 @@ const { rowClass } = useRowFlash({
                y las acciones al pie de la fila -->
           <div class="flex flex-col items-end gap-1.5">
             <div class="text-right">
+              <!-- lo pagado manda; la conversión a la moneda base va de caption -->
               <div class="text-sm font-medium text-ink whitespace-nowrap">
-                {{ formatMoney(entry.row.amount_base, trip.base_currency) }}
+                {{ formatMoney(entry.row.amount, entry.row.currency) }}
               </div>
               <div
                 v-if="entry.row.currency !== trip.base_currency"
                 class="text-xs text-ink-faint whitespace-nowrap"
               >
-                {{ formatMoney(entry.row.amount, entry.row.currency) }}
+                ≈ {{ formatMoney(entry.row.amount_base, trip.base_currency) }}
               </div>
             </div>
             <PayerBadge :expense="entry.row" :memberById="memberById" />

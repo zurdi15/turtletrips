@@ -102,6 +102,9 @@ class Trip(TimestampMixin, Base):
     # NULL = estado auto-derivado de las fechas; un valor = override manual
     status_override: Mapped[str | None] = mapped_column(String(20))
     base_currency: Mapped[str] = mapped_column(String(3), default="EUR")
+    # moneda del destino (VND en Vietnam): opción rápida al apuntar gastos; los
+    # totales, gráficas y saldos siguen SIEMPRE en la base
+    secondary_currency: Mapped[str | None] = mapped_column(String(3))
     budget_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
     album_url: Mapped[str | None] = mapped_column(String(500))  # enlace a álbum de fotos externo
     # llave secreta del feed .ics de suscripción (URL pública sin auth)

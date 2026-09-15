@@ -13,6 +13,7 @@ import ExpenseSplitEditor, { type SplitState } from '../ExpenseSplitEditor.vue'
 import PayerSelect from '../PayerSelect.vue'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
+import ClusterBtn from '../ui/ClusterBtn.vue'
 import ToggleSwitch from 'primevue/toggleswitch'
 import UploadButton from '../ui/UploadButton.vue'
 import { api } from '../../api/client'
@@ -48,6 +49,29 @@ const category = ref('Otros')
 const description = ref('')
 const amount = ref<number | null>(null)
 const currency = ref('EUR')
+// con moneda secundaria en el viaje, la moneda se elige con un segmented
+// (principal · secundaria · otra) y el Select completo solo asoma con "otra"
+type CurrencyPick = 'base' | 'secondary' | 'other'
+const showOtherCurrency = ref(false)
+const currencyPick = computed<CurrencyPick>({
+  get() {
+    if (showOtherCurrency.value) return 'other'
+    if (currency.value === props.trip.base_currency) return 'base'
+    if (currency.value === props.trip.secondary_currency) return 'secondary'
+    return 'other'
+  },
+  set(pick) {
+    showOtherCurrency.value = pick === 'other'
+    if (pick === 'base') currency.value = props.trip.base_currency
+    else if (pick === 'secondary' && props.trip.secondary_currency)
+      currency.value = props.trip.secondary_currency
+  },
+})
+const currencyPickOptions = computed(() => [
+  { value: 'base' as const, label: props.trip.base_currency },
+  { value: 'secondary' as const, label: props.trip.secondary_currency ?? '' },
+  { value: 'other' as const, label: t('expenses.form.otherCurrency') },
+])
 const exchangeRate = ref<number | null>(null)
 // 'common' = pagado del fondo/monedero común (no entra en los saldos)
 const paidById = ref<number | 'common' | null>(null)
@@ -117,6 +141,7 @@ const { saving, save } = useFormDialog({
     description.value = e?.description ?? ''
     amount.value = e?.amount ?? null
     currency.value = e?.currency ?? props.trip.base_currency
+    showOtherCurrency.value = false
     exchangeRate.value = e && e.currency !== props.trip.base_currency ? e.exchange_rate : null
     paidById.value = e?.paid_by_common ? 'common' : (e?.paid_by_id ?? null)
     placeValue.value = (e?.place_id != null && places.items.find((p) => p.id === e.place_id)) || ''
@@ -242,7 +267,19 @@ const { saving, save } = useFormDialog({
         />
       </FormField>
       <FormField :label="$t('expenses.fields.currency')">
-        <Select v-model="currency" :options="CURRENCIES" filter />
+        <ClusterBtn
+          v-if="trip.secondary_currency"
+          v-model="currencyPick"
+          :options="currencyPickOptions"
+          size="small"
+        />
+        <Select
+          v-if="!trip.secondary_currency || currencyPick === 'other'"
+          v-model="currency"
+          :options="CURRENCIES"
+          filter
+          :class="trip.secondary_currency ? 'mt-2' : ''"
+        />
       </FormField>
     </div>
 

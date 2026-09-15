@@ -101,6 +101,8 @@ export interface Trip {
   status: TripStatus
   status_override: TripStatus | null
   base_currency: string
+  /** moneda del destino: opción rápida en el gasto; totales y saldos siguen en la base */
+  secondary_currency: string | null
   budget_amount: number | null
   album_url: string | null
   ics_token: string | null

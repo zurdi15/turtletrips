@@ -122,6 +122,7 @@ export default {
     excluding: '· excluding {list}',
   },
   form: {
+    otherCurrency: 'Other',
     paid: 'Paid',
     paidHint: 'Turn it off if it is paid on site: it counts towards the total, but not the balances until paid',
     newTitle: 'New expense',

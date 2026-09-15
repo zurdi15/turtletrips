@@ -143,9 +143,10 @@ const { rowClass } = useRowFlash({
     <Column :header="$t('expenses.fields.amount')" style="width: 8rem">
       <template #body="{ data }">
         <div class="text-right">
-          <div class="font-medium">{{ formatMoney(data.amount_base, trip.base_currency) }}</div>
+          <!-- lo pagado manda; la conversión a la moneda base va de caption -->
+          <div class="font-medium">{{ formatMoney(data.amount, data.currency) }}</div>
           <div v-if="data.currency !== trip.base_currency" class="text-xs text-ink-faint">
-            {{ formatMoney(data.amount, data.currency) }}
+            ≈ {{ formatMoney(data.amount_base, trip.base_currency) }}
           </div>
         </div>
       </template>

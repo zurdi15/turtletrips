@@ -55,6 +55,7 @@ class TripCreate(BaseModel):
     end_date: date | None = None
     status_override: TripStatus | None = None
     base_currency: str = Field(default="EUR", min_length=3, max_length=3)
+    secondary_currency: str | None = Field(default=None, min_length=3, max_length=3)
     budget_amount: Decimal | None = Field(default=None, ge=0)
     album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
@@ -73,6 +74,7 @@ class TripUpdate(BaseModel):
     end_date: date | None = None
     status_override: TripStatus | None = None
     base_currency: str | None = Field(default=None, min_length=3, max_length=3)
+    secondary_currency: str | None = Field(default=None, min_length=3, max_length=3)
     budget_amount: Decimal | None = Field(default=None, ge=0)
     album_url: str | None = Field(default=None, max_length=500)
     notes: str | None = None
@@ -101,6 +103,7 @@ class TripRead(BaseModel):
     status: TripStatus
     status_override: TripStatus | None
     base_currency: str
+    secondary_currency: str | None
     budget_amount: float | None
     album_url: str | None
     ics_token: str | None
