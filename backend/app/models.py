@@ -604,6 +604,7 @@ class LinkGroup(TimestampMixin, Base):
         ForeignKey("trips.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(120))
+    icon: Mapped[str | None] = mapped_column(String(40))  # nombre mdi sin prefijo; NULL = folder
     position: Mapped[int] = mapped_column(Integer, default=0)  # orden manual
 
     trip: Mapped[Trip] = relationship(back_populates="link_groups")
@@ -629,9 +630,17 @@ class TripLink(TimestampMixin, Base):
     url: Mapped[str] = mapped_column(String(2000))
     notes: Mapped[str | None] = mapped_column(Text)
     position: Mapped[int] = mapped_column(Integer, default=0)  # orden dentro del bloque
+    # miniatura OG descargada a uploads/{trip_id} (como Trip.cover_image)
+    image_path: Mapped[str | None] = mapped_column(String(100))
 
     trip: Mapped[Trip] = relationship(back_populates="links")
     group: Mapped[LinkGroup | None] = relationship(back_populates="links")
+
+    @property
+    def image_url(self) -> str | None:
+        if not self.image_path:
+            return None
+        return f"/api/v1/links/{self.id}/image?v={self.image_path}"
 
 
 class Category(TimestampMixin, Base):

@@ -83,7 +83,6 @@ export default {
     photoCredit: 'Photos from Wikimedia Commons',
     album: 'Photo album',
     albumHint: 'External link (Google Photos, etc.), reachable from the trip header',
-    notes: 'Notes',
   },
   toast: {
     updated: 'Trip updated',
@@ -102,6 +101,9 @@ export default {
     viewBookings: 'View bookings',
     noUpcoming: 'Nothing booked in the next 7 days.',
     notes: 'Notes',
+    notesPlaceholder: 'Keep whatever you want at hand here: ideas, reminders, things to decide…',
+    notesEmpty: 'No notes yet. Press the pencil to write.',
+    notesSaved: 'Notes saved',
   },
   lodging: {
     gapsTitle: 'No lodging | 1 night without lodging | {n} nights without lodging',

@@ -14,12 +14,18 @@ def _normalize_url(value: str) -> str:
 # ---- bloques ----
 
 
+# nombre de icono mdi sin prefijo ("bed", "passport"); la lista la ofrece el front
+ICON_PATTERN = r"^[a-z0-9-]{1,40}$"
+
+
 class LinkGroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
+    icon: str | None = Field(default=None, pattern=ICON_PATTERN)
 
 
 class LinkGroupUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
+    icon: str | None = Field(default=None, pattern=ICON_PATTERN)
 
 
 class LinkGroupRead(BaseModel):
@@ -28,6 +34,7 @@ class LinkGroupRead(BaseModel):
     id: int
     trip_id: int
     name: str
+    icon: str | None
     position: int
 
 
@@ -68,6 +75,7 @@ class TripLinkRead(BaseModel):
     url: str
     notes: str | None
     position: int
+    image_url: str | None
 
 
 class TripLinkBucket(BaseModel):

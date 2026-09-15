@@ -82,7 +82,7 @@ export default defineConfig({
           // portadas, avatares e imágenes de país (Wikimedia)
           {
             urlPattern: ({ url }) =>
-              /^\/api\/v1\/(trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(url.pathname) ||
+              /^\/api\/v1\/(trips\/\d+\/cover|travelers\/\d+\/avatar|links\/\d+\/image)/.test(url.pathname) ||
               url.hostname === 'upload.wikimedia.org',
             handler: 'StaleWhileRevalidate',
             options: {

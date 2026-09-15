@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
 import InputNumber from 'primevue/inputnumber'
@@ -53,7 +52,6 @@ const endDate = ref<Date | null>(props.trip?.end_date ? parseIsoDate(props.trip.
 const baseCurrency = ref(props.trip?.base_currency ?? 'EUR')
 const budget = ref<number | null>(props.trip?.budget_amount ?? null)
 const albumUrl = ref(props.trip?.album_url ?? '')
-const notes = ref(props.trip?.notes ?? '')
 // 'auto' como centinela: con null PrimeVue mostraba el placeholder vacío
 const statusOverride = ref<TripStatus | 'auto'>(props.trip?.status_override ?? 'auto')
 const uploadingCover = ref(false)
@@ -170,7 +168,6 @@ async function submit(): Promise<Trip> {
     base_currency: baseCurrency.value,
     budget_amount: budget.value,
     album_url: albumUrl.value.trim() || null,
-    notes: notes.value || null,
     status_override: statusOverride.value === 'auto' ? null : statusOverride.value,
     traveler_ids: travelerIds.value,
     // al crear no hay portada todavía: el encuadre no pinta nada
@@ -350,9 +347,6 @@ defineExpose({ validate, submit })
           {{ t('trips.form.albumHint') }}
         </span>
       </template>
-    </FormField>
-    <FormField :label="t('trips.form.notes')">
-      <Textarea v-model="notes" rows="3" autoResize />
     </FormField>
   </div>
 </template>

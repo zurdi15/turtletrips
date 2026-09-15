@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import Button from 'primevue/button'
 import PlaceMap from '../../components/PlaceMap.vue'
 import LodgingGapsCard from '../../components/trip/LodgingGapsCard.vue'
+import TripNotesCard from '../../components/trip/TripNotesCard.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import type { Trip } from '../../api/types'
@@ -219,12 +220,7 @@ const initialLoading = computed(
         <p v-else class="text-sm text-ink-faint">{{ $t('trips.overview.noUpcoming') }}</p>
       </div>
 
-      <div v-if="trip.notes" class="bg-surface rounded-card border border-line p-4">
-        <h3 class="text-sm font-semibold text-ink-secondary mb-2">
-          {{ $t('trips.overview.notes') }}
-        </h3>
-        <p class="text-sm text-ink-secondary whitespace-pre-wrap">{{ trip.notes }}</p>
-      </div>
+      <TripNotesCard :trip="trip" />
     </div>
 
     <div class="flex flex-col gap-4">

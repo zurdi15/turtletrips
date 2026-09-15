@@ -61,6 +61,35 @@ export function isTransport(type: BookingType): boolean {
 }
 
 // MDI para lo que PrimeIcons no cubre bien (cama, avión, tren, ferry…)
+/** Iconos elegibles para un bloque de enlaces (nombres mdi sin prefijo; el
+ * backend solo valida el formato). El primero es el default. */
+export const LINK_GROUP_ICONS = [
+  'folder',
+  'bed',
+  'airplane',
+  'train',
+  'bus',
+  'car',
+  'ferry',
+  'passport',
+  'file-document',
+  'sim',
+  'silverware-fork-knife',
+  'glass-cocktail',
+  'ticket',
+  'map',
+  'camera',
+  'shopping',
+  'cash',
+  'medical-bag',
+  'hiking',
+  'beach',
+  'star',
+  'lightbulb',
+  'book-open-variant',
+  'web',
+] as const
+
 export const BOOKING_TYPE_ICONS: Record<BookingType, string> = {
   hotel: 'mdi mdi-bed',
   flight: 'mdi mdi-airplane',

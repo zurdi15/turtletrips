@@ -83,7 +83,6 @@ export default {
     photoCredit: 'Fotos de Wikimedia Commons',
     album: 'Álbum de fotos',
     albumHint: 'Enlace externo (Google Photos, etc.), accesible desde la cabecera del viaje',
-    notes: 'Notas',
   },
   toast: {
     updated: 'Viaje actualizado',
@@ -102,6 +101,9 @@ export default {
     viewBookings: 'Ver reservas',
     noUpcoming: 'Nada reservado en los próximos 7 días.',
     notes: 'Notas',
+    notesPlaceholder: 'Apunta aquí lo que quieras tener a mano: ideas, avisos, cosas por decidir…',
+    notesEmpty: 'Sin notas. Pulsa el lápiz para escribir.',
+    notesSaved: 'Notas guardadas',
   },
   lodging: {
     gapsTitle: 'Sin alojamiento | 1 noche sin alojamiento | {n} noches sin alojamiento',

@@ -99,14 +99,15 @@ function openNewIn(groupId: number | null) {
 // ---- bloques ----
 
 const showGroupForm = ref(false)
+const editingGroup = ref<LinkGroup | null>(null)
 
-async function renameGroup(group: LinkGroup, name: string) {
-  try {
-    await groups.update(group.id, { name })
-  } catch (err) {
-    notify.error(t('links.toast.renameError'), err)
-  }
+function openGroupForm(group: LinkGroup | null) {
+  editingGroup.value = group
+  showGroupForm.value = true
 }
+
+// modo Ordenar: las asas del drag & drop solo aparecen mientras está activo
+const reordering = ref(false)
 
 function removeGroup(group: LinkGroup) {
   confirmAction({
@@ -139,9 +140,21 @@ function removeGroup(group: LinkGroup) {
         outlined
         severity="secondary"
         class="w-full sm:w-auto"
-        @click="showGroupForm = true"
+        @click="openGroupForm(null)"
+      />
+      <Button
+        v-if="!isEmpty"
+        :label="reordering ? $t('links.reorderDone') : $t('links.reorder')"
+        :icon="reordering ? 'pi pi-check' : 'pi pi-sort-alt'"
+        :outlined="!reordering"
+        severity="secondary"
+        class="w-full sm:w-auto sm:ml-auto"
+        @click="reordering = !reordering"
       />
     </div>
+    <p v-if="reordering" class="text-xs text-ink-faint -mt-2 mb-4">
+      {{ $t('links.reorderHint') }}
+    </p>
 
     <TabSkeleton v-if="initialLoading" variant="list" :rows="6" />
 
@@ -158,6 +171,7 @@ function removeGroup(group: LinkGroup) {
         :list="groupList"
         item-key="id"
         handle=".tt-group-handle"
+        :disabled="!reordering"
         group="link-groups"
         ghost-class="opacity-40"
         tag="div"
@@ -168,7 +182,8 @@ function removeGroup(group: LinkGroup) {
           <LinkGroupSection
             :group="element"
             :links="lists[bucketKey(element.id)] ?? []"
-            @rename="renameGroup(element, $event)"
+            :reorderable="reordering"
+            @edit="openGroupForm(element)"
             @remove="removeGroup(element)"
             @add="openNewIn(element.id)"
             @edit-link="openEdit"
@@ -183,6 +198,7 @@ function removeGroup(group: LinkGroup) {
         :group="null"
         :links="lists[NO_GROUP_KEY] ?? []"
         :bare="!groupList.length"
+        :reorderable="reordering"
         @add="openNewIn(null)"
         @edit-link="openEdit"
         @remove-link="removeItem"
@@ -191,6 +207,6 @@ function removeGroup(group: LinkGroup) {
     </div>
 
     <LinkDialog v-model:visible="showForm" :link="editing" :defaultGroupId="defaultGroupId" />
-    <LinkGroupDialog v-model:visible="showGroupForm" />
+    <LinkGroupDialog v-model:visible="showGroupForm" :group="editingGroup" />
   </div>
 </template>

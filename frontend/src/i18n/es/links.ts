@@ -4,6 +4,9 @@ export default {
   noGroup: 'Sin bloque',
   openLink: 'Abrir enlace',
   dragHint: 'Arrastra para ordenar',
+  reorder: 'Ordenar',
+  reorderDone: 'Listo',
+  reorderHint: 'Arrastra bloques y enlaces por su asa; pulsa Listo al acabar.',
   count: '{n} enlace | {n} enlaces',
   groupEmpty: 'Arrastra enlaces aquí o crea uno en este bloque',
   addHere: 'Añadir enlace aquí',
@@ -24,6 +27,8 @@ export default {
   },
   groupDialog: {
     newTitle: 'Nuevo bloque',
+    editTitle: 'Editar bloque',
+    icon: 'Icono',
     name: 'Nombre',
     namePlaceholder: 'Alojamientos, Visados, eSIM…',
     nameRequired: 'El nombre es obligatorio',
@@ -36,7 +41,6 @@ export default {
   },
   toast: {
     reorderError: 'No se pudo guardar el orden',
-    renameError: 'No se pudo renombrar el bloque',
     deleteError: 'No se pudo eliminar',
   },
 }

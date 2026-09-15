@@ -4,6 +4,9 @@ export default {
   noGroup: 'No block',
   openLink: 'Open link',
   dragHint: 'Drag to reorder',
+  reorder: 'Reorder',
+  reorderDone: 'Done',
+  reorderHint: 'Drag blocks and links by their handle; press Done when finished.',
   count: '{n} link | {n} links',
   groupEmpty: 'Drag links here or create one in this block',
   addHere: 'Add link here',
@@ -24,6 +27,8 @@ export default {
   },
   groupDialog: {
     newTitle: 'New block',
+    editTitle: 'Edit block',
+    icon: 'Icon',
     name: 'Name',
     namePlaceholder: 'Hotels, Visas, eSIM…',
     nameRequired: 'Name is required',
@@ -36,7 +41,6 @@ export default {
   },
   toast: {
     reorderError: 'Could not save the order',
-    renameError: 'Could not rename the block',
     deleteError: 'Could not delete',
   },
 }

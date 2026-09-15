@@ -3,11 +3,11 @@ import type { LinkGroup, TripLink } from '../api/types'
 import { bucketsFromLists, groupLinks, linkHost } from './links'
 
 function group(id: number, position: number): LinkGroup {
-  return { id, trip_id: 1, name: `G${id}`, position }
+  return { id, trip_id: 1, name: `G${id}`, icon: null, position }
 }
 
 function link(id: number, group_id: number | null, position: number): TripLink {
-  return { id, trip_id: 1, group_id, title: `L${id}`, url: 'https://x.example', notes: null, position }
+  return { id, trip_id: 1, group_id, title: `L${id}`, url: 'https://x.example', notes: null, position, image_url: null }
 }
 
 describe('groupLinks', () => {

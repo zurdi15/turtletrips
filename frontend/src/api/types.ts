@@ -147,6 +147,8 @@ export interface LinkGroup {
   id: number
   trip_id: number
   name: string
+  /** nombre mdi sin prefijo; null = folder */
+  icon: string | null
   position: number
 }
 
@@ -158,6 +160,8 @@ export interface TripLink {
   url: string
   notes: string | null
   position: number
+  /** miniatura OG descargada por el servidor (null si la web no la da) */
+  image_url: string | null
 }
 
 export interface PackingSelection {
@@ -431,7 +435,7 @@ export type ItineraryInput = Partial<Omit<ItineraryItem, 'id' | 'trip_id'>>
 export type PackingInput = Partial<Omit<PackingItem, 'id' | 'trip_id'>>
 export type ChecklistInput = Partial<Omit<ChecklistItem, 'id' | 'trip_id'>>
 export type LinkGroupInput = Partial<Omit<LinkGroup, 'id' | 'trip_id' | 'position'>>
-export type TripLinkInput = Partial<Omit<TripLink, 'id' | 'trip_id' | 'position'>>
+export type TripLinkInput = Partial<Omit<TripLink, 'id' | 'trip_id' | 'position' | 'image_url'>>
 /** disposición completa tras un drag & drop: bloque (null = sin bloque) → ids en orden */
 export interface TripLinkBucket {
   group_id: number | null

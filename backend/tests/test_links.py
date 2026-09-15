@@ -1,4 +1,14 @@
+import pytest
 from conftest import login, make_user
+
+from app.routers import links as links_router
+from app.services.link_preview import extract_image_url, is_public_host
+
+
+@pytest.fixture(autouse=True)
+def no_preview(monkeypatch):
+    """Los tests no salen a la red: sin miniatura salvo que un test lo pida."""
+    monkeypatch.setattr(links_router, "fetch_preview_image", lambda url: None)
 
 
 def _make_trip(client) -> int:
@@ -8,10 +18,13 @@ def _make_trip(client) -> int:
 def test_links_crud_and_groups(client):
     trip_id = _make_trip(client)
 
-    group = client.post(f"/api/v1/trips/{trip_id}/link-groups", json={"name": " Alojamientos "})
+    group = client.post(
+        f"/api/v1/trips/{trip_id}/link-groups", json={"name": " Alojamientos ", "icon": "bed"}
+    )
     assert group.status_code == 201, group.text
     group = group.json()
     assert group["name"] == "Alojamientos"
+    assert group["icon"] == "bed"
     assert group["position"] == 0
 
     link = client.post(
@@ -50,6 +63,14 @@ def test_links_crud_and_groups(client):
 
     resp = client.patch(f"/api/v1/link-groups/{group['id']}", json={"name": "Hoteles"})
     assert resp.json()["name"] == "Hoteles"
+    assert resp.json()["icon"] == "bed"
+    resp = client.patch(f"/api/v1/link-groups/{group['id']}", json={"icon": "passport"})
+    assert resp.json()["icon"] == "passport"
+    # el icono es un nombre mdi: nada de clases arbitrarias
+    assert (
+        client.patch(f"/api/v1/link-groups/{group['id']}", json={"icon": "pi pi-x"}).status_code
+        == 422
+    )
 
     # borrar el bloque deja sus enlaces sin bloque, no los borra
     assert client.delete(f"/api/v1/link-groups/{group['id']}").status_code == 204
@@ -181,3 +202,73 @@ def test_links_require_trip_membership(app, client):
         ).status_code
         == 403
     )
+
+
+PNG = bytes([0x89]) + b"PNG-fake-bytes" * 4
+
+
+def test_link_image_fetched_on_create_and_url_change(client, monkeypatch):
+    calls: list[str] = []
+
+    def fake_fetch(url):
+        calls.append(url)
+        return (PNG, ".png") if "booking" in url else None
+
+    monkeypatch.setattr(links_router, "fetch_preview_image", fake_fetch)
+    trip_id = _make_trip(client)
+
+    link = client.post(
+        f"/api/v1/trips/{trip_id}/links",
+        json={"title": "Hotel", "url": "https://www.booking.com/hotel/kh/x.html"},
+    ).json()
+    assert calls == ["https://www.booking.com/hotel/kh/x.html"]
+    assert link["image_url"] == f"/api/v1/links/{link['id']}/image?v=" + link["image_url"].split("v=")[1]
+    resp = client.get(f"/api/v1/links/{link['id']}/image")
+    assert resp.status_code == 200
+    assert resp.content == PNG
+
+    # editar sin tocar la URL no vuelve a descargar
+    client.patch(f"/api/v1/links/{link['id']}", json={"title": "Hotel 2"})
+    assert len(calls) == 1
+
+    # cambiar la URL a una página sin OG quita la miniatura
+    resp = client.patch(f"/api/v1/links/{link['id']}", json={"url": "https://blog.example/esim"})
+    assert len(calls) == 2
+    assert resp.json()["image_url"] is None
+    assert client.get(f"/api/v1/links/{link['id']}/image").status_code == 404
+
+    # reintento manual
+    resp = client.post(f"/api/v1/links/{link['id']}/refresh-image")
+    assert resp.status_code == 200
+    assert len(calls) == 3
+
+    assert client.delete(f"/api/v1/links/{link['id']}").status_code == 204
+
+
+def test_extract_image_url_prefers_og_and_resolves_relative():
+    page = """
+      <html><head>
+        <meta name="twitter:image" content="https://cdn.example/tw.jpg">
+        <meta content="/img/hotel.jpg?k=1&amp;o=" property="og:image" />
+      </head></html>
+    """
+    assert extract_image_url(page, "https://www.booking.com/hotel/x.html") == (
+        "https://www.booking.com/img/hotel.jpg?k=1&o="
+    )
+    assert extract_image_url("<meta name='twitter:image' content='//cdn.example/a.png'>", "https://x.example/") == (
+        "https://cdn.example/a.png"
+    )
+    assert extract_image_url('<link rel="image_src" href="https://cdn.example/l.jpg">', "https://x.example/") == (
+        "https://cdn.example/l.jpg"
+    )
+    assert extract_image_url("<html><body>nada</body></html>", "https://x.example/") is None
+
+
+def test_is_public_host_rejects_internal_targets():
+    assert not is_public_host("localhost")
+    assert not is_public_host("127.0.0.1")
+    assert not is_public_host("10.0.0.5")
+    assert not is_public_host("192.168.1.152")
+    assert not is_public_host("169.254.169.254")
+    assert not is_public_host("host.that.does.not.exist.invalid")
+    assert is_public_host("1.1.1.1")
