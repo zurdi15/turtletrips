@@ -17,6 +17,7 @@ export default {
     dayN: 'Día {n}',
     addToDay: 'Añadir a este día',
     rainProb: 'Probabilidad de lluvia: {pct}%',
+    forecastTooltip: 'Previsión donde duermes esa noche',
     transport: 'Transporte',
     bookings: 'Reservas',
     lodging: 'Alojamiento',

@@ -83,12 +83,6 @@ export function useDayInsights(input: {
     return `${formatKm(own.km, intlLocale())} · ${formatMinutes(own.minutes)}`
   }
 
-  function issuesTooltip(day: string): string {
-    return (issuesByDay.value.get(day) ?? [])
-      .map((issue) => t(`itinerary.transfers.issues.${issue}`))
-      .join(' · ')
-  }
-
   return {
     lodgingGaps,
     transferMode,
@@ -96,6 +90,5 @@ export function useDayInsights(input: {
     transfersByDay,
     issuesByDay,
     transferSummary,
-    issuesTooltip,
   }
 }

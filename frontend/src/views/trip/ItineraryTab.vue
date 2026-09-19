@@ -28,7 +28,7 @@ import { useTripTabData } from '../../composables/useTripTabData'
 import { useDayInsights } from '../../composables/useDayInsights'
 import { useWeather } from '../../composables/useWeather'
 import { expenseIdByBooking } from '../../utils/expenses'
-import { itemCoord, pickDayCoords, type Coord } from '../../utils/weather'
+import { itemCoord, pickDayCoords, sameForecast, type Coord } from '../../utils/weather'
 import {
   agendaDayLabel,
   agendaDays,
@@ -133,6 +133,13 @@ function headerForecast(day: string) {
   return forecastAt(day, dayCoords.value.get(day))
 }
 
+// la de cada actividad solo si dice algo distinto que la de la cabecera
+function itemForecast(day: string, item: ItineraryItem) {
+  const own = forecastAt(day, itemCoord(item, placeById.value))
+  const header = headerForecast(day)
+  return own && header && sameForecast(own, header) ? null : own
+}
+
 const lists = reactive<Record<string, ItineraryItem[]>>({})
 
 watch(
@@ -162,7 +169,6 @@ const {
   transfersByDay,
   issuesByDay,
   transferSummary,
-  issuesTooltip,
 } = useDayInsights({
   trip: () => props.trip,
   days,
@@ -303,7 +309,6 @@ function openNew(day?: string) {
           :title="dayLabel(day).title"
           :sub="dayLabel(day).sub"
           :issues="issuesByDay.get(day) ?? []"
-          :issuesTooltip="issuesTooltip(day)"
           :lodgingGap="lodgingGaps.has(day)"
           :transfers="transferSummary(day)"
           :forecast="headerForecast(day)"
@@ -346,7 +351,7 @@ function openNew(day?: string) {
               :placeName="placeName(element.place_id)"
               :bookingTitle="bookingTitle(element.booking_id)"
               :expenseId="element.booking_id ? (expenseByBooking.get(element.booking_id) ?? null) : null"
-              :forecast="forecastAt(day, itemCoord(element, placeById))"
+              :forecast="itemForecast(day, element)"
               :transfer="transfersByDay.get(day)?.byItem.get(element.id) ?? null"
               :transferMode="transferMode"
               @edit="openEdit(element)"

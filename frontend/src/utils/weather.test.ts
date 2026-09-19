@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Booking, ItineraryItem, Place } from '../api/types'
-import { coordKey, itemCoord, pickDayCoords, weatherIcon } from './weather'
+import { coordKey, itemCoord, pickDayCoords, sameForecast, weatherIcon } from './weather'
 
 function makePlace(id: number, lat: number | null, lon: number | null): Place {
   return {
@@ -72,5 +72,22 @@ describe('weatherIcon / coordKey', () => {
 
   it('coordKey agrupa a ~11 km', () => {
     expect(coordKey({ lat: 40.41, lon: -3.7 })).toBe(coordKey({ lat: 40.44, lon: -3.68 }))
+  })
+})
+
+describe('sameForecast', () => {
+  const base = { day: '2026-09-28', weather_code: 3, t_max: 30.2, t_min: 24.8, precip_prob: 66 }
+
+  it('iguales salvo décimas, % de lluvia o un código de la misma familia', () => {
+    expect(sameForecast(base, { ...base, t_max: 30.9, precip_prob: 55 })).toBe(true)
+    expect(sameForecast(base, { ...base, t_min: 26 })).toBe(true)
+    expect(sameForecast({ ...base, weather_code: 1 }, { ...base, weather_code: 2 })).toBe(true)
+  })
+
+  it('distintas si cambia el cielo, 2° o más, o el aviso de lluvia', () => {
+    expect(sameForecast(base, { ...base, weather_code: 63 })).toBe(false)
+    expect(sameForecast(base, { ...base, t_max: 32.4 })).toBe(false)
+    expect(sameForecast(base, { ...base, precip_prob: 10 })).toBe(false)
+    expect(sameForecast({ ...base, precip_prob: null }, { ...base, precip_prob: 29 })).toBe(true)
   })
 })

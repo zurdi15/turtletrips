@@ -128,9 +128,14 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
       class="flex items-center gap-x-3 px-4 py-1"
       :class="TONE_CLASSES[tone].row"
     >
+      <!-- transporte: columna fija (alinea horas y rutas entre filas); el resto
+           ("Check-out: 10:00") crece antes que recortarse en móvil -->
       <span
-        class="text-xs sm:text-sm w-24 sm:w-28 shrink-0 truncate"
-        :class="row.transport?.layover ? 'opacity-60' : 'opacity-80'"
+        class="text-xs sm:text-sm shrink-0"
+        :class="[
+          row.transport ? 'w-24 sm:w-28 truncate' : 'min-w-24 sm:min-w-28 whitespace-nowrap',
+          row.transport?.layover ? 'opacity-60' : 'opacity-80',
+        ]"
       >
         {{ row.transport ? row.transport.kind : row.head }}
       </span>

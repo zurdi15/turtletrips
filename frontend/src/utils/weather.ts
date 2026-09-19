@@ -1,4 +1,4 @@
-import type { Booking, ItineraryItem, Place } from '../api/types'
+import type { Booking, DayForecast, ItineraryItem, Place } from '../api/types'
 
 export interface Coord {
   lat: number
@@ -17,6 +17,24 @@ export function weatherIcon(code: number): string {
   if ((code >= 71 && code <= 77) || code === 85 || code === 86) return 'mdi mdi-weather-snowy'
   if (code >= 95) return 'mdi mdi-weather-lightning-rainy'
   return 'mdi mdi-weather-partly-cloudy'
+}
+
+/** la agenda solo avisa de lluvia desde este % de probabilidad */
+export const RAIN_ALERT_PCT = 30
+
+/**
+ * ¿Dice lo mismo que la otra previsión? Mismo icono, máx/mín a ±1° y el mismo
+ * aviso de lluvia (sí/no, no el % exacto). La agenda la usa para no repetir en
+ * cada actividad el tiempo que ya enseña la cabecera del día.
+ */
+export function sameForecast(a: DayForecast, b: DayForecast): boolean {
+  const rains = (f: DayForecast) => (f.precip_prob ?? 0) >= RAIN_ALERT_PCT
+  return (
+    weatherIcon(a.weather_code) === weatherIcon(b.weather_code) &&
+    Math.abs(Math.round(a.t_max) - Math.round(b.t_max)) <= 1 &&
+    Math.abs(Math.round(a.t_min) - Math.round(b.t_min)) <= 1 &&
+    rains(a) === rains(b)
+  )
 }
 
 /** clave de agrupación: ~11 km de resolución, suficiente para previsión diaria */

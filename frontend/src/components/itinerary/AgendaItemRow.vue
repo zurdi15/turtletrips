@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
+import ForecastChip from './ForecastChip.vue'
 import type { DayForecast, ItineraryItem } from '../../api/types'
 import { TRANSFER_MODE_ICONS } from '../../constants'
 import { intlLocale } from '../../i18n'
 import { fmtDayShort, fmtTime, rangeNights } from '../../utils/itinerary'
 import { formatKm, formatMinutes, type Transfer, type TransferMode } from '../../utils/transfers'
-import { weatherIcon } from '../../utils/weather'
 
 // contenido de una fila arrastrable de la agenda; el bucle <draggable> vive en
 // el padre (el drag entre días no puede cruzar un boundary de componente)
@@ -16,7 +16,8 @@ defineProps<{
   placeName: string | null
   bookingTitle: string | null
   expenseId: number | null
-  /** previsión del sitio de ESTA actividad (puede diferir de la del día) */
+  /** previsión del sitio de ESTA actividad, solo si difiere de la del día
+   *  (repetida en cada fila era ruido) */
   forecast?: DayForecast | null
   /** traslado desde la parada anterior: se pinta ENCIMA de la fila */
   transfer?: Transfer | null
@@ -50,9 +51,17 @@ defineEmits<{ edit: []; remove: [] }>()
     <div class="flex items-center gap-3 px-4 py-2.5">
       <i class="pi pi-bars drag-handle cursor-grab text-ink-disabled group-hover:text-ink-faint" />
       <div class="flex-1 min-w-0 ml-1">
-        <!-- la hora en su propia fila (no columna): sin ella no se reserva espacio -->
-        <p v-if="item.start_time" class="text-xs font-mono text-ink-faint">
-          {{ fmtTime(item.start_time) }}<template v-if="item.end_time">–{{ fmtTime(item.end_time) }}</template>
+        <!-- hora y tiempo en su propia fila (no columna): sin ellos no se
+             reserva espacio, y el título se queda con todo el ancho (con el
+             tiempo a la derecha, en móvil quedaba una columna de dos palabras) -->
+        <p
+          v-if="item.start_time || forecast"
+          class="flex flex-wrap items-center gap-x-2.5 text-xs text-ink-faint"
+        >
+          <span v-if="item.start_time" class="font-mono">
+            {{ fmtTime(item.start_time) }}<template v-if="item.end_time">–{{ fmtTime(item.end_time) }}</template>
+          </span>
+          <ForecastChip v-if="forecast" :forecast="forecast" />
         </p>
         <span class="font-medium text-ink">{{ item.title }}</span>
         <!-- enlaces compactos: solo icono, el detalle vive en el tooltip -->
@@ -87,23 +96,6 @@ defineEmits<{ edit: []; remove: [] }>()
         </div>
         <p v-if="item.notes" class="text-xs text-ink-faint whitespace-pre-line break-words">{{ item.notes }}</p>
       </div>
-      <!-- previsión del sitio de la actividad: máx/mín y lluvia si amenaza -->
-      <span
-        v-if="forecast"
-        class="flex items-center gap-1.5 text-xs text-ink-faint whitespace-nowrap shrink-0"
-      >
-        <i :class="weatherIcon(forecast.weather_code)" class="text-sm" />
-        <span class="tabular-nums">
-          {{ Math.round(forecast.t_max) }}° / {{ Math.round(forecast.t_min) }}°
-        </span>
-        <span
-          v-if="(forecast.precip_prob ?? 0) >= 30"
-          class="text-info"
-          v-tooltip.top="$t('itinerary.agenda.rainProb', { pct: forecast.precip_prob })"
-        >
-          <i class="mdi mdi-water text-2xs" />{{ forecast.precip_prob }}%
-        </span>
-      </span>
       <RowActions @edit="$emit('edit')" @remove="$emit('remove')" />
     </div>
   </div>
