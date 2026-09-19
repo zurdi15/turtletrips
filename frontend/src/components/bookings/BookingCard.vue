@@ -63,14 +63,15 @@ const addressLine = computed(() => bookingAddressLine(props.booking.address, pro
           v-tooltip.top="$t('bookings.card.copyBookingCode')"
           @click="$emit('copy-code', booking.confirmation_code!)"
         />
-        <Tag
-          v-if="booking.flight_number"
-          :value="booking.flight_number"
-          severity="info"
-          class="cursor-pointer font-mono"
-          v-tooltip.top="$t('bookings.card.copyFlightCode')"
-          @click="$emit('copy-code', booking.flight_number!)"
-        />
+        <span v-if="booking.flight_number" class="max-sm:basis-full">
+          <Tag
+            :value="booking.flight_number"
+            severity="info"
+            class="cursor-pointer font-mono"
+            v-tooltip.top="$t('bookings.card.copyFlightCode')"
+            @click="$emit('copy-code', booking.flight_number!)"
+          />
+        </span>
       </div>
 
       <!-- importe + acciones: en la fila del título, sin estirarse con ella
@@ -118,14 +119,17 @@ const addressLine = computed(() => bookingAddressLine(props.booking.address, pro
                     {{ formatDateTime(seg.departure_dt) }}
                     <template v-if="seg.arrival_dt"> → {{ formatDateTime(seg.arrival_dt) }}</template>
                   </span>
-                  <Tag
-                    v-if="seg.flight_number"
-                    :value="seg.flight_number"
-                    severity="info"
-                    class="cursor-pointer font-mono"
-                    v-tooltip.top="$t('bookings.card.copyFlightCode')"
-                    @click="$emit('copy-code', seg.flight_number!)"
-                  />
+                  <!-- en móvil el número de vuelo va SIEMPRE en su fila: si no,
+                       caía en la de la ruta o bajaba según el largo de las fechas -->
+                  <span v-if="seg.flight_number" class="max-sm:basis-full">
+                    <Tag
+                      :value="seg.flight_number"
+                      severity="info"
+                      class="cursor-pointer font-mono"
+                      v-tooltip.top="$t('bookings.card.copyFlightCode')"
+                      @click="$emit('copy-code', seg.flight_number!)"
+                    />
+                  </span>
                 </span>
                 <span
                   v-if="layoverInfo(journey, i)"
