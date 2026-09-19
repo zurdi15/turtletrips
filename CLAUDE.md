@@ -4,7 +4,7 @@ Multi-usuario con login propio (cookie de sesión). Vue 3 + FastAPI + SQLite, un
 
 ## Tareas
 
-El tablero de tareas del proyecto vive en Vikunja (proyecto "Turtletrips"), accesible por el servidor MCP `vikunja` que declara `.mcp.json` (`zurdi15/vikunja-mcp`, se ejecuta con `uvx`; el token sale de la variable de entorno `VIKUNJA_TOKEN` de cada máquina, nunca del repo). Cuando pidan "las tasks": `list_tasks`, hacerlas en el orden dado, `update_task done=true` SOLO tras push + release + despliegue, y `add_comment` con la versión que la cerró.
+El tablero de tareas del proyecto vive en Norna (proyecto "Turtletrips"), accesible por el servidor MCP `norna` registrado a nivel de usuario en cada máquina (el token sale de la variable de entorno `NORNA_TOKEN`, nunca del repo). Cuando pidan "las tasks": `tasks_list` con `filter: "project = <id> && done = false"` (el id sale de `projects_list`), hacerlas en el orden dado, `tasks_update done=true` SOLO tras push + release + despliegue, y `task_comments_create` con la versión que la cerró.
 
 ## Comandos
 
