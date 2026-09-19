@@ -55,6 +55,8 @@ async function pickColor(color: string) {
 
 // encuadre del avatar: se guarda al soltar, no en cada píxel del arrastre
 const avatarFocus = ref<Focus>({ x: 0.5, y: 0.5 })
+// la ayuda de arrastre va fuera del círculo y solo en modo encuadre
+const framingAvatar = ref(false)
 watch(
   traveler,
   (v) => {
@@ -125,6 +127,7 @@ async function removeAvatar() {
               <ImageFramer
                 v-if="traveler.avatar_url"
                 v-model="avatarFocus"
+                v-model:framing="framingAvatar"
                 :src="traveler.avatar_url"
                 aspect="1 / 1"
                 circle
@@ -159,7 +162,7 @@ async function removeAvatar() {
                 @click="removeAvatar"
               />
             </div>
-            <span v-if="traveler.avatar_url" class="text-xs text-ink-faint text-center">
+            <span v-if="traveler.avatar_url && framingAvatar" class="text-xs text-ink-faint text-center">
               {{ t('common.image.frameHint') }}
             </span>
           </div>

@@ -2,7 +2,7 @@
 // Primitiva TONTA: la imagen dentro de su marco real, arrastrable para elegir
 // qué parte se ve. No guarda nada — emite el encuadre y ya decide el
 // consumidor cuándo persistirlo.
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import {
   canFrame,
   clamp01,
@@ -28,6 +28,11 @@ const props = withDefaults(
 )
 
 const focus = defineModel<Focus>({ required: true })
+// modo encuadre: el arrastre solo existe tras pulsar "Encuadrar". Siempre
+// activo, el marco llevaba touch-action: none y en móvil un scroll que
+// empezase sobre la imagen la movía en vez de bajar por la página. Es
+// v-model opcional para quien pinte la ayuda fuera del marco
+const framing = defineModel<boolean>('framing', { default: false })
 
 const frameEl = ref<HTMLElement | null>(null)
 const imgEl = ref<HTMLImageElement | null>(null)
@@ -39,6 +44,7 @@ const overflow = computed(() => coverOverflow(natural.value, frame.value))
 // una imagen con la misma proporción que el marco no tiene nada que encuadrar:
 // mejor decirlo que dejar al usuario arrastrando algo que no se mueve
 const movable = computed(() => !props.disabled && canFrame(overflow.value))
+const active = computed(() => movable.value && framing.value)
 
 const position = computed(() => focusStyle(focus.value.x, focus.value.y))
 
@@ -50,8 +56,24 @@ function measure() {
 }
 
 // imagen nueva en el mismo marco: hay que volver a medir (la anterior podía ser
-// panorámica y la nueva un retrato)
-watch(() => props.src, measure)
+// panorámica y la nueva un retrato) y se sale del modo encuadre
+watch(
+  () => props.src,
+  () => {
+    framing.value = false
+    measure()
+  },
+)
+
+async function toggleFraming() {
+  measure()
+  framing.value = !framing.value
+  // con el foco en el marco las flechas encuadran sin un clic más
+  if (framing.value) {
+    await nextTick()
+    frameEl.value?.focus({ preventScroll: true })
+  }
+}
 
 onMounted(() => {
   // servida de caché: el `load` pudo dispararse antes de montarse el listener
@@ -65,7 +87,7 @@ function onPointerDown(event: PointerEvent) {
   // haberse disparado antes de que este componente lo escuchase, y sin medidas
   // `movable` sale false y el arrastre no llegaría a empezar nunca
   measure()
-  if (!movable.value) return
+  if (!active.value) return
   last = { x: event.clientX, y: event.clientY }
   dragging.value = true
   // el puntero se captura para que el arrastre siga aunque te salgas del marco
@@ -92,7 +114,7 @@ function onPointerUp(event: PointerEvent) {
 // cubre el recorrido en medio centenar de pulsaciones y afina lo suficiente
 const STEP = 0.02
 function onKeydown(event: KeyboardEvent) {
-  if (!movable.value) return
+  if (!active.value) return
   const dx = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
   const dy = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0
   if (!dx && !dy) return
@@ -106,46 +128,67 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="flex flex-col gap-1">
-    <div
-      ref="frameEl"
-      class="relative overflow-hidden border border-line select-none"
-      :class="[
-        circle ? 'rounded-full' : 'rounded-card',
-        movable ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default',
-      ]"
-      :style="{ aspectRatio: aspect, touchAction: movable ? 'none' : undefined }"
-      :tabindex="movable ? 0 : undefined"
-      role="application"
-      :aria-label="hint || undefined"
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
-      @keydown="onKeydown"
-    >
-      <img
-        ref="imgEl"
-        :src="src"
-        alt=""
-        draggable="false"
-        class="w-full h-full object-cover"
-        :style="{ objectPosition: position }"
-        @load="measure"
-      />
-      <!-- retícula de encuadre, solo mientras arrastras: fuera del arrastre
-           ensuciaría la vista previa -->
+    <div class="relative">
       <div
-        v-if="dragging"
-        class="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3"
-        aria-hidden="true"
+        ref="frameEl"
+        class="relative overflow-hidden border border-line select-none outline-none"
+        :class="[
+          circle ? 'rounded-full' : 'rounded-card',
+          active ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default',
+          active ? 'ring-2 ring-primary' : '',
+        ]"
+        :style="{ aspectRatio: aspect, touchAction: active ? 'none' : undefined }"
+        :tabindex="active ? 0 : undefined"
+        role="application"
+        :aria-label="hint || undefined"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerUp"
+        @pointercancel="onPointerUp"
+        @keydown="onKeydown"
       >
-        <span
-          v-for="i in 9"
-          :key="i"
-          class="border border-white/40"
+        <img
+          ref="imgEl"
+          :src="src"
+          alt=""
+          draggable="false"
+          class="w-full h-full object-cover"
+          :style="{ objectPosition: position }"
+          @load="measure"
         />
+        <!-- retícula de encuadre, solo mientras arrastras: fuera del arrastre
+             ensuciaría la vista previa -->
+        <div
+          v-if="dragging"
+          class="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3"
+          aria-hidden="true"
+        >
+          <span
+            v-for="i in 9"
+            :key="i"
+            class="border border-white/40"
+          />
+        </div>
       </div>
+      <!-- entrar/salir del modo encuadre. En el avatar redondo va de chapa sin
+           texto en la esquina (fuera del recorte del círculo) -->
+      <button
+        v-if="movable"
+        type="button"
+        class="absolute flex items-center justify-center gap-1.5 rounded-full text-xs font-medium text-white shadow-lift cursor-pointer"
+        :class="[
+          circle ? 'bottom-0 right-0 w-8 h-8' : 'bottom-2 right-2 h-8 px-3',
+          framing ? 'bg-primary' : 'bg-black/55 hover:bg-black/70',
+        ]"
+        :aria-pressed="framing"
+        :aria-label="framing ? $t('common.image.frameDone') : $t('common.image.frame')"
+        v-tooltip.top="circle ? (framing ? $t('common.image.frameDone') : $t('common.image.frame')) : undefined"
+        @click="toggleFraming"
+      >
+        <i :class="framing ? 'pi pi-check' : 'mdi mdi-crop'" />
+        <span v-if="!circle">{{ framing ? $t('common.image.frameDone') : $t('common.image.frame') }}</span>
+      </button>
     </div>
-    <span v-if="hint && movable" class="text-xs text-ink-faint">{{ hint }}</span>
+    <span v-if="hint && active" class="text-xs text-ink-faint">{{ hint }}</span>
   </div>
 </template>

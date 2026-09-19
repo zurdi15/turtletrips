@@ -46,6 +46,8 @@ export default {
   },
   // encuadre de las imágenes recortadas (ImageFramer)
   image: {
+    frame: 'Encuadrar',
+    frameDone: 'Listo',
     frameHint: 'Arrastra la imagen para encuadrarla',
     frameSaved: 'Encuadre guardado',
     frameError: 'No se pudo guardar el encuadre',

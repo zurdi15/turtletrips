@@ -40,6 +40,8 @@ export default {
     deleteConfirm: 'Delete the file "{name}"?',
   },
   image: {
+    frame: 'Reframe',
+    frameDone: 'Done',
     frameHint: 'Drag the image to reposition it',
     frameSaved: 'Framing saved',
     frameError: 'Could not save the framing',
