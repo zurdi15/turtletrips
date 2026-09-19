@@ -9,13 +9,12 @@ export interface AgendaRow {
   /** texto del enlace: ruta MAD → NRT o título de la reserva */
   label: string
   bookingId: number
+  /** nombre de la reserva: tooltip de sus chips cuando la banda lleva varias */
+  bookingTitle: string
   placeId: number | null
   expenseId: number | null
   /** el chip de gasto hereda el color (banda ámbar: ámbar sobre ámbar no se ve) */
   expenseInherit?: boolean
-  /** sin chips: los tramos de un trayecto los llevan una sola vez (la primera
-   *  fila); el label sigue enlazando a la reserva */
-  hideChips?: boolean
   /** transporte: tipo, horas y ruta por separado, cada uno con su tipografía
    *  (si está, head/label se ignoran) */
   transport?: TransportRowView
@@ -23,11 +22,13 @@ export interface AgendaRow {
 </script>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import EntityLink from '../trip/EntityLink.vue'
 
 // UNA banda para las tres secciones clonadas de la agenda: transporte (azul,
 // arriba), otras reservas (ámbar, arriba) y alojamiento (violeta, al pie)
-withDefaults(
+const props = withDefaults(
   defineProps<{
     tone: 'info' | 'warn' | 'lodging'
     title: string
@@ -39,6 +40,30 @@ withDefaults(
   }>(),
   { position: 'top' },
 )
+
+const { t } = useI18n()
+
+// chips de sitio/gasto/reserva: van en la cabecera de la banda, UN grupo por
+// reserva (un vuelo con escalas son varias filas y una sola reserva). Al pie
+// de cada fila bajaban en móvil a una línea propia y partían el bloque
+const chipGroups = computed(() => {
+  const groups = new Map<number, Pick<AgendaRow, 'bookingId' | 'bookingTitle' | 'placeId' | 'expenseId' | 'expenseInherit'>>()
+  for (const row of props.rows) {
+    const group = groups.get(row.bookingId)
+    if (!group) {
+      groups.set(row.bookingId, { ...row })
+      continue
+    }
+    group.placeId ??= row.placeId
+    group.expenseId ??= row.expenseId
+  }
+  return [...groups.values()]
+})
+
+// con varias reservas en la banda cada chip dice de cuál es
+function chipTooltip(key: string, group: { bookingTitle: string }): string | undefined {
+  return chipGroups.value.length > 1 ? `${t(key)}: ${group.bookingTitle}` : undefined
+}
 
 const TONE_CLASSES: Record<string, { band: string; header: string; row: string }> = {
   info: { band: 'bg-info-tint-strong', header: 'text-info', row: 'text-info-strong' },
@@ -52,16 +77,55 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
     class="py-1.5"
     :class="[TONE_CLASSES[tone].band, position === 'bottom' ? 'border-t border-line-subtle' : 'border-b border-line-subtle']"
   >
-    <p
-      class="px-4 pb-0.5 text-2xs font-semibold uppercase tracking-wide flex items-center gap-1.5"
+    <div
+      class="px-4 pb-0.5 flex items-center gap-1.5"
       :class="TONE_CLASSES[tone].header"
     >
-      <i :class="icon" /> {{ title }}
-    </p>
+      <p class="text-2xs font-semibold uppercase tracking-wide flex items-center gap-1.5">
+        <i :class="icon" /> {{ title }}
+      </p>
+      <!-- chips de cada reserva, con aire: separados del título y entre sí,
+           y un filete entre reservas si la banda lleva varias -->
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 ml-4">
+        <span
+          v-for="(group, i) in chipGroups"
+          :key="group.bookingId"
+          class="flex items-center gap-3.5"
+        >
+          <span v-if="i > 0" class="w-px h-3 mr-0.5 bg-current opacity-25" />
+          <EntityLink
+            v-if="group.placeId"
+            type="place"
+            :tripId="tripId"
+            :targetId="group.placeId"
+            :tooltip="chipTooltip('common.entityLink.viewPlace', group)"
+            size="2xs"
+          />
+          <EntityLink
+            v-if="group.expenseId"
+            type="expense"
+            :tripId="tripId"
+            :targetId="group.expenseId"
+            :inheritColor="group.expenseInherit"
+            :tooltip="chipTooltip('common.entityLink.viewExpense', group)"
+            size="2xs"
+          />
+          <EntityLink
+            type="booking"
+            :tripId="tripId"
+            :targetId="group.bookingId"
+            :tooltip="chipTooltip('common.entityLink.viewBooking', group)"
+            inheritColor
+            dimmed
+            size="2xs"
+          />
+        </span>
+      </div>
+    </div>
     <div
       v-for="row in rows"
       :key="row.key"
-      class="flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-0.5 px-4 py-1"
+      class="flex items-center gap-x-3 px-4 py-1"
       :class="TONE_CLASSES[tone].row"
     >
       <span
@@ -110,36 +174,6 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
       >
         {{ row.label }}
       </router-link>
-      <!-- chips de sitio/gasto/reserva: en móvil bajan a su propia fila,
-           alineados con el texto (si no, truncaban el origen → destino) -->
-      <span
-        v-if="!row.hideChips"
-        class="basis-full sm:basis-auto sm:ml-auto flex items-center gap-2.5 shrink-0 pl-[6.75rem] sm:pl-0"
-      >
-        <EntityLink
-          v-if="row.placeId"
-          type="place"
-          :tripId="tripId"
-          :targetId="row.placeId"
-          size="2xs"
-        />
-        <EntityLink
-          v-if="row.expenseId"
-          type="expense"
-          :tripId="tripId"
-          :targetId="row.expenseId"
-          :inheritColor="row.expenseInherit"
-          size="2xs"
-        />
-        <EntityLink
-          type="booking"
-          :tripId="tripId"
-          :targetId="row.bookingId"
-          inheritColor
-          dimmed
-          size="2xs"
-        />
-      </span>
     </div>
   </div>
 </template>

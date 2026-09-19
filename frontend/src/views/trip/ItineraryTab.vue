@@ -41,7 +41,6 @@ import {
   transportKey,
   transportLabel,
   transportRowView,
-  type TransportEntry,
 } from '../../utils/itinerary'
 
 const props = defineProps<{ trip: Trip }>()
@@ -173,28 +172,18 @@ function bookingTitle(id: number | null): string | null {
 }
 
 // filas de las tres bandas de reservas, ya etiquetadas para AgendaBookingSection
+// (los chips de sitio/gasto/reserva los agrupa la banda por reserva, en su cabecera)
 function transportRows(day: string): AgendaRow[] {
-  // los chips (sitio/gasto/reserva) van UNA vez por trayecto: en su ÚLTIMA
-  // fila del día, que en móvil bajan a una fila propia y en mitad de un vuelo
-  // con escalas partían el bloque; los demás tramos y las escalas se quedan
-  // solo con el enlace
-  const entries = transportsByDay.value.get(day) ?? []
-  const groupOf = (e: TransportEntry) => `${e.b.id}-j${e.journey ?? 0}`
-  const lastOfGroup = new Map<string, number>()
-  entries.forEach((e, i) => lastOfGroup.set(groupOf(e), i))
-  return entries.map((e, i) => {
-    const carrier = lastOfGroup.get(groupOf(e)) === i
-    return {
-      key: transportKey(e),
-      head: transportHead(e, t),
-      label: transportLabel(e),
-      transport: transportRowView(e, t),
-      bookingId: e.b.id,
-      placeId: carrier ? e.b.place_id : null,
-      expenseId: carrier ? (expenseByBooking.value.get(e.b.id) ?? null) : null,
-      hideChips: !carrier,
-    }
-  })
+  return (transportsByDay.value.get(day) ?? []).map((e) => ({
+    key: transportKey(e),
+    head: transportHead(e, t),
+    label: transportLabel(e),
+    transport: transportRowView(e, t),
+    bookingId: e.b.id,
+    bookingTitle: e.b.title,
+    placeId: e.b.place_id,
+    expenseId: expenseByBooking.value.get(e.b.id) ?? null,
+  }))
 }
 
 function otherBookingRows(day: string): AgendaRow[] {
@@ -203,6 +192,7 @@ function otherBookingRows(day: string): AgendaRow[] {
     head: bookingHead(b, t),
     label: b.title,
     bookingId: b.id,
+    bookingTitle: b.title,
     placeId: b.place_id,
     expenseId: expenseByBooking.value.get(b.id) ?? null,
     expenseInherit: true,
@@ -215,6 +205,7 @@ function lodgingRows(day: string): AgendaRow[] {
     head: lodgingHead(b, day, t),
     label: b.title,
     bookingId: b.id,
+    bookingTitle: b.title,
     placeId: b.place_id,
     expenseId: expenseByBooking.value.get(b.id) ?? null,
   }))
