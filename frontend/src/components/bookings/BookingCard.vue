@@ -11,6 +11,7 @@ import type { Booking, Traveler, Trip } from '../../api/types'
 import { BOOKING_TYPE_ICONS, isTransport } from '../../constants'
 import { formatDateTime, formatMoney } from '../../composables/useMoney'
 import { groupJourneys, layoverInfo, segmentLabel } from '../../utils/segments'
+import { bookingAddressLine } from '../../utils/bookings'
 
 const props = defineProps<{
   booking: Booking
@@ -30,6 +31,9 @@ defineEmits<{ edit: []; remove: []; 'create-expense': []; 'copy-code': [code: st
 const journeys = computed(() => groupJourneys(props.booking.segments ?? []))
 const hasSegments = computed(() => (props.booking.segments ?? []).length > 0)
 
+// la dirección sale SIEMPRE: con coordenadas (buscadas o con el pin del mapa)
+// la reserva se enlaza a un sitio y el chip de sitio no dice dónde está
+const addressLine = computed(() => bookingAddressLine(props.booking.address, props.booking.title))
 </script>
 
 <template>
@@ -148,13 +152,10 @@ const hasSegments = computed(() => (props.booking.segments ?? []).length > 0)
               <template v-if="booking.end_dt"> → {{ formatDateTime(booking.end_dt) }}</template>
             </span>
           </template>
-          <span
-            v-if="!booking.place_id && booking.address"
-            class="flex items-center gap-1 min-w-0"
-          >
+          <span v-if="addressLine" class="flex items-center gap-1 min-w-0">
             <i class="pi pi-map-marker text-xs shrink-0" />
             <span class="truncate max-w-[24rem]" v-tooltip.top="booking.address">
-              {{ booking.address }}
+              {{ addressLine }}
             </span>
           </span>
         </div>
