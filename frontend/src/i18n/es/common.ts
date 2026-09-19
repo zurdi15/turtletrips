@@ -14,6 +14,7 @@ export default {
     retry: 'Reintentar',
     apply: 'Aplicar',
     filters: 'Filtros',
+    more: 'Más acciones',
     changeColor: 'Cambiar color',
   },
   // navegación principal (AppNav)

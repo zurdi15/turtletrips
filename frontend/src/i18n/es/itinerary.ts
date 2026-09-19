@@ -5,10 +5,9 @@ export default {
   },
   actions: {
     newActivity: 'Nueva actividad',
-    export: 'Exportar',
-    exportTooltip: 'Descargar calendario (.ics)',
-    subscribe: 'Suscribirse',
-    subscribeTooltip: 'URL de suscripción: tu calendario se actualiza solo',
+    export: 'Descargar calendario (.ics)',
+    subscribe: 'Suscribirse al calendario',
+    subscribeHint: 'URL de suscripción: tu calendario se actualiza solo',
   },
   empty: {
     title: 'Sin itinerario',

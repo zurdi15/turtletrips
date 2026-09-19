@@ -13,6 +13,7 @@ export default {
     retry: 'Retry',
     apply: 'Apply',
     filters: 'Filters',
+    more: 'More actions',
     changeColor: 'Change color',
   },
   nav: {

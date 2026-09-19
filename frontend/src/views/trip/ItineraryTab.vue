@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import ClusterBtn from '../../components/ui/ClusterBtn.vue'
+import ActionMenu, { type ActionMenuItem } from '../../components/ui/ActionMenu.vue'
 import draggable from 'vuedraggable'
 import ItineraryFormDialog from '../../components/itinerary/ItineraryFormDialog.vue'
 import CalendarSubscribeDialog from '../../components/itinerary/CalendarSubscribeDialog.vue'
@@ -64,6 +65,17 @@ const showSubscribe = ref(false)
 const presetDay = ref<string | null>(null)
 
 const icsUrl = computed(() => `${API_BASE}/trips/${props.trip.id}/calendar.ics`)
+
+// calendario (.ics y suscripción): al menú, a la derecha de "Nueva actividad"
+const actionItems = computed<ActionMenuItem[]>(() => [
+  { label: t('itinerary.actions.export'), icon: 'pi pi-calendar-plus', href: icsUrl.value },
+  {
+    label: t('itinerary.actions.subscribe'),
+    hint: t('itinerary.actions.subscribeHint'),
+    icon: 'mdi mdi-calendar-sync',
+    command: () => (showSubscribe.value = true),
+  },
+])
 
 useTripTabData(() => props.trip, {
   load(tripId) {
@@ -242,10 +254,17 @@ function openNew(day?: string) {
 
 <template>
   <div>
+    <!-- alta + menú del calendario; los selectores a todo el ancho en móvil -->
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <Button :label="t('itinerary.actions.newActivity')" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew()" />
+      <Button
+        :label="t('itinerary.actions.newActivity')"
+        icon="pi pi-plus"
+        class="flex-1 sm:flex-none"
+        @click="openNew()"
+      />
+      <ActionMenu :items="actionItems" :label="t('common.actions.more')" />
       <span class="hidden sm:block flex-1" />
-      <ClusterBtn v-model="view" :options="viewOptions" class="flex-1 sm:flex-none" />
+      <ClusterBtn v-model="view" :options="viewOptions" class="basis-full sm:basis-auto" />
       <!-- cómo te mueves: solo cambia la estimación de los traslados. En móvil
            baja a su propia fila (con los cuatro modos en la misma no cabían las
            etiquetas de Agenda/Calendario) -->
@@ -255,26 +274,7 @@ function openNew(day?: string) {
         :options="transferModeOptions"
         size="small"
         iconOnly
-        class="max-sm:order-last max-sm:basis-full"
-      />
-      <a :href="icsUrl" download>
-        <Button
-          :label="t('itinerary.actions.export')"
-          icon="pi pi-calendar-plus"
-          severity="secondary"
-          outlined
-          v-tooltip.bottom="t('itinerary.actions.exportTooltip')"
-          class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
-        />
-      </a>
-      <Button
-        :label="t('itinerary.actions.subscribe')"
-        icon="mdi mdi-calendar-sync"
-        severity="secondary"
-        outlined
-        v-tooltip.bottom="t('itinerary.actions.subscribeTooltip')"
-        class="max-sm:[&_.p-button-label]:hidden max-sm:!w-10 max-sm:!h-10 max-sm:!p-0"
-        @click="showSubscribe = true"
+        class="max-sm:basis-full"
       />
     </div>
 

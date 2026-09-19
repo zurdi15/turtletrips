@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Select from 'primevue/select'
 import ClusterBtn from '../../components/ui/ClusterBtn.vue'
+import ActionMenu, { type ActionMenuItem } from '../../components/ui/ActionMenu.vue'
 import ExpenseFormDialog from '../../components/expenses/ExpenseFormDialog.vue'
 import ExpenseImportDialog from '../../components/expenses/ExpenseImportDialog.vue'
 import EmptyState from '../../components/EmptyState.vue'
@@ -58,6 +59,17 @@ function catColor(name: string): string {
 
 const showImport = ref(false)
 const showConverter = ref(false)
+
+// acciones secundarias de la barra: al menú, a la derecha de "Nuevo gasto"
+const actionItems = computed<ActionMenuItem[]>(() => [
+  { label: t('expenses.actions.importCsv'), icon: 'pi pi-file-import', command: () => (showImport.value = true) },
+  { label: t('expenses.actions.exportCsv'), icon: 'pi pi-file-export', href: store.exportUrl() },
+  {
+    label: t('expenses.actions.converter'),
+    icon: 'pi pi-arrow-right-arrow-left',
+    command: () => (showConverter.value = true),
+  },
+])
 
 // bajo `sm` la tabla se sustituye por la lista apilada (sin scroll lateral)
 const isDesktop = useMediaQuery('(min-width: 640px)')
@@ -247,28 +259,35 @@ const {
       :currencyBreakdown="breakdown"
     />
 
-    <!-- barra de acciones -->
+    <!-- barra de acciones: alta + menú (importar, exportar, conversor); el
+         selector de vista debajo a todo el ancho en móvil (a la derecha en
+         escritorio) y, bajo él, filtros y agrupar con su panel -->
     <div class="flex flex-wrap items-center gap-2 mb-3">
-      <Button :label="$t('expenses.actions.newExpense')" icon="pi pi-plus" class="w-full sm:w-auto" @click="openNew" />
-      <FilterToggleButton
-        v-if="viewMode !== 'balances'"
-        v-model="showFilters"
-        :count="activeFilterCount"
+      <Button
+        :label="$t('expenses.actions.newExpense')"
+        icon="pi pi-plus"
+        class="flex-1 sm:flex-none"
+        @click="openNew"
       />
-      <Select
-        v-if="viewMode === 'table'"
-        v-model="tableGroup"
-        :options="tableGroupOptions"
-        optionLabel="label"
-        optionValue="value"
-        class="flex-1 sm:flex-none sm:w-52"
-      />
-      <!-- en móvil el panel salta aquí (justo bajo su botón); en desktop order-last lo baja
-           tras la fila única. -mt-2 anula el gap extra de la línea fantasma cerrada -->
+      <ActionMenu :items="actionItems" :label="$t('common.actions.more')" />
+      <span class="hidden sm:block flex-1" />
+      <ClusterBtn v-model="viewMode" :options="viewOptions" class="basis-full sm:basis-auto" />
+      <div v-if="viewMode !== 'balances'" class="basis-full flex items-center gap-2">
+        <FilterToggleButton v-model="showFilters" :count="activeFilterCount" />
+        <Select
+          v-if="viewMode === 'table'"
+          v-model="tableGroup"
+          :options="tableGroupOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="flex-1 sm:flex-none sm:w-52"
+        />
+      </div>
+      <!-- -mt-2 anula el gap extra de la línea fantasma cerrada -->
       <CollapsePanel
         v-if="viewMode !== 'balances'"
         :open="showFilters"
-        class="w-full sm:order-last -mt-2"
+        class="w-full -mt-2"
       >
         <div class="pt-2">
           <ExpenseFilterPanel
@@ -282,30 +301,6 @@ const {
           />
         </div>
       </CollapsePanel>
-      <span class="hidden sm:block flex-1" />
-      <ClusterBtn v-model="viewMode" :options="viewOptions" class="flex-1 sm:flex-none" />
-      <Button
-        icon="pi pi-file-import"
-        severity="secondary"
-        outlined
-        v-tooltip.bottom="$t('expenses.actions.importCsv')"
-        @click="showImport = true"
-      />
-      <a :href="store.exportUrl()" download>
-        <Button
-          icon="pi pi-file-export"
-          severity="secondary"
-          outlined
-          v-tooltip.bottom="$t('expenses.actions.exportCsv')"
-        />
-      </a>
-      <Button
-        icon="pi pi-arrow-right-arrow-left"
-        severity="secondary"
-        outlined
-        v-tooltip.bottom="$t('expenses.actions.converter')"
-        @click="showConverter = true"
-      />
     </div>
 
     <EmptyState

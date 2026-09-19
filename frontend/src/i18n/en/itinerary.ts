@@ -5,10 +5,9 @@ export default {
   },
   actions: {
     newActivity: 'New activity',
-    export: 'Export',
-    exportTooltip: 'Download calendar (.ics)',
-    subscribe: 'Subscribe',
-    subscribeTooltip: 'Subscription URL: your calendar stays up to date on its own',
+    export: 'Download calendar (.ics)',
+    subscribe: 'Subscribe to the calendar',
+    subscribeHint: 'Subscription URL: your calendar stays up to date on its own',
   },
   empty: {
     title: 'No itinerary yet',
