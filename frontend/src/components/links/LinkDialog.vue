@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -28,10 +28,13 @@ const groups = useLinkGroupsStore()
 
 // 0 = "sin bloque": el Select de PrimeVue pinta null como vacío, no como opción
 const NO_GROUP = 0
+// -1 = "nuevo bloque": abre el campo de nombre y el bloque se crea al guardar
+const NEW_GROUP = -1
 
 const title = ref('')
 const url = ref('')
 const groupId = ref<number>(NO_GROUP)
+const newGroupName = ref('')
 const notes = ref('')
 
 // imagen: al editar se gestiona en el acto contra el enlace (buscar en la
@@ -43,10 +46,31 @@ const pendingPreview = computed(() =>
   pendingImage.value ? URL.createObjectURL(pendingImage.value) : null,
 )
 
+// "Nuevo bloque" va el primero y con un filete debajo: es una acción, no un
+// bloque más de la lista (con ! porque la opción de PrimeVue fija su color y
+// su overflow: hidden, que recortaría el filete)
 const groupOptions = computed(() => [
-  { value: NO_GROUP, label: t('links.noGroup') },
-  ...groups.items.map((g) => ({ value: g.id, label: g.name })),
+  { value: NEW_GROUP, label: t('links.newGroup'), icon: 'pi pi-folder-plus' },
+  { value: NO_GROUP, label: t('links.noGroup'), icon: null },
+  ...groups.items.map((g) => ({ value: g.id, label: g.name, icon: null })),
 ])
+const groupSelectPt = {
+  option: ({ context }: { context: { option?: { value: number } } }) =>
+    context.option?.value === NEW_GROUP
+      ? {
+          class:
+            "relative mb-2 !overflow-visible !text-primary after:content-[''] after:absolute after:-inset-x-1 after:-bottom-1 after:border-b after:border-line",
+        }
+      : {},
+}
+
+// elegir "Nuevo bloque" lleva el foco al nombre (autofocus no vale en un
+// campo que aparece después; y el Select, al cerrarse, se queda el foco)
+const newGroupInput = ref<{ $el: HTMLInputElement } | null>(null)
+watch(groupId, (value) => {
+  if (value !== NEW_GROUP) return
+  nextTick(() => setTimeout(() => newGroupInput.value?.$el.focus()))
+})
 
 const { saving, save } = useFormDialog<TripLink>({
   visible,
@@ -55,6 +79,7 @@ const { saving, save } = useFormDialog<TripLink>({
     title.value = link?.title ?? ''
     url.value = link?.url ?? ''
     groupId.value = link ? (link.group_id ?? NO_GROUP) : (props.defaultGroupId ?? NO_GROUP)
+    newGroupName.value = ''
     notes.value = link?.notes ?? ''
     imageUrl.value = link?.image_url ?? null
     pendingImage.value = null
@@ -62,9 +87,18 @@ const { saving, save } = useFormDialog<TripLink>({
   validate() {
     if (!title.value.trim()) return t('links.dialog.titleRequired')
     if (!url.value.trim()) return t('links.dialog.urlRequired')
+    if (groupId.value === NEW_GROUP && !newGroupName.value.trim())
+      return t('links.groupDialog.nameRequired')
     return null
   },
   async submit() {
+    // el bloque nuevo se crea primero (con el icono por defecto, que se cambia
+    // luego desde su cabecera) y el enlace entra ya en él. Queda elegido: si
+    // falla el enlace, reintentar no crea un segundo bloque
+    if (groupId.value === NEW_GROUP) {
+      const group = await groups.create({ name: newGroupName.value.trim(), icon: null })
+      groupId.value = group.id
+    }
     const payload = {
       title: title.value.trim(),
       url: url.value.trim(),
@@ -146,8 +180,30 @@ async function removeImage() {
     <FormField :label="$t('links.dialog.url')" required>
       <InputText v-model="url" type="url" placeholder="https://…" @keyup.enter="save" />
     </FormField>
-    <FormField v-if="groups.items.length" :label="$t('links.dialog.group')">
-      <Select v-model="groupId" :options="groupOptions" optionLabel="label" optionValue="value" />
+    <FormField :label="$t('links.dialog.group')">
+      <Select
+        v-model="groupId"
+        :options="groupOptions"
+        optionLabel="label"
+        optionValue="value"
+        :pt="groupSelectPt"
+      >
+        <template #option="{ option }">
+          <span class="flex items-center gap-2">
+            <i v-if="option.icon" :class="option.icon" />
+            {{ option.label }}
+          </span>
+        </template>
+      </Select>
+      <InputText
+        v-if="groupId === NEW_GROUP"
+        ref="newGroupInput"
+        v-model="newGroupName"
+        :placeholder="$t('links.groupDialog.namePlaceholder')"
+        :aria-label="$t('links.dialog.newGroupName')"
+        class="mt-1"
+        @keyup.enter="save"
+      />
     </FormField>
     <FormField :label="$t('links.dialog.notes')">
       <Textarea v-model="notes" rows="2" autoResize />

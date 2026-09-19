@@ -127,28 +127,24 @@ function removeGroup(group: LinkGroup) {
 
 <template>
   <div>
-    <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+    <!-- los bloques se crean desde el propio enlace ("Nuevo bloque" en su
+         selector); Ordenar queda de icono a la derecha, en la misma fila -->
+    <div class="flex items-center gap-2 mb-4">
       <Button
         :label="$t('links.newLink')"
         icon="pi pi-plus"
-        class="w-full sm:w-auto"
+        class="flex-1 sm:flex-none"
         @click="openNewIn(null)"
       />
       <Button
-        :label="$t('links.newGroup')"
-        icon="pi pi-folder-plus"
-        outlined
-        severity="secondary"
-        class="w-full sm:w-auto"
-        @click="openGroupForm(null)"
-      />
-      <Button
         v-if="!isEmpty"
-        :label="reordering ? $t('links.reorderDone') : $t('links.reorder')"
         :icon="reordering ? 'pi pi-check' : 'pi pi-sort-alt'"
         :outlined="!reordering"
         severity="secondary"
-        class="w-full sm:w-auto sm:ml-auto"
+        :aria-label="reordering ? $t('links.reorderDone') : $t('links.reorder')"
+        :aria-pressed="reordering"
+        v-tooltip.bottom="reordering ? $t('links.reorderDone') : $t('links.reorder')"
+        class="ml-auto shrink-0"
         @click="reordering = !reordering"
       />
     </div>

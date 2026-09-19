@@ -21,6 +21,7 @@ export default {
     title: 'Nombre',
     url: 'Enlace',
     group: 'Bloque',
+    newGroupName: 'Nombre del bloque nuevo',
     notes: 'Notas',
     image: 'Imagen',
     imageHint: 'Sin imagen. Búscala en la web del enlace (hoteles de Booking, Agoda…) o sube una foto.',

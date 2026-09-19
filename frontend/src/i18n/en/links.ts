@@ -21,6 +21,7 @@ export default {
     title: 'Name',
     url: 'Link',
     group: 'Block',
+    newGroupName: 'New block name',
     notes: 'Notes',
     image: 'Image',
     imageHint: 'No image. Fetch it from the linked site (Booking, Agoda hotels…) or upload a photo.',
