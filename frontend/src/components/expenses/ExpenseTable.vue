@@ -8,6 +8,7 @@ import PayerBadge from './PayerBadge.vue'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import ExpenseNote from './ExpenseNote.vue'
+import OutOfStatsMark from './OutOfStatsMark.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
 import {
   isGroupSelected,
@@ -148,6 +149,7 @@ const { rowClass } = useRowFlash({
           <div v-if="data.currency !== trip.base_currency" class="text-xs text-ink-faint">
             ≈ {{ formatMoney(data.amount_base, trip.base_currency) }}
           </div>
+          <OutOfStatsMark v-if="!data.in_stats" />
         </div>
       </template>
     </Column>

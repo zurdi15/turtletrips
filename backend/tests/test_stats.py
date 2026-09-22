@@ -62,3 +62,18 @@ def test_yearly_stats_includes_retroactive_world_entries(client):
     assert years[2019]["trips"] == 0
     assert years[2019]["days"] == 0
     assert years[2024]["countries"] == ["PT"]
+
+
+def test_yearly_stats_skip_expenses_out_of_stats(client):
+    trip = _trip(client, "Japón", "2025-04-01", "2025-04-10", ["JP"])
+    client.post(
+        f"/api/v1/trips/{trip['id']}/expenses",
+        json={"day": "2025-04-02", "description": "Ramen", "amount": "20"},
+    )
+    # el vuelo, marcado fuera de estadísticas, no suma al gasto del año
+    client.post(
+        f"/api/v1/trips/{trip['id']}/expenses",
+        json={"day": "2025-04-01", "description": "Vuelo", "amount": "900", "in_stats": False},
+    )
+    years = {y["year"]: y for y in client.get("/api/v1/stats/yearly").json()}
+    assert years[2025]["spent"] == [{"currency": "EUR", "amount": 20.0}]

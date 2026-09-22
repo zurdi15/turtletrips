@@ -11,6 +11,7 @@ import {
   filterExpenses,
   groupTotals,
   isGroupSelected,
+  partitionForStats,
   sortRows,
   toggleGroupSelection,
   toggleRowSelection,
@@ -34,6 +35,7 @@ function makeExpense(overrides: Partial<Expense> = {}): Expense {
     paid_by_id: null,
     paid_by_common: false,
     paid: true,
+    in_stats: true,
     split_mode: 'equal',
     shares: [],
     notes: null,
@@ -124,6 +126,24 @@ describe('computeStats / tripDayCount', () => {
     expect(stats.perPerson).toBeNull()
     expect(stats.perDay).toBeNull()
     expect(stats.perDayPerson).toBeNull()
+  })
+})
+
+describe('partitionForStats', () => {
+  it('saca de las métricas los gastos marcados fuera de estadísticas', () => {
+    const dinner = makeExpense({ amount_base: 40 })
+    const flight = makeExpense({ amount_base: 600, in_stats: false })
+    const train = makeExpense({ amount_base: 50.5, in_stats: false })
+    const { counted, excludedCount, excludedTotal } = partitionForStats([dinner, flight, train])
+    expect(counted).toEqual([dinner])
+    expect(excludedCount).toBe(2)
+    expect(excludedTotal).toBe(650.5)
+    expect(computeStats(counted, 2, 4).perDay).toBe(10)
+  })
+
+  it('sin marcados deja la lista intacta', () => {
+    const items = [makeExpense(), makeExpense()]
+    expect(partitionForStats(items)).toEqual({ counted: items, excludedCount: 0, excludedTotal: 0 })
   })
 })
 

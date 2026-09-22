@@ -473,6 +473,10 @@ class Expense(TimestampMixin, Base):
     # False = pendiente de pago (reserva que se paga in situ): cuenta en los
     # totales y el presupuesto, pero nadie lo ha adelantado → fuera de los saldos
     paid: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    # False = fuera de las estadísticas (tarjetas, gráficas, resumen anual): un
+    # vuelo no debe inflar el gasto por día. Sigue contando en el presupuesto y
+    # en los saldos, que son dinero de verdad, no métricas
+    in_stats: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
     notes: Mapped[str | None] = mapped_column(Text)
 
     trip: Mapped[Trip] = relationship(back_populates="expenses")

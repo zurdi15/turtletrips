@@ -73,6 +73,9 @@ export default {
     noDates: 'no dates',
     perDayPerson: 'Per day and person',
     filtered: 'with filters applied',
+    outOfStats: '+{amount} not in stats',
+    outOfStatsTooltip:
+      '{n} expense marked as not in stats: left out of these figures and the charts, still counted in the budget and balances | {n} expenses marked as not in stats: left out of these figures and the charts, still counted in the budget and balances',
     originalCurrency: 'In original currency:',
     showMore: 'More stats',
     showLess: 'Fewer stats',
@@ -103,6 +106,8 @@ export default {
     viewReceipt: 'View receipt',
     showNote: 'Show the full note',
     hideNote: 'Collapse the note',
+    outOfStats: 'not in stats',
+    outOfStatsTooltip: 'Left out of the figures and charts; still counted in the budget and balances',
   },
   charts: {
     dim: {
@@ -120,10 +125,13 @@ export default {
     empty: 'No data with the current filters',
     total: '{amount} in total',
     excluding: '· excluding {list}',
+    outOfStats: '· without {n} expense not in stats | · without {n} expenses not in stats',
   },
   form: {
     otherCurrency: 'Other',
     paid: 'Paid',
+    inStats: 'Counts in stats',
+    inStatsHint: 'Turn it off for flights and the like so they do not inflate the averages (still in budget and balances)',
     newTitle: 'New expense',
     editTitle: 'Edit expense',
     addLabel: 'Add expense',

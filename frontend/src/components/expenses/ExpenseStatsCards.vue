@@ -17,6 +17,9 @@ const props = defineProps<{
   currency: string
   activeFilterCount: number
   currencyBreakdown: [string, number][]
+  /** gastos (con los filtros aplicados) que se quedan fuera de las métricas */
+  excludedCount: number
+  excludedTotal: number
 }>()
 
 const { t } = useI18n()
@@ -77,6 +80,14 @@ const extraCards = computed(() => [
           {{ formatMoney(total ?? 0, currency) }}
         </p>
         <p class="text-xs text-ink-faint mt-0.5">{{ $t('expenses.stats.count', { n: stats.count }) }}</p>
+        <p
+          v-if="excludedCount"
+          class="text-xs text-info mt-0.5"
+          v-tooltip.bottom="$t('expenses.stats.outOfStatsTooltip', { n: excludedCount }, excludedCount)"
+        >
+          <i class="pi pi-eye-slash mr-0.5" style="font-size: inherit" />
+          {{ $t('expenses.stats.outOfStats', { amount: formatMoney(excludedTotal, currency) }) }}
+        </p>
       </div>
       <div class="bg-surface rounded-card border border-line p-3.5">
         <p class="text-2xs uppercase tracking-wide text-ink-faint font-semibold">{{ $t('expenses.stats.budget') }}</p>

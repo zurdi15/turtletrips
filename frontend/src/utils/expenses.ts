@@ -81,6 +81,34 @@ export interface ExpenseStats {
   perDayPerson: number | null
 }
 
+export interface StatsPartition {
+  /** los que entran en tarjetas y gráficas */
+  counted: Expense[]
+  /** los marcados fuera de estadísticas (vuelos…): cuántos y cuánto suman */
+  excludedCount: number
+  excludedTotal: number
+}
+
+/**
+ * Separa los gastos marcados fuera de estadísticas. Es un filtro fijo que se
+ * aplica DESPUÉS de los del usuario: la tabla los sigue listando, pero las
+ * métricas y gráficas no los cuentan (el presupuesto y los saldos sí).
+ */
+export function partitionForStats(expenses: Expense[]): StatsPartition {
+  const counted: Expense[] = []
+  let excludedCount = 0
+  let excludedTotal = 0
+  for (const e of expenses) {
+    if (e.in_stats) {
+      counted.push(e)
+    } else {
+      excludedCount++
+      excludedTotal += e.amount_base
+    }
+  }
+  return { counted, excludedCount, excludedTotal }
+}
+
 /** Días del viaje si tiene fechas; si no, días distintos con gasto (o null). */
 export function tripDayCount(
   startDate: string | null,

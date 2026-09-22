@@ -24,7 +24,15 @@ def yearly(user: CurrentUser, db: Session = Depends(get_db)):
     trips = list(db.scalars(query).all())
     trip_ids = [trip.id for trip in trips]
     expenses = (
-        list(db.scalars(select(Expense).where(Expense.trip_id.in_(trip_ids))).all())
+        list(
+            db.scalars(
+                select(Expense).where(
+                    Expense.trip_id.in_(trip_ids),
+                    # los marcados fuera de estadísticas no suman al gasto del año
+                    Expense.in_stats.is_(True),
+                )
+            ).all()
+        )
         if trip_ids
         else []
     )

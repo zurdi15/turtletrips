@@ -73,6 +73,9 @@ export default {
     noDates: 'sin fechas',
     perDayPerson: 'Por día y persona',
     filtered: 'con filtros aplicados',
+    outOfStats: '+{amount} fuera de estadísticas',
+    outOfStatsTooltip:
+      '{n} gasto marcado fuera de estadísticas: no cuenta en estas cifras ni en las gráficas, sí en el presupuesto y los saldos | {n} gastos marcados fuera de estadísticas: no cuentan en estas cifras ni en las gráficas, sí en el presupuesto y los saldos',
     originalCurrency: 'En moneda original:',
     showMore: 'Más métricas',
     showLess: 'Menos métricas',
@@ -103,6 +106,8 @@ export default {
     viewReceipt: 'Ver recibo',
     showNote: 'Ver la nota completa',
     hideNote: 'Recoger la nota',
+    outOfStats: 'fuera de estadísticas',
+    outOfStatsTooltip: 'No cuenta en las métricas ni en las gráficas; sí en el presupuesto y los saldos',
   },
   charts: {
     dim: {
@@ -120,10 +125,13 @@ export default {
     empty: 'Sin datos con los filtros actuales',
     total: '{amount} en total',
     excluding: '· sin {list}',
+    outOfStats: '· sin {n} gasto fuera de estadísticas | · sin {n} gastos fuera de estadísticas',
   },
   form: {
     otherCurrency: 'Otra',
     paid: 'Pagado',
+    inStats: 'Cuenta en estadísticas',
+    inStatsHint: 'Apágalo en vuelos y similares para que no inflen las medias (sigue en presupuesto y saldos)',
     newTitle: 'Nuevo gasto',
     editTitle: 'Editar gasto',
     addLabel: 'Añadir gasto',

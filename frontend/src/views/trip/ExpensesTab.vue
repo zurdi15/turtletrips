@@ -38,6 +38,7 @@ import {
   computeStats,
   currencyBreakdown,
   groupTotals as computeGroupTotals,
+  partitionForStats,
   sortRows,
   tripDayCount,
   type ExpenseGroupBy,
@@ -153,14 +154,19 @@ const {
 })
 
 // ---- métricas ----
+// los gastos marcados fuera de estadísticas (vuelos…) siguen en la tabla, pero
+// ni tarjetas ni gráficas los cuentan
+const forStats = computed(() => partitionForStats(filtered.value))
 const stats = computed(() =>
   computeStats(
-    filtered.value,
+    forStats.value.counted,
     props.trip.travelers.length,
-    tripDayCount(props.trip.start_date, props.trip.end_date, filtered.value),
+    tripDayCount(props.trip.start_date, props.trip.end_date, forStats.value.counted),
   ),
 )
-const breakdown = computed(() => currencyBreakdown(filtered.value, props.trip.base_currency))
+const breakdown = computed(() =>
+  currencyBreakdown(forStats.value.counted, props.trip.base_currency),
+)
 const budgetPct = computed(() => budgetPercent(store.summary))
 
 // ---- tabla ----
@@ -257,6 +263,8 @@ const {
       :currency="trip.base_currency"
       :activeFilterCount="activeFilterCount"
       :currencyBreakdown="breakdown"
+      :excludedCount="forStats.excludedCount"
+      :excludedTotal="forStats.excludedTotal"
     />
 
     <!-- barra de acciones: alta + menú (importar, exportar, conversor); el
@@ -357,12 +365,13 @@ const {
 
       <div v-else-if="renderedView === 'charts'" class="tt-anim-rise">
         <ExpenseChartsPanel
-          :filtered="filtered"
+          :filtered="forStats.counted"
           :trip="trip"
           :catColor="catColor"
           :payerName="payerName"
           :placeNameOf="placeNameOf"
           :excludedCategories="filters.excludedCategories"
+          :excludedCount="forStats.excludedCount"
         />
       </div>
 

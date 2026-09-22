@@ -13,6 +13,8 @@ const props = defineProps<{
   payerName: (e: Expense) => string
   placeNameOf: (e: Expense) => string
   excludedCategories: string[]
+  /** gastos que no llegan al gráfico por estar fuera de estadísticas */
+  excludedCount: number
 }>()
 
 const { isDark } = useTheme()
@@ -64,6 +66,9 @@ const {
       {{ $t('expenses.charts.total', { amount: formatMoney(chartTotal, trip.base_currency) }) }}
       <template v-if="excludedCategories.length">
         {{ $t('expenses.charts.excluding', { list: excludedCategories.join(', ') }) }}
+      </template>
+      <template v-if="excludedCount">
+        {{ $t('expenses.charts.outOfStats', { n: excludedCount }, excludedCount) }}
       </template>
     </p>
   </div>

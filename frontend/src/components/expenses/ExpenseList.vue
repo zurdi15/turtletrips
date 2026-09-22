@@ -4,6 +4,7 @@ import Checkbox from 'primevue/checkbox'
 import Paginator from 'primevue/paginator'
 import Tag from 'primevue/tag'
 import PayerBadge from './PayerBadge.vue'
+import OutOfStatsMark from './OutOfStatsMark.vue'
 import RowActions from '../ui/RowActions.vue'
 import EntityLink from '../trip/EntityLink.vue'
 import type { Expense, Place, Traveler, Trip } from '../../api/types'
@@ -171,6 +172,7 @@ const { rowClass } = useRowFlash({
               >
                 ≈ {{ formatMoney(entry.row.amount_base, trip.base_currency) }}
               </div>
+              <OutOfStatsMark v-if="!entry.row.in_stats" />
             </div>
             <PayerBadge :expense="entry.row" :memberById="memberById" />
             <RowActions

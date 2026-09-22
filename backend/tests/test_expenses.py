@@ -126,3 +126,45 @@ def test_summary(client, trip):
         {"day": "2026-04-01", "total": 40.0},
         {"day": "2026-04-02", "total": 10.0},
     ]
+
+
+def test_expense_out_of_stats_still_counts_as_money(client, trip):
+    from conftest import add_traveler
+
+    trip_id = trip["id"]
+    ana = add_traveler(client, trip_id, "Ana")
+    add_traveler(client, trip_id, "Luis")
+    client.patch(f"/api/v1/trips/{trip_id}", json={"budget_amount": "1000"})
+
+    dinner = client.post(
+        f"/api/v1/trips/{trip_id}/expenses",
+        json={"day": "2026-04-01", "description": "Cena", "amount": "40", "paid_by_id": ana["id"]},
+    ).json()
+    assert dinner["in_stats"] is True  # por defecto cuenta
+
+    flight = client.post(
+        f"/api/v1/trips/{trip_id}/expenses",
+        json={
+            "day": "2026-04-01",
+            "description": "Vuelo",
+            "amount": "600",
+            "paid_by_id": ana["id"],
+            "in_stats": False,
+        },
+    ).json()
+    assert flight["in_stats"] is False
+
+    # fuera de estadísticas no es fuera del dinero: presupuesto y saldos lo ven
+    summary = client.get(f"/api/v1/trips/{trip_id}/summary").json()
+    assert summary["total_base"] == 640.0
+    assert summary["remaining"] == 360.0
+    balances = client.get(f"/api/v1/trips/{trip_id}/balances").json()
+    nets = {b["name"]: b["net_base"] for b in balances["balances"]}
+    assert nets == {"Ana": 320.0, "Luis": -320.0}
+
+    # se puede volver a meter (y otro PATCH sin el campo no lo toca)
+    resp = client.patch(f"/api/v1/expenses/{flight['id']}", json={"in_stats": True})
+    assert resp.json()["in_stats"] is True
+    resp = client.patch(f"/api/v1/expenses/{flight['id']}", json={"in_stats": False})
+    resp = client.patch(f"/api/v1/expenses/{flight['id']}", json={"description": "Vuelo MAD-HAN"})
+    assert resp.json()["in_stats"] is False

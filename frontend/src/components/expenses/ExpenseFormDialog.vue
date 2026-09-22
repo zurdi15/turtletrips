@@ -80,6 +80,7 @@ const placeSuggestions = ref<Place[]>([])
 const notes = ref('')
 // false = se paga in situ: cuenta en el total pero nadie lo ha adelantado
 const paid = ref(true)
+const inStats = ref(true)
 const split = ref<SplitState>({ split_mode: 'equal', shares: [] })
 const fetchingRate = ref(false)
 const rateSource = ref<string | null>(null)
@@ -147,6 +148,7 @@ const { saving, save } = useFormDialog({
     placeValue.value = (e?.place_id != null && places.items.find((p) => p.id === e.place_id)) || ''
     notes.value = e?.notes ?? ''
     paid.value = e?.paid ?? true
+    inStats.value = e?.in_stats ?? true
     split.value = {
       split_mode: e?.split_mode ?? 'equal',
       shares: e?.shares.map((s) => ({ ...s })) ?? [],
@@ -208,6 +210,7 @@ const { saving, save } = useFormDialog({
       split_mode: paidById.value === 'common' ? ('equal' as const) : split.value.split_mode,
       shares: paidById.value === 'common' ? [] : split.value.shares,
       paid: paid.value,
+      in_stats: inStats.value,
       notes: notes.value || null,
     }
     if (props.expense) return store.update(props.expense.id, payload)
@@ -333,8 +336,17 @@ const { saving, save } = useFormDialog({
       </FormField>
     </div>
     <!-- pendiente de pago (reserva que se paga in situ): cuenta en el total
-         y el presupuesto, pero no en los saldos hasta que alguien lo pague -->
-    <ToggleField v-model="paid" :label="$t('expenses.form.paid')" />
+         y el presupuesto, pero no en los saldos hasta que alguien lo pague.
+         Fuera de estadísticas (un vuelo): sí en presupuesto y saldos, pero no
+         en las tarjetas ni en las gráficas -->
+    <div class="flex flex-col gap-3">
+      <ToggleField v-model="paid" :label="$t('expenses.form.paid')" />
+      <ToggleField v-model="inStats" :label="$t('expenses.form.inStats')">
+        <template #hint>
+          <span class="block text-xs text-ink-faint">{{ $t('expenses.form.inStatsHint') }}</span>
+        </template>
+      </ToggleField>
+    </div>
     <ExpenseSplitEditor
       v-if="paidById !== 'common'"
       v-model="split"

@@ -298,6 +298,9 @@ export interface Expense {
   shares: ExpenseShare[]
   // false = pendiente de pago (se paga in situ): cuenta en totales, no en saldos
   paid: boolean
+  // false = fuera de las estadísticas (tarjetas, gráficas, año viajero); sigue
+  // contando en el presupuesto y en los saldos
+  in_stats: boolean
   notes: string | null
 }
 

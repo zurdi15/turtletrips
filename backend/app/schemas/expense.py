@@ -41,6 +41,8 @@ class ExpenseCreate(ExpenseBase):
     shares: list[ExpenseShareInput] = []
     # por defecto pagado; False = se paga in situ (fuera de los saldos)
     paid: bool = True
+    # False = no cuenta en las estadísticas (sí en presupuesto y saldos)
+    in_stats: bool = True
 
 
 class ExpenseUpdate(ExpenseBase):
@@ -52,6 +54,7 @@ class ExpenseUpdate(ExpenseBase):
     # None = no tocar; [] + equal = volver al reparto implícito entre todos
     shares: list[ExpenseShareInput] | None = None
     paid: bool | None = None
+    in_stats: bool | None = None
 
 
 class ExpenseRead(BaseModel):
@@ -73,6 +76,7 @@ class ExpenseRead(BaseModel):
     split_mode: str
     shares: list[ExpenseShareRead]
     paid: bool
+    in_stats: bool
     notes: str | None
 
 
