@@ -132,6 +132,8 @@ export interface PackingItem {
   name: string
   category: string
   url: string | null
+  /** unidades de lo mismo (3 camisetas); el elemento se marca entero */
+  quantity: number
   checked: boolean
 }
 
@@ -184,6 +186,7 @@ export interface PackingTemplateItem {
   name: string
   category: string
   url: string | null
+  quantity: number
 }
 
 export interface PackingTemplateDetail {

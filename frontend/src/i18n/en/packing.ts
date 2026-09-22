@@ -15,10 +15,17 @@ export default {
   newTemplateTooltip: 'Save this bag as a new template',
   progress: '{done}/{total} packed · {pct}%',
   addToBagPlaceholder: "Add to {bag}'s bag…",
+  quantity: 'Quantity',
   purchaseLink: 'Purchase link',
   empty: {
     title: "{bag}'s bag is empty",
     subtitle: 'Add items or apply a template',
+  },
+  categorySelect: {
+    new: 'New category',
+    namePlaceholder: 'Category name',
+    create: 'Create category',
+    createError: 'Could not create the category',
   },
   addBar: {
     linkTooltip: 'Add a purchase link',

@@ -282,7 +282,9 @@ def create_template(
         _validate_traveler(db, trip, payload.traveler_id)
         for item in _trip_items(db, trip.id, payload.traveler_id):
             template.items.append(
-                PackingTemplateItem(name=item.name, category=item.category, url=item.url)
+                PackingTemplateItem(
+                    name=item.name, category=item.category, url=item.url, quantity=item.quantity
+                )
             )
     db.add(template)
     db.flush()
@@ -407,6 +409,7 @@ def apply_template(
                 name=entry.name,
                 category=entry.category,
                 url=entry.url,
+                quantity=entry.quantity,
             )
         )
     _upsert_selection(db, trip_id, traveler_id, template_id)
@@ -434,7 +437,9 @@ def sync_template_from_trip(
     template.items.clear()
     for item in _trip_items(db, trip_id, traveler_id):
         template.items.append(
-            PackingTemplateItem(name=item.name, category=item.category, url=item.url)
+            PackingTemplateItem(
+                name=item.name, category=item.category, url=item.url, quantity=item.quantity
+            )
         )
     _upsert_selection(db, trip_id, traveler_id, template_id)
     db.commit()

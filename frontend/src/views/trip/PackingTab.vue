@@ -12,9 +12,10 @@ import ProgressMeter from '../../components/ui/ProgressMeter.vue'
 import RowActions from '../../components/ui/RowActions.vue'
 import TravelerAvatar from '../../components/ui/TravelerAvatar.vue'
 import BagSelector, { type BagOption } from '../../components/packing/BagSelector.vue'
-import PackingAddBar from '../../components/packing/PackingAddBar.vue'
+import PackingAddBar, { type PackingAddPayload } from '../../components/packing/PackingAddBar.vue'
 import PackingCategoryCard from '../../components/packing/PackingCategoryCard.vue'
 import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
+import PackingQuantity from '../../components/packing/PackingQuantity.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useBagPermissionsStore } from '../../stores/bagPermissions'
@@ -152,10 +153,6 @@ const activeBagLabel = computed(
   () => bags.value.find((b) => b.travelerId === activeTraveler.value)?.label ?? t('packing.commonBag'),
 )
 
-const categoryOptions = computed(() =>
-  categories.packing.map((c) => ({ value: c.name, label: c.name })),
-)
-
 // mover elementos: cualquier maleta visible que además puedas editar
 const bagMoveOptions = computed(() =>
   bags.value
@@ -204,7 +201,7 @@ const grouped = computed(() =>
   ),
 )
 
-async function addItem(payload: { name: string; category: string; url: string | null }) {
+async function addItem(payload: PackingAddPayload) {
   try {
     await store.create({ ...payload, traveler_id: activeTraveler.value })
   } catch (err) {
@@ -421,7 +418,6 @@ async function saveTemplate() {
     <PackingAddBar
       v-if="canEditActive"
       :placeholder="$t('packing.addToBagPlaceholder', { bag: activeBagLabel })"
-      :categoryOptions="categoryOptions"
       :onAdd="addItem"
       class="mb-5"
     />
@@ -459,6 +455,7 @@ async function saveTemplate() {
             :class="{ 'line-through text-ink-faint': item.checked }"
           >
             {{ item.name }}
+            <PackingQuantity :quantity="item.quantity" />
             <a
               v-if="item.url"
               :href="item.url"
@@ -480,7 +477,6 @@ async function saveTemplate() {
     <PackingItemDialog
       v-model:visible="showEdit"
       :item="editing"
-      :categoryOptions="categoryOptions"
       :bagOptions="bagMoveOptions"
     />
 

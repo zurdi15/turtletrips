@@ -194,3 +194,65 @@ def test_template_edit_and_sync(client, trip):
         f"/api/v1/packing-templates/{template['id']}/sync-from-trip/{trip_id}"
     ).json()
     assert sorted(i["name"] for i in detail["items"]) == ["Crema solar", "Gorra"]
+
+
+def test_packing_quantity(client, trip):
+    trip_id = trip["id"]
+    # sin cantidad = 1 unidad; con ella, un único elemento de N unidades
+    single = client.post(
+        f"/api/v1/trips/{trip_id}/packing", json={"name": "Gorra", "category": "Ropa"}
+    ).json()
+    assert single["quantity"] == 1
+    shirts = client.post(
+        f"/api/v1/trips/{trip_id}/packing",
+        json={"name": "Camisetas", "category": "Ropa", "quantity": 4},
+    ).json()
+    assert shirts["quantity"] == 4
+
+    resp = client.patch(f"/api/v1/packing/{shirts['id']}", json={"quantity": 5})
+    assert resp.json()["quantity"] == 5
+    # marcar no toca la cantidad
+    resp = client.patch(f"/api/v1/packing/{shirts['id']}", json={"checked": True})
+    assert resp.json()["quantity"] == 5
+
+    # fuera de rango -> 422 (ni cero ni negativos; tope 99)
+    for bad in (0, -1, 100):
+        resp = client.patch(f"/api/v1/packing/{shirts['id']}", json={"quantity": bad})
+        assert resp.status_code == 422
+        resp = client.post(
+            f"/api/v1/trips/{trip_id}/packing",
+            json={"name": "Calcetines", "category": "Ropa", "quantity": bad},
+        )
+        assert resp.status_code == 422
+
+    # la cantidad viaja a la plantilla y de vuelta a otro viaje
+    template = client.post(
+        "/api/v1/packing-templates", json={"name": "Ropa", "from_trip_id": trip_id}
+    ).json()
+    detail = client.get(f"/api/v1/packing-templates/{template['id']}").json()
+    assert {i["name"]: i["quantity"] for i in detail["items"]} == {"Gorra": 1, "Camisetas": 5}
+
+    other = client.post("/api/v1/trips", json={"name": "Otro"}).json()
+    items = client.post(f"/api/v1/trips/{other['id']}/packing/apply/{template['id']}").json()
+    assert {i["name"]: i["quantity"] for i in items} == {"Gorra": 1, "Camisetas": 5}
+
+    # items de plantilla: alta con cantidad, edición y sync desde la maleta
+    item = client.post(
+        f"/api/v1/packing-templates/{template['id']}/items",
+        json={"name": "Pantalones", "category": "Ropa", "quantity": 2},
+    ).json()
+    assert item["quantity"] == 2
+    resp = client.patch(f"/api/v1/packing-template-items/{item['id']}", json={"quantity": 3})
+    assert resp.json()["quantity"] == 3
+    assert (
+        client.patch(
+            f"/api/v1/packing-template-items/{item['id']}", json={"quantity": 0}
+        ).status_code
+        == 422
+    )
+
+    client.patch(f"/api/v1/packing/{single['id']}", json={"quantity": 2})
+    detail = client.post(
+        f"/api/v1/packing-templates/{template['id']}/sync-from-trip/{trip_id}"
+    ).json()
+    assert {i["name"]: i["quantity"] for i in detail["items"]} == {"Gorra": 2, "Camisetas": 5}

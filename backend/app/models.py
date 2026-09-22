@@ -683,6 +683,8 @@ class PackingItem(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200))
     category: Mapped[str] = mapped_column(String(50), default="Ropa")
     url: Mapped[str | None] = mapped_column(String(500))  # enlace de compra
+    # unidades de lo mismo (3 camisetas): un único elemento que se marca entero
+    quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     checked: Mapped[bool] = mapped_column(Boolean, default=False)
 
     trip: Mapped[Trip] = relationship(back_populates="packing_items")
@@ -740,6 +742,7 @@ class PackingTemplateItem(Base):
     name: Mapped[str] = mapped_column(String(200))
     category: Mapped[str] = mapped_column(String(50), default="Ropa")
     url: Mapped[str | None] = mapped_column(String(500))
+    quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     template: Mapped[PackingTemplate] = relationship(back_populates="items")
 

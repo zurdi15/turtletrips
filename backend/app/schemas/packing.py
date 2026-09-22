@@ -1,10 +1,16 @@
+from typing import Annotated
+
 from pydantic import BaseModel, ConfigDict, Field
+
+# unidades de un elemento (3 camisetas): tope generoso, es una lista, no inventario
+Quantity = Annotated[int, Field(ge=1, le=99)]
 
 
 class PackingItemCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     category: str = Field(default="Ropa", min_length=1, max_length=50)
     url: str | None = None
+    quantity: Quantity = 1
     checked: bool = False
     traveler_id: int | None = None  # NULL = maleta común
 
@@ -13,6 +19,7 @@ class PackingItemUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     category: str | None = Field(default=None, min_length=1, max_length=50)
     url: str | None = None
+    quantity: Quantity | None = None
     checked: bool | None = None
     traveler_id: int | None = None
 
@@ -26,6 +33,7 @@ class PackingItemRead(BaseModel):
     name: str
     category: str
     url: str | None
+    quantity: int
     checked: bool
 
 
@@ -60,12 +68,14 @@ class PackingTemplateItemCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     category: str = Field(default="Ropa", min_length=1, max_length=50)
     url: str | None = None
+    quantity: Quantity = 1
 
 
 class PackingTemplateItemUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     category: str | None = Field(default=None, min_length=1, max_length=50)
     url: str | None = None
+    quantity: Quantity | None = None
 
 
 class PackingTemplateItemRead(BaseModel):
@@ -76,6 +86,7 @@ class PackingTemplateItemRead(BaseModel):
     name: str
     category: str
     url: str | None
+    quantity: int
 
 
 class PackingTemplateDetail(BaseModel):

@@ -15,10 +15,17 @@ export default {
   newTemplateTooltip: 'Guardar esta maleta como plantilla nueva',
   progress: '{done}/{total} preparado · {pct}%',
   addToBagPlaceholder: 'Añadir a la maleta de {bag}…',
+  quantity: 'Cantidad',
   purchaseLink: 'Enlace de compra',
   empty: {
     title: 'La maleta de {bag} está vacía',
     subtitle: 'Añade elementos o aplica una plantilla',
+  },
+  categorySelect: {
+    new: 'Nueva categoría',
+    namePlaceholder: 'Nombre de la categoría',
+    create: 'Crear categoría',
+    createError: 'No se pudo crear la categoría',
   },
   addBar: {
     linkTooltip: 'Añadir enlace de compra',

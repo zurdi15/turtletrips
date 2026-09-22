@@ -55,7 +55,12 @@ export const usePackingTemplatesStore = defineStore('packingTemplates', {
       this.templates = this.templates.filter((t) => t.id !== id)
       if (this.detail?.id === id) this.detail = null
     },
-    async addItem(payload: { name: string; category: string; url?: string | null }) {
+    async addItem(payload: {
+      name: string
+      category: string
+      url?: string | null
+      quantity?: number
+    }) {
       if (!this.detail) return
       const item = await api.post<PackingTemplateItem>(
         `/packing-templates/${this.detail.id}/items`,
@@ -67,7 +72,7 @@ export const usePackingTemplatesStore = defineStore('packingTemplates', {
     },
     async updateItem(
       id: number,
-      payload: { name?: string; category?: string; url?: string | null },
+      payload: { name?: string; category?: string; url?: string | null; quantity?: number },
     ) {
       const item = await api.patch<PackingTemplateItem>(`/packing-template-items/${id}`, payload)
       if (this.detail) {

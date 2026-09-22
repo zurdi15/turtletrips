@@ -7,7 +7,7 @@ import Select from 'primevue/select'
 import EmptyState from '../components/EmptyState.vue'
 import PageHeader from '../components/ui/PageHeader.vue'
 import TravelerAvatar from '../components/ui/TravelerAvatar.vue'
-import PackingAddBar from '../components/packing/PackingAddBar.vue'
+import PackingAddBar, { type PackingAddPayload } from '../components/packing/PackingAddBar.vue'
 import PackingCategoryCard from '../components/packing/PackingCategoryCard.vue'
 import TemplateList, { type TemplateOwnerGroup } from '../components/packing/TemplateList.vue'
 import TemplateItemRow from '../components/packing/TemplateItemRow.vue'
@@ -36,10 +36,6 @@ onMounted(() => {
   categories.load('packing')
   travelers.load()
 })
-
-const categoryOptions = computed(() =>
-  categories.packing.map((c) => ({ value: c.name, label: c.name })),
-)
 
 // --- matriz familiar: toda tu familia se VE; editas lo tuyo y lo de virtuales ---
 
@@ -166,7 +162,7 @@ function removeTemplate() {
   })
 }
 
-async function addItem(payload: { name: string; category: string; url: string | null }) {
+async function addItem(payload: PackingAddPayload) {
   if (!store.detail) return
   try {
     await store.addItem(payload)
@@ -176,7 +172,7 @@ async function addItem(payload: { name: string; category: string; url: string | 
   }
 }
 
-function saveItem(item: PackingTemplateItem, payload: { name: string; category: string; url: string | null }) {
+function saveItem(item: PackingTemplateItem, payload: PackingAddPayload) {
   store.updateItem(item.id, payload)
 }
 </script>
@@ -317,7 +313,6 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
           <PackingAddBar
             v-if="canEditDetail"
             :placeholder="$t('packing.templatesView.addItemPlaceholder')"
-            :categoryOptions="categoryOptions"
             :onAdd="addItem"
             class="mb-4"
           />
@@ -339,7 +334,6 @@ function saveItem(item: PackingTemplateItem, payload: { name: string; category: 
                 v-for="item in group.items"
                 :key="item.id"
                 :item="item"
-                :categoryOptions="categoryOptions"
                 :readonly="!canEditDetail"
                 @save="(payload) => saveItem(item, payload)"
                 @remove="store.removeItem(item.id)"

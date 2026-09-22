@@ -259,6 +259,23 @@ html:not(.tt-dark) .p-selectbutton .p-togglebutton {
   border-color: theme('colors.slate.200');
 }
 
+/* QuantityStepper (− n +): número estrecho y botones algo más finos que los
+   2.5rem del tema, que en la barra de añadir de la maleta no cabía en móvil.
+   En un diálogo el componente ocupa la celda (regla de arriba) y el número
+   se estira con su flex-grow. */
+.tt-qty .p-inputnumber-button {
+  width: 2rem;
+}
+.tt-qty .tt-qty-input {
+  width: 2.5rem;
+  padding-inline: 0.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tt-qty .tt-qty-input-sm {
+  width: 2.25rem;
+}
+
 /* DatePicker: altura estable del calendario. Los meses de 5 y 6 semanas miden
    distinto y cada navegación hacía recolocar el overlay (saltaba de debajo a
    encima del campo y vuelta). Con altura mínima de 6 semanas nunca cambia. */
