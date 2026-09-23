@@ -18,7 +18,6 @@ FORBIDDEN_KEYS = (
     "ics_token",
     "share_token",
     "family_id",
-    "avatar_url",
     "visited",
     "priority",
     "debts_settled",
@@ -114,7 +113,15 @@ def test_public_trip_is_readable_without_session(anon, client, loaded_trip):
     data = resp.json()
     assert data["name"] == "Japón 2026"
     assert data["countries"] == ["JP"]
-    assert data["travelers"] == [{"name": "Noelia", "color": "#8b5cf6"}]
+    assert data["travelers"] == [
+        {
+            "name": "Noelia",
+            "color": "#8b5cf6",
+            "avatar_url": None,
+            "avatar_focus_x": 0.5,
+            "avatar_focus_y": 0.5,
+        }
+    ]
     assert data["places"][0]["name"] == "Fushimi Inari"
     assert data["itinerary"][0]["title"] == "Torii al amanecer"
     assert data["bookings"][0]["origin"] == "MAD"
@@ -235,3 +242,30 @@ def test_public_weather_needs_a_valid_token(anon, client, loaded_trip, monkeypat
 
     # sin token válido no hay proxy meteorológico abierto
     assert anon.get(f"/api/v1/public/trips/inventado/weather?{query}").status_code == 404
+
+
+def test_public_traveler_avatar_travels_by_token(anon, client, loaded_trip, tmp_path):
+    """La foto del chip sí sale, pero servida por el token y sin ids."""
+    trip_id = loaded_trip["trip"]["id"]
+    traveler = client.get(f"/api/v1/trips/{trip_id}").json()["travelers"][0]
+    png = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
+        b"\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    resp = client.post(
+        f"/api/v1/travelers/{traveler['id']}/avatar",
+        files={"file": ("cara.png", png, "image/png")},
+    )
+    assert resp.status_code == 200, resp.text
+
+    token = share(client, trip_id)["token"]
+    data = anon.get(f"/api/v1/public/trips/{token}").json()
+    url = data["travelers"][0]["avatar_url"]
+    assert url and url.startswith(f"/api/v1/public/trips/{token}/avatars/")
+    # la foto va por el fichero, nunca por la ruta con el id del viajero
+    assert "/travelers/" not in url
+    assert anon.get(url).status_code == 200
+
+    # un fichero que no es de este viaje no se sirve
+    assert anon.get(f"/api/v1/public/trips/{token}/avatars/otra.png").status_code == 404

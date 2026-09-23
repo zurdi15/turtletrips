@@ -494,6 +494,10 @@ export type ShareScope = 'itinerary' | 'bookings' | 'map'
 export interface PublicTraveler {
   name: string
   color: string | null
+  /** la foto se sirve por el token del enlace, no por el id del viajero */
+  avatar_url: string | null
+  avatar_focus_x: number
+  avatar_focus_y: number
 }
 
 export interface PublicPlace {

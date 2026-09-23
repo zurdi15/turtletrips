@@ -105,7 +105,7 @@ export default {
     noUpcoming: 'Nothing booked in the next 7 days.',
     notes: 'Notes',
     notesPlaceholder: 'Keep whatever you want at hand here: ideas, reminders, things to decide…',
-    notesEmpty: 'No notes yet. Press the pencil to write.',
+    notesEmpty: 'No notes yet.',
     notesSaved: 'Notes saved',
   },
   lodging: {

@@ -13,7 +13,8 @@ aquí no aparece sola. Lo que NO sale, y por qué:
   · las notas: ni las del viaje, ni las de las actividades, ni las de los
     sitios. El enlace lleva datos duros (horas, rutas, tiempo), no el cuaderno
   · `visited`, `priority`, el diario del día y sus postales
-  · ids, avatares y familia de los viajeros: identifican cuentas de la instancia
+  · ids y familia de los viajeros: identifican cuentas de la instancia (la FOTO
+    sí sale, servida por el token: es la misma cara que ya se ve en el chip)
 """
 
 from datetime import date, datetime, time
@@ -27,10 +28,17 @@ SHARE_SCOPES = ("itinerary", "bookings", "map")
 
 
 class PublicTraveler(BaseModel):
-    """Quién viaja: solo lo que sale en un chip de la interfaz."""
+    """Quién viaja: solo lo que sale en un chip de la interfaz.
+
+    La foto viaja por el TOKEN (`/public/trips/{token}/avatars/{fichero}`), no
+    por el id del viajero: el enlace nunca dice qué cuentas hay en la instancia.
+    """
 
     name: str
     color: str | None
+    avatar_url: str | None = None
+    avatar_focus_x: float = 0.5
+    avatar_focus_y: float = 0.5
 
 
 class PublicPlace(BaseModel):

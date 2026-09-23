@@ -185,7 +185,21 @@ def public_trip(token: str, db: Session = Depends(get_db)):
         else None,
         cover_focus_x=trip.cover_focus_x,
         cover_focus_y=trip.cover_focus_y,
-        travelers=[PublicTraveler(name=t.name, color=t.color) for t in trip.travelers],
+        travelers=[
+            PublicTraveler(
+                name=t.name,
+                color=t.color,
+                # el fichero del avatar, no el id del viajero
+                avatar_url=(
+                    f"/api/v1/public/trips/{token}/avatars/{t.avatar_image}"
+                    if t.avatar_image
+                    else None
+                ),
+                avatar_focus_x=t.avatar_focus_x,
+                avatar_focus_y=t.avatar_focus_y,
+            )
+            for t in trip.travelers
+        ],
         scopes=scopes,
         places=places,
         itinerary=itinerary,
@@ -230,3 +244,22 @@ async def public_weather(
         return await weather_service.forecast(lat, lon, *clamped)
     except weather_service.WeatherError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@public_router.get("/public/trips/{token}/avatars/{name}", include_in_schema=False)
+def public_avatar(token: str, name: str, db: Session = Depends(get_db)):
+    """Foto de un viajero DE ESTE VIAJE, pedida por su fichero.
+
+    Se comprueba que el fichero es de alguien que viaja aquí: con el token de
+    otro viaje (o inventándose un nombre) no se saca ninguna otra foto.
+    """
+    trip = _shared_trip(db, token)
+    if name not in {t.avatar_image for t in trip.travelers if t.avatar_image}:
+        raise HTTPException(status_code=404, detail="Sin avatar")
+    try:
+        path = files.resolve_avatar(name)
+    except files.FileValidationError as exc:
+        raise HTTPException(status_code=404, detail="Sin avatar") from exc
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Sin avatar")
+    return FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})

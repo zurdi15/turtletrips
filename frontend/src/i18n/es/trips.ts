@@ -105,7 +105,7 @@ export default {
     noUpcoming: 'Nada reservado en los próximos 7 días.',
     notes: 'Notas',
     notesPlaceholder: 'Apunta aquí lo que quieras tener a mano: ideas, avisos, cosas por decidir…',
-    notesEmpty: 'Sin notas. Pulsa el lápiz para escribir.',
+    notesEmpty: 'Sin notas.',
     notesSaved: 'Notas guardadas',
   },
   lodging: {
