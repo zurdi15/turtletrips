@@ -145,10 +145,12 @@ defineExpose({ refresh })
     class="w-full h-full rounded-card"
     @ready="onReady"
   >
+    <!-- en oscuro son DOS capas (base y rótulos): v-for sobre las que toquen -->
     <LTileLayer
-      :key="tiles.url.value"
-      :url="tiles.url.value"
-      :attribution="tiles.attribution"
+      v-for="(url, idx) in tiles.layers.value"
+      :key="url"
+      :url="url"
+      :attribution="idx === 0 ? tiles.attribution : undefined"
       layer-type="base"
       name="Base"
     />

@@ -37,8 +37,10 @@ const props = withDefaults(
     rows: AgendaRow[]
     /** posición dentro de la tarjeta del día: arriba (border-b) o al pie (border-t) */
     position?: 'top' | 'bottom'
+    /** enlace compartido: ni chips ni enlaces, que llevan a la app */
+    readonly?: boolean
   }>(),
-  { position: 'top' },
+  { position: 'top', readonly: false },
 )
 
 const { t } = useI18n()
@@ -86,7 +88,7 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
       </p>
       <!-- chips de cada reserva, con aire: separados del título y entre sí,
            y un filete entre reservas si la banda lleva varias -->
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 ml-4">
+      <div v-if="!readonly" class="flex flex-wrap items-center gap-x-4 gap-y-1 ml-4">
         <span
           v-for="(group, i) in chipGroups"
           :key="group.bookingId"
@@ -147,16 +149,18 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
             {{ row.transport.dep ?? '' }}<span v-if="row.transport.dep && row.transport.arr" class="opacity-40">–</span>{{ row.transport.arr ?? '' }}<sup v-if="row.transport.arr && row.transport.plusDays" class="text-3xs font-normal opacity-70">+{{ row.transport.plusDays }}</sup>
           </template>
         </span>
-        <router-link
-          :to="{ name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
-          class="flex-1 min-w-0 truncate no-underline hover:underline"
-          :class="
+        <component
+          :is="readonly ? 'span' : 'router-link'"
+          :to="readonly ? undefined : { name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
+          class="flex-1 min-w-0 truncate no-underline"
+          :class="[
+            readonly ? '' : 'hover:underline',
             row.transport.layover
               ? row.transport.shortLayover
                 ? 'text-xs font-medium text-warn-strong'
                 : 'text-xs opacity-70 text-inherit'
-              : 'font-medium text-sm text-inherit'
-          "
+              : 'font-medium text-sm text-inherit',
+          ]"
         >
           <i
             v-if="row.transport.shortLayover"
@@ -164,7 +168,7 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
             v-tooltip.top="$t('itinerary.agenda.shortLayover')"
           />
           {{ row.transport.route }}
-        </router-link>
+        </component>
         <span
           v-if="row.transport.flightNumber"
           class="font-mono text-2xs opacity-60 shrink-0 hidden sm:inline"
@@ -172,13 +176,15 @@ const TONE_CLASSES: Record<string, { band: string; header: string; row: string }
           {{ row.transport.flightNumber }}
         </span>
       </template>
-      <router-link
+      <component
+        :is="readonly ? 'span' : 'router-link'"
         v-else
-        :to="{ name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
-        class="flex-1 min-w-0 font-medium text-sm truncate text-inherit no-underline hover:underline"
+        :to="readonly ? undefined : { name: 'trip-bookings', params: { id: tripId }, query: { booking: row.bookingId } }"
+        class="flex-1 min-w-0 font-medium text-sm truncate text-inherit no-underline"
+        :class="readonly ? '' : 'hover:underline'"
       >
         {{ row.label }}
-      </router-link>
+      </component>
     </div>
   </div>
 </template>

@@ -33,7 +33,8 @@ const doc = usePrintTripData({
       countries: trip.value.countries,
       start_date: trip.value.start_date,
       end_date: trip.value.end_date,
-      notes: trip.value.notes,
+      // el enlace no lleva notas: la versión imprimible pública tampoco
+      notes: null,
       cover_url: trip.value.cover_url,
       cover_focus_x: trip.value.cover_focus_x,
       cover_focus_y: trip.value.cover_focus_y,

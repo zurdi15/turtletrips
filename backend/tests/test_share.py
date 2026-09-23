@@ -5,9 +5,10 @@ import pytest
 from conftest import add_traveler, login, make_user
 
 # lo que jamás puede salir por el endpoint público, pase lo que pase
+# (el número de vuelo SÍ sale: va en la tarjeta de embarque y es lo que se
+# teclea para seguir el vuelo; el localizador, que es la credencial, no)
 FORBIDDEN_KEYS = (
     "confirmation_code",
-    "flight_number",
     "cost_amount",
     "cost_currency",
     "paid_by_id",
@@ -124,8 +125,8 @@ def test_public_trip_never_leaks_private_fields(anon, client, loaded_trip):
     body = anon.get(f"/api/v1/public/trips/{token}").text
     for key in FORBIDDEN_KEYS:
         assert key not in body, f"el enlace público filtra {key}"
-    # ni los valores, no solo los nombres de campo (IB9999/IB9998 viven en tramos)
-    for value in ("SECRETO1", "IB6800", "IB9999", "IB9998", "850", "Nota privada"):
+    # ni los valores, no solo los nombres de campo
+    for value in ("SECRETO1", "850", "Nota privada"):
         assert value not in body, f"el enlace público filtra {value!r}"
 
 
@@ -137,6 +138,21 @@ def test_public_booking_segments_expose_route_and_times(anon, client, loaded_tri
     assert [s["origin"] for s in segmented["segments"]] == ["HND", "DOH"]
     assert segmented["segments"][0]["departure_dt"] == "2026-02-20T22:00:00"
     assert segmented["segments"][1]["arrival_dt"] == "2026-02-21T13:45:00"
+    # el número de vuelo acompaña a cada tramo y a la reserva plana
+    assert [s["flight_number"] for s in segmented["segments"]] == ["IB9999", "IB9998"]
+    assert legacy["flight_number"] == "IB6800"
+
+
+def test_public_trip_carries_no_notes(anon, client, loaded_trip):
+    """Datos duros: ni las notas del viaje, ni las de las actividades."""
+    trip_id = loaded_trip["trip"]["id"]
+    client.patch(f"/api/v1/trips/{trip_id}", json={"notes": "Nota del viaje"})
+    token = share(client, trip_id)["token"]
+    body = anon.get(f"/api/v1/public/trips/{token}")
+    assert "Nota del viaje" not in body.text
+    data = body.json()
+    assert "notes" not in data
+    assert all("notes" not in item for item in data["itinerary"])
 
 
 def test_scopes_hide_whole_sections(anon, client, loaded_trip):
@@ -197,3 +213,25 @@ def test_public_cover_needs_a_valid_token(anon, client, trip):
     # sin portada subida, 404 (pero con token válido: no es un 404 de token)
     assert anon.get(f"/api/v1/public/trips/{token}/cover").status_code == 404
     assert anon.get("/api/v1/public/trips/otro/cover").status_code == 404
+
+
+def test_public_weather_needs_a_valid_token(anon, client, loaded_trip, monkeypatch):
+    """La previsión de la agenda compartida sale por el token, no a pelo."""
+    from datetime import date
+
+    from app.schemas.misc import DayForecast
+
+    async def fake_forecast(lat, lon, start, end):
+        return [DayForecast(day=start, weather_code=61, t_max=21.5, t_min=12.0, precip_prob=80)]
+
+    monkeypatch.setattr("app.services.weather.forecast", fake_forecast)
+    today = date.today().isoformat()
+    query = f"lat=35.0&lon=135.7&start={today}&end={today}"
+
+    token = share(client, loaded_trip["trip"]["id"])["token"]
+    resp = anon.get(f"/api/v1/public/trips/{token}/weather?{query}")
+    assert resp.status_code == 200
+    assert resp.json()[0]["weather_code"] == 61
+
+    # sin token válido no hay proxy meteorológico abierto
+    assert anon.get(f"/api/v1/public/trips/inventado/weather?{query}").status_code == 404

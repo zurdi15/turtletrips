@@ -514,17 +514,17 @@ export interface PublicItineraryItem {
   end_time: string | null
   order_index: number
   title: string
-  notes: string | null
   place_id: number | null
   booking_id: number | null
 }
 
-// ruta y horas del tramo, nada más: el flight_number es privado
+// ruta, horas y número de vuelo (el localizador de la reserva sí es privado)
 export interface PublicBookingSegment {
   origin: string | null
   destination: string | null
   departure_dt: string | null
   arrival_dt: string | null
+  flight_number: string | null
 }
 
 export interface PublicBooking {
@@ -540,6 +540,7 @@ export interface PublicBooking {
   lat: number | null
   lon: number | null
   place_id: number | null
+  flight_number: string | null
   segments: PublicBookingSegment[]
 }
 
@@ -549,7 +550,6 @@ export interface PublicTrip {
   start_date: string | null
   end_date: string | null
   status: TripStatus
-  notes: string | null
   album_url: string | null
   cover_url: string | null
   cover_focus_x: number

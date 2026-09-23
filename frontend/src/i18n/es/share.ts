@@ -19,17 +19,16 @@ export default {
     copied: 'Enlace copiado',
     saveError: 'No se pudo actualizar el enlace',
     privacy:
-      'Nunca viajan los gastos, los saldos, el presupuesto, los códigos de reserva ni los números de vuelo.',
+      'Nunca viajan los gastos, los saldos, el presupuesto ni los códigos de reserva.',
     privacyNotes:
-      'Ojo: las notas del viaje y las de cada actividad SÍ se ven. Las notas de los sitios y el diario de cada día, no.',
+      'Tampoco las notas: ni las del viaje, ni las de las actividades, ni las de los sitios, ni el diario. Sí viajan los datos duros: horas, rutas, números de vuelo y la previsión del tiempo.',
   },
   scopes: {
     itinerary: 'Itinerario día a día',
-    bookings: 'Reservas (sin códigos ni importes)',
+    bookings: 'Reservas (sin localizadores ni importes)',
     map: 'Sitios y mapa',
   },
   public: {
-    readOnly: 'Plan compartido en solo lectura',
     emptyDay: 'Día libre',
     placeLink: 'Más información',
     errorTitle: 'No se pudo cargar el viaje',

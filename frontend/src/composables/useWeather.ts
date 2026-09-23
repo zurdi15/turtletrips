@@ -10,7 +10,11 @@ import { coordKey, type Coord } from '../utils/weather'
  * recorta al horizonte de Open-Meteo (viajes pasados o lejanos → vacío).
  * Best-effort: los errores se tragan y la agenda sigue igual.
  */
-export function useWeather(requests: () => { day: string; coord: Coord }[]) {
+export function useWeather(
+  requests: () => { day: string; coord: Coord }[],
+  /** endpoint alternativo: el enlace compartido pide la previsión por su token */
+  endpoint = '/weather',
+) {
   // clave `${coordKey}|${day}` → previsión de ese día en esa zona
   const forecasts = ref(new Map<string, DayForecast>())
   const requested = new Set<string>()
@@ -32,7 +36,7 @@ export function useWeather(requests: () => { day: string; coord: Coord }[]) {
         requested.add(reqKey)
         try {
           const result = await api.get<DayForecast[]>(
-            `/weather?lat=${group.coord.lat}&lon=${group.coord.lon}` +
+            `${endpoint}?lat=${group.coord.lat}&lon=${group.coord.lon}` +
               `&start=${days[0]}&end=${days[days.length - 1]}`,
           )
           const next = new Map(forecasts.value)

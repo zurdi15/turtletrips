@@ -7,10 +7,12 @@ aquí no aparece sola. Lo que NO sale, y por qué:
 
   · dinero (gastos, saldos, presupuesto, fondo común, coste y pagador de las
     reservas): el enlace se reenvía por WhatsApp, no es una cuenta compartida
-  · códigos de reserva y números de vuelo: con ellos se gestiona (o se cancela)
-    una reserva ajena
-  · notas privadas de los sitios, `visited`, `priority`, el diario del día y sus
-    postales: son el cuaderno de quien viaja, no el folleto
+  · códigos de reserva (el localizador ES la credencial: con él se gestiona o se
+    cancela un vuelo ajeno). El NÚMERO de vuelo sí viaja: va impreso en
+    cualquier tarjeta de embarque y es lo que se teclea para seguir el vuelo
+  · las notas: ni las del viaje, ni las de las actividades, ni las de los
+    sitios. El enlace lleva datos duros (horas, rutas, tiempo), no el cuaderno
+  · `visited`, `priority`, el diario del día y sus postales
   · ids, avatares y familia de los viajeros: identifican cuentas de la instancia
 """
 
@@ -49,19 +51,19 @@ class PublicItineraryItem(BaseModel):
     end_time: time | None
     order_index: int
     title: str
-    notes: str | None
     place_id: int | None
     booking_id: int | None
 
 
 class PublicBookingSegment(BaseModel):
-    """Tramo de un transporte: ruta y horas, nada más (el flight_number es
-    privado como el de la reserva; sin id — nada lo referencia)."""
+    """Tramo de un transporte: ruta, horas y número de vuelo (sin id: nada lo
+    referencia). El localizador de la reserva sigue sin salir."""
 
     origin: str | None
     destination: str | None
     departure_dt: datetime | None
     arrival_dt: datetime | None
+    flight_number: str | None
 
 
 class PublicBooking(BaseModel):
@@ -77,6 +79,7 @@ class PublicBooking(BaseModel):
     lat: float | None
     lon: float | None
     place_id: int | None
+    flight_number: str | None
     segments: list[PublicBookingSegment] = []
 
 
@@ -86,7 +89,6 @@ class PublicTrip(BaseModel):
     start_date: date | None
     end_date: date | None
     status: TripStatus
-    notes: str | None
     album_url: str | None
     cover_url: str | None
     # encuadre de la portada: sin él, el enlace público recorta la foto por el

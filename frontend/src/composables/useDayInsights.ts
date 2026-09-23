@@ -1,6 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { Booking, ItineraryItem, Place, Trip } from '../api/types'
+import type { Booking, ItineraryItem, Place } from '../api/types'
 import { TRANSFER_MODE_ICONS, TRANSFER_MODE_KEYS } from '../constants'
 import { intlLocale } from '../i18n'
 import { hasLodgingBookings, lodgingCoverage } from '../utils/lodging'
@@ -23,7 +23,8 @@ import {
  * sobre el store: así se recalculan mientras arrastras, sin esperar al PATCH.
  */
 export function useDayInsights(input: {
-  trip: () => Trip
+  /** solo hacen falta las fechas: así vale para el viaje compartido */
+  trip: () => { start_date: string | null; end_date: string | null }
   days: Ref<string[]>
   lists: Record<string, ItineraryItem[]>
   bookings: () => Booking[]

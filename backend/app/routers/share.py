@@ -7,8 +7,9 @@ también en la auth del reverse proxy). Lo que sale por aquí lo decide
 """
 
 import secrets
+from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Session
 from ..auth import CurrentUser
 from ..db import get_db
 from ..models import Booking, ItineraryItem, Place, Trip
+from ..schemas.misc import DayForecast
 from ..schemas.share import (
     SHARE_SCOPES,
     PublicBooking,
@@ -28,6 +30,7 @@ from ..schemas.share import (
     ShareUpdate,
 )
 from ..services import files
+from ..services import weather as weather_service
 from .common import ensure_trip_member
 
 router = APIRouter(tags=["share"])
@@ -129,7 +132,6 @@ def public_trip(token: str, db: Session = Depends(get_db)):
                 end_time=i.end_time,
                 order_index=i.order_index,
                 title=i.title,
-                notes=i.notes,
                 place_id=i.place_id,
                 booking_id=i.booking_id,
             )
@@ -155,12 +157,14 @@ def public_trip(token: str, db: Session = Depends(get_db)):
                 lat=b.lat,
                 lon=b.lon,
                 place_id=b.place_id,
+                flight_number=b.flight_number,
                 segments=[
                     PublicBookingSegment(
                         origin=s.origin,
                         destination=s.destination,
                         departure_dt=s.departure_dt,
                         arrival_dt=s.arrival_dt,
+                        flight_number=s.flight_number,
                     )
                     for s in b.segments  # ya ordenados por position
                 ],
@@ -174,7 +178,6 @@ def public_trip(token: str, db: Session = Depends(get_db)):
         start_date=trip.start_date,
         end_date=trip.end_date,
         status=trip.status,
-        notes=trip.notes,
         album_url=trip.album_url,
         # la portada se sirve por el mismo token, no por el id del viaje
         cover_url=f"/api/v1/public/trips/{token}/cover?v={trip.cover_image}"
@@ -202,3 +205,28 @@ def public_cover(token: str, db: Session = Depends(get_db)):
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Sin portada")
     return FileResponse(path, headers={"Cache-Control": "public, max-age=86400"})
+
+
+@public_router.get("/public/trips/{token}/weather", response_model=list[DayForecast])
+async def public_weather(
+    token: str,
+    lat: float = Query(ge=-90, le=90),
+    lon: float = Query(ge=-180, le=180),
+    start: date = Query(),
+    end: date = Query(),
+    db: Session = Depends(get_db),
+):
+    """La misma previsión que la agenda de la app, para quien abre el enlace.
+
+    Pide un token válido antes de salir a Open-Meteo: si no, esto sería un
+    proxy meteorológico abierto a internet. No mira scopes: la previsión de
+    unas coordenadas no cuenta nada del viaje.
+    """
+    _shared_trip(db, token)
+    clamped = weather_service.clamp_forecast_range(start, end)
+    if clamped is None:
+        return []
+    try:
+        return await weather_service.forecast(lat, lon, *clamped)
+    except weather_service.WeatherError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc

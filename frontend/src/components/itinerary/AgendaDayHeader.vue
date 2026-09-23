@@ -20,6 +20,8 @@ const props = defineProps<{
   /** "12 km · 1 h 20 min" de traslados propios, o null */
   transfers: string | null
   forecast?: DayForecast | null
+  /** el enlace compartido reusa esta cabecera sin el botón de añadir */
+  readonly?: boolean
 }>()
 defineEmits<{ add: [] }>()
 
@@ -83,6 +85,7 @@ const issuesPopover = ref<InstanceType<typeof Popover> | null>(null)
       </Pill>
     </div>
     <Button
+      v-if="!readonly"
       icon="pi pi-plus"
       text
       size="small"

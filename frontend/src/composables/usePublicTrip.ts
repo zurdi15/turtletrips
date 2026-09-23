@@ -37,7 +37,7 @@ export function usePublicTrip() {
 
   const retry = () => load(lastToken)
 
-  // El enlace trae tipos propios (sin dinero, códigos ni notas privadas). Para
+  // El enlace trae tipos propios (sin dinero, localizadores ni notas). Para
   // reutilizar el mapa y las derivaciones de la agenda se completan con NULOS
   // los campos que no viajan: la lista es, literalmente, lo que NO contiene.
   const bookings = computed<Booking[]>(() =>
@@ -45,19 +45,13 @@ export function usePublicTrip() {
       ...b,
       trip_id: 0,
       confirmation_code: null,
-      flight_number: null,
       cost_amount: null,
       cost_currency: null,
       notes: null,
       paid_by_id: null,
       paid_by_common: false,
-      // tramos: ids sintéticos por índice y sin flight_number (no viaja)
-      segments: b.segments.map((s, index) => ({
-        ...s,
-        id: index,
-        position: index,
-        flight_number: null,
-      })),
+      // tramos: ids sintéticos por índice (el enlace no los referencia)
+      segments: b.segments.map((s, index) => ({ ...s, id: index, position: index })),
     })),
   )
   const places = computed<Place[]>(() =>
@@ -70,7 +64,7 @@ export function usePublicTrip() {
     })),
   )
   const items = computed<ItineraryItem[]>(() =>
-    (trip.value?.itinerary ?? []).map((i) => ({ ...i, trip_id: 0 })),
+    (trip.value?.itinerary ?? []).map((i) => ({ ...i, trip_id: 0, notes: null })),
   )
 
   return { trip, loading, gone, failed, load, retry, bookings, places, items }

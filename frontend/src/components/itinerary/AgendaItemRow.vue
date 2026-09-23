@@ -22,6 +22,8 @@ defineProps<{
   /** traslado desde la parada anterior: se pinta ENCIMA de la fila */
   transfer?: Transfer | null
   transferMode?: TransferMode
+  /** enlace compartido: ni asa, ni acciones, ni enlaces a la app */
+  readonly?: boolean
 }>()
 defineEmits<{ edit: []; remove: [] }>()
 </script>
@@ -49,8 +51,11 @@ defineEmits<{ edit: []; remove: [] }>()
       </span>
     </div>
     <div class="flex items-center gap-3 px-4 py-2.5">
-      <i class="pi pi-bars drag-handle cursor-grab text-ink-disabled group-hover:text-ink-faint" />
-      <div class="flex-1 min-w-0 ml-1">
+      <i
+        v-if="!readonly"
+        class="pi pi-bars drag-handle cursor-grab text-ink-disabled group-hover:text-ink-faint"
+      />
+      <div class="flex-1 min-w-0" :class="readonly ? '' : 'ml-1'">
         <!-- hora y tiempo en su propia fila (no columna): sin ellos no se
              reserva espacio, y el título se queda con todo el ancho (con el
              tiempo a la derecha, en móvil quedaba una columna de dos palabras) -->
@@ -65,8 +70,9 @@ defineEmits<{ edit: []; remove: [] }>()
         </p>
         <span class="font-medium text-ink">{{ item.title }}</span>
         <!-- enlaces compactos: solo icono, el detalle vive en el tooltip -->
+        <span v-if="readonly && placeName" class="ml-2 text-xs text-ink-faint">{{ placeName }}</span>
         <EntityLink
-          v-if="item.place_id && placeName"
+          v-if="!readonly && item.place_id && placeName"
           type="place"
           :tripId="tripId"
           :targetId="item.place_id"
@@ -74,7 +80,7 @@ defineEmits<{ edit: []; remove: [] }>()
           class="ml-2"
         />
         <EntityLink
-          v-if="item.booking_id && bookingTitle"
+          v-if="!readonly && item.booking_id && bookingTitle"
           type="booking"
           :tripId="tripId"
           :targetId="item.booking_id"
@@ -82,7 +88,7 @@ defineEmits<{ edit: []; remove: [] }>()
           class="ml-2"
         />
         <EntityLink
-          v-if="item.booking_id && expenseId"
+          v-if="!readonly && item.booking_id && expenseId"
           type="expense"
           :tripId="tripId"
           :targetId="expenseId"
@@ -96,7 +102,7 @@ defineEmits<{ edit: []; remove: [] }>()
         </div>
         <p v-if="item.notes" class="text-xs text-ink-faint whitespace-pre-line break-words">{{ item.notes }}</p>
       </div>
-      <RowActions @edit="$emit('edit')" @remove="$emit('remove')" />
+      <RowActions v-if="!readonly" @edit="$emit('edit')" @remove="$emit('remove')" />
     </div>
   </div>
 </template>

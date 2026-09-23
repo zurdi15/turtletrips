@@ -1,57 +1,113 @@
 <script setup lang="ts">
-import type { PublicDayRow, RowTone } from '../../utils/publicAgenda'
+import AgendaBookingSection, { type AgendaRow } from '../itinerary/AgendaBookingSection.vue'
+import AgendaDayHeader from '../itinerary/AgendaDayHeader.vue'
+import AgendaItemRow from '../itinerary/AgendaItemRow.vue'
+import type { DayForecast, ItineraryItem, Place } from '../../api/types'
+import type { Transfer, TransferMode } from '../../utils/transfers'
 
-// Tarjeta de un día del viaje compartido: solo lectura, sin enlaces ni acciones.
-defineProps<{ title: string; sub: string; rows: PublicDayRow[] }>()
-
-const TONE_CLASSES: Record<RowTone, string> = {
-  info: 'text-info-strong bg-info-tint-strong',
-  warn: 'text-warn-strong bg-warn-tint-strong',
-  lodging: 'text-lodging-strong bg-lodging-tint-strong',
-  plain: 'text-ink',
-}
+// Tarjeta de un día del viaje compartido. Monta LAS MISMAS piezas que la agenda
+// de la app (cabecera con tiempo y avisos, bandas de transporte/reservas/cama y
+// filas de actividad) en su modo solo-lectura: así el enlace es un calco y no
+// una segunda implementación que se queda atrás.
+defineProps<{
+  title: string
+  sub: string
+  issues: string[]
+  lodgingGap: boolean
+  transfers: string | null
+  forecast: DayForecast | null | undefined
+  transportRows: AgendaRow[]
+  otherRows: AgendaRow[]
+  lodgingRows: AgendaRow[]
+  items: ItineraryItem[]
+  /** actividades de varios días que vienen de atrás ("sigue …") */
+  continuations: ItineraryItem[]
+  placeById: Map<number, Place>
+  itemForecast: (item: ItineraryItem) => DayForecast | null | undefined
+  transferOf: (item: ItineraryItem) => Transfer | null
+  transferMode: TransferMode
+  emptyLabel: string
+}>()
 </script>
 
 <template>
   <div class="bg-surface rounded-card border border-line overflow-hidden">
+    <AgendaDayHeader
+      :title="title"
+      :sub="sub"
+      :issues="issues"
+      :lodgingGap="lodgingGap"
+      :transfers="transfers"
+      :forecast="forecast"
+      readonly
+    />
+
+    <AgendaBookingSection
+      v-if="transportRows.length"
+      tone="info"
+      icon="mdi mdi-plane-train"
+      :title="$t('itinerary.agenda.transport')"
+      :tripId="0"
+      :rows="transportRows"
+      readonly
+    />
+    <AgendaBookingSection
+      v-if="otherRows.length"
+      tone="warn"
+      icon="pi pi-ticket"
+      :title="$t('itinerary.agenda.bookings')"
+      :tripId="0"
+      :rows="otherRows"
+      readonly
+    />
+
+    <AgendaItemRow
+      v-for="item in items"
+      :key="item.id"
+      :item="item"
+      :tripId="0"
+      :placeName="item.place_id != null ? (placeById.get(item.place_id)?.name ?? null) : null"
+      :bookingTitle="null"
+      :expenseId="null"
+      :forecast="itemForecast(item)"
+      :transfer="transferOf(item)"
+      :transferMode="transferMode"
+      readonly
+    />
+
+    <!-- misma fila "sigue" que la agenda de la app, sin el clic para editar -->
     <div
-      class="flex items-baseline justify-between gap-2 px-4 py-2.5 bg-surface-muted border-b border-line-subtle"
+      v-for="cont in continuations"
+      :key="`cont-${cont.id}`"
+      class="flex items-center gap-3 px-4 py-1.5 border-b border-line-faint last:border-b-0 text-sm text-nature-strong opacity-70"
     >
-      <span class="font-semibold text-ink capitalize">{{ title }}</span>
-      <span class="text-sm text-ink-faint shrink-0">{{ sub }}</span>
+      <i class="pi pi-arrow-down-right text-xs w-4 text-center" />
+      <span class="w-24 shrink-0 text-xs">{{ $t('itinerary.agenda.continues') }}</span>
+      <span class="italic">{{ cont.title }}</span>
     </div>
-    <div
-      v-for="row in rows"
-      :key="row.key"
-      class="flex items-start gap-3 px-4 py-2 border-b border-line-faint last:border-b-0"
-      :class="TONE_CLASSES[row.tone]"
+
+    <AgendaBookingSection
+      v-if="lodgingRows.length"
+      tone="lodging"
+      icon="mdi mdi-bed"
+      :title="$t('itinerary.agenda.lodging')"
+      :tripId="0"
+      :rows="lodgingRows"
+      position="bottom"
+      readonly
+    />
+
+    <p
+      v-if="
+        !transportRows.length &&
+        !otherRows.length &&
+        !lodgingRows.length &&
+        !items.length &&
+        !continuations.length
+      "
+      class="px-4 py-3 text-xs text-ink-disabled"
     >
-      <!-- el icono en su propia caja fija (vacía en las actividades): dentro de
-           la columna de horas se comía el ancho y recortaba "Check-in: 15:00" -->
-      <span class="w-4 shrink-0 mt-0.5 text-sm opacity-80 grid place-items-center">
-        <i v-if="row.icon" :class="row.icon" />
-      </span>
-      <span class="w-24 sm:w-32 shrink-0 text-xs sm:text-sm opacity-80 tabular-nums truncate">
-        <!-- transporte: tipo y horas (salida–llegada, +n si cruza noches) en
-             dos líneas, como en la agenda de la app -->
-        <template v-if="row.transport">
-          {{ row.transport.kind }}
-          <span v-if="row.transport.dep || row.transport.arr" class="block font-medium">
-            {{ row.transport.dep ?? '' }}<span v-if="row.transport.dep && row.transport.arr" class="opacity-50">–</span>{{ row.transport.arr ?? '' }}<sup v-if="row.transport.arr && row.transport.plusDays" class="text-3xs">+{{ row.transport.plusDays }}</sup>
-          </span>
-        </template>
-        <template v-else>{{ row.head }}</template>
-      </span>
-      <span class="min-w-0">
-        <span class="font-medium text-sm">{{ row.title }}</span>
-        <!-- una sola línea de apoyo: el sitio manda sobre la nota -->
-        <span v-if="row.place ?? row.note" class="block text-xs opacity-70 whitespace-pre-line">
-          {{ row.place ?? row.note }}
-        </span>
-      </span>
-    </div>
-    <p v-if="!rows.length" class="px-4 py-3 text-xs text-ink-disabled">
-      {{ $t('share.public.emptyDay') }}
+      {{ emptyLabel }}
     </p>
   </div>
 </template>

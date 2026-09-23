@@ -19,9 +19,9 @@ export default {
     copied: 'Link copied',
     saveError: 'Could not update the link',
     privacy:
-      'Expenses, balances, budget, confirmation codes and flight numbers never travel with the link.',
+      'Expenses, balances, the budget and booking reference codes never travel.',
     privacyNotes:
-      'Heads up: trip notes and activity notes ARE visible. Place notes and the daily journal are not.',
+      'Notes do not travel either: not on the trip, the activities, the places, nor the diary. Hard facts do: times, routes, flight numbers and the weather forecast.',
   },
   scopes: {
     itinerary: 'Day-by-day itinerary',
@@ -29,7 +29,6 @@ export default {
     map: 'Places and map',
   },
   public: {
-    readOnly: 'Read-only shared plan',
     emptyDay: 'Free day',
     placeLink: 'More information',
     errorTitle: 'Could not load the trip',
