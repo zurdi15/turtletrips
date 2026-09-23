@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import type { PackingItem } from '../api/types'
 import { groupPackingItems, packingBuckets } from './packing'
 
 const colorOf = (name: string) => (name === 'Ropa' ? '#f59e0b' : null)
@@ -39,7 +38,7 @@ describe('groupPackingItems', () => {
 })
 
 describe('packingBuckets', () => {
-  const item = (id: number) => ({ id }) as PackingItem
+  const item = (id: number) => ({ id })
 
   it('manda la disposición entera, categorías vacías incluidas', () => {
     expect(

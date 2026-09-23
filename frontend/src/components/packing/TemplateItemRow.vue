@@ -13,6 +13,8 @@ const props = defineProps<{
   item: PackingTemplateItem
   /** plantilla de otro viajero: fila de solo consulta */
   readonly?: boolean
+  /** modo Ordenar: aparece el asa del drag & drop */
+  reorderable?: boolean
 }>()
 const emit = defineEmits<{
   save: [payload: PackingAddPayload]
@@ -59,6 +61,11 @@ function save() {
       <Button icon="pi pi-times" text size="small" severity="secondary" @click="editing = false" />
     </template>
     <template v-else>
+      <i
+        v-if="reorderable"
+        class="pi pi-bars text-xs text-ink-faint hover:text-ink-secondary tt-drag-handle cursor-grab active:cursor-grabbing shrink-0"
+        v-tooltip.top="$t('packing.dragHint')"
+      />
       <span class="flex-1 text-ink">
         {{ item.name }}
         <PackingQuantity :quantity="item.quantity" />

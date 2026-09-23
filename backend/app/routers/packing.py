@@ -320,10 +320,14 @@ def create_template(
     if payload.from_trip_id is not None:
         trip = ensure_trip_member(db, user, payload.from_trip_id)
         _validate_traveler(db, trip, payload.traveler_id)
-        for item in _trip_items(db, trip.id, payload.traveler_id):
+        for position, item in enumerate(_trip_items(db, trip.id, payload.traveler_id)):
             template.items.append(
                 PackingTemplateItem(
-                    name=item.name, category=item.category, url=item.url, quantity=item.quantity
+                    name=item.name,
+                    category=item.category,
+                    url=item.url,
+                    quantity=item.quantity,
+                    position=position,
                 )
             )
     db.add(template)
@@ -395,7 +399,13 @@ def create_template_item(
 ):
     template = get_or_404(db, PackingTemplate, template_id)
     _ensure_template_editable(user, template)
-    return save_new(db, PackingTemplateItem(template_id=template_id), payload.model_dump())
+    last = db.scalar(
+        select(func.max(PackingTemplateItem.position)).where(
+            PackingTemplateItem.template_id == template_id
+        )
+    )
+    item = PackingTemplateItem(template_id=template_id, position=(last or 0) + 1)
+    return save_new(db, item, payload.model_dump())
 
 
 @router.patch("/packing-template-items/{item_id}", response_model=PackingTemplateItemRead)
@@ -405,6 +415,32 @@ def update_template_item(
     item = get_or_404(db, PackingTemplateItem, item_id)
     _ensure_template_editable(user, item.template)
     return save_updates(db, item, payload.model_dump(exclude_unset=True))
+
+
+@router.post(
+    "/packing-templates/{template_id}/reorder", response_model=PackingTemplateDetail
+)
+def reorder_template(
+    template_id: int, payload: PackingReorder, user: CurrentUser, db: Session = Depends(get_db)
+):
+    """Disposición completa de la plantilla (categoría + orden) tras un drag & drop."""
+    template = get_or_404(db, PackingTemplate, template_id)
+    _ensure_template_editable(user, template)
+    items = {item.id: item for item in template.items}
+    for bucket in payload.buckets:
+        for position, item_id in enumerate(bucket.ids):
+            item = items.get(item_id)
+            if item is not None:
+                item.category = bucket.category
+                item.position = position
+    db.commit()
+    db.refresh(template)
+    return PackingTemplateDetail(
+        id=template.id,
+        traveler_id=template.traveler_id,
+        name=template.name,
+        items=template.items,
+    )
 
 
 @router.delete("/packing-template-items/{item_id}", status_code=204)
@@ -439,6 +475,8 @@ def apply_template(
         (item.name.strip().lower(), item.category)
         for item in _trip_items(db, trip_id, traveler_id)
     }
+    # los copiados van DETRÁS de lo que ya hubiera, en el orden de la plantilla
+    position = _next_position(db, trip_id, traveler_id)
     for entry in template.items:
         if (entry.name.strip().lower(), entry.category) in existing:
             continue
@@ -450,8 +488,10 @@ def apply_template(
                 category=entry.category,
                 url=entry.url,
                 quantity=entry.quantity,
+                position=position,
             )
         )
+        position += 1
     _upsert_selection(db, trip_id, traveler_id, template_id)
     db.commit()
     return _visible_items(user, trip, _trip_items(db, trip_id))
@@ -475,10 +515,14 @@ def sync_template_from_trip(
     _validate_traveler(db, trip, traveler_id)
     _ensure_bag_editable(db, user, traveler_id)
     template.items.clear()
-    for item in _trip_items(db, trip_id, traveler_id):
+    for position, item in enumerate(_trip_items(db, trip_id, traveler_id)):
         template.items.append(
             PackingTemplateItem(
-                name=item.name, category=item.category, url=item.url, quantity=item.quantity
+                name=item.name,
+                category=item.category,
+                url=item.url,
+                quantity=item.quantity,
+                position=position,
             )
         )
     _upsert_selection(db, trip_id, traveler_id, template_id)

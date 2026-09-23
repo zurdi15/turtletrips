@@ -101,6 +101,7 @@ class PackingTemplateItemRead(BaseModel):
     category: str
     url: str | None
     quantity: int
+    position: int
 
 
 class PackingTemplateDetail(BaseModel):

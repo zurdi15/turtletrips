@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watchEffect } from 'vue'
+import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
+import draggable from 'vuedraggable'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
@@ -18,7 +19,7 @@ import { useTravelersStore } from '../stores/travelers'
 import { useSessionStore } from '../stores/session'
 import { useConfirmDelete } from '../composables/useConfirmDelete'
 import { useNotify } from '../composables/useNotify'
-import { groupPackingItems } from '../utils/packing'
+import { groupPackingItems, packingBuckets } from '../utils/packing'
 
 const store = usePackingTemplatesStore()
 const categories = useCategoriesStore()
@@ -133,6 +134,29 @@ const grouped = computed(() =>
     (name) => categories.colorOf('packing', name),
   ),
 )
+
+// modo Ordenar y espejos locales por categoría, como en la maleta del viaje
+const reordering = ref(false)
+watch(() => store.detail?.id, () => (reordering.value = false))
+
+const lists = reactive<Record<string, PackingTemplateItem[]>>({})
+watch(
+  grouped,
+  (groups) => {
+    for (const key of Object.keys(lists)) delete lists[key]
+    for (const group of groups) lists[group.name] = [...group.items]
+  },
+  { immediate: true, deep: true },
+)
+
+async function persistOrder() {
+  try {
+    await store.reorder(packingBuckets(lists))
+  } catch (err) {
+    notify.error(t('packing.toast.reorderError'), err)
+    if (store.detail) store.select(store.detail.id)
+  }
+}
 
 async function createTemplate(name: string, ownerId: number) {
   try {
@@ -314,8 +338,29 @@ function saveItem(item: PackingTemplateItem, payload: PackingAddPayload) {
             v-if="canEditDetail"
             :placeholder="$t('packing.templatesView.addItemPlaceholder')"
             :onAdd="addItem"
-            class="mb-4"
+            class="mb-3"
           />
+
+          <!-- Ordenar: mismo modo que en la maleta del viaje -->
+          <div
+            v-if="canEditDetail && store.detail.items.length"
+            class="flex items-center gap-2 mb-3"
+          >
+            <p v-if="reordering" class="flex-1 text-xs text-ink-faint">
+              {{ $t('packing.reorderHint') }}
+            </p>
+            <span v-else class="flex-1" />
+            <Button
+              :icon="reordering ? 'pi pi-check' : 'pi pi-sort-alt'"
+              severity="secondary"
+              size="small"
+              :outlined="!reordering"
+              :aria-label="reordering ? $t('packing.reorderDone') : $t('packing.reorder')"
+              :aria-pressed="reordering"
+              v-tooltip.bottom="reordering ? $t('packing.reorderDone') : $t('packing.reorder')"
+              @click="reordering = !reordering"
+            />
+          </div>
 
           <p v-if="!store.detail.items.length" class="text-sm text-ink-faint py-4 text-center">
             {{ $t('packing.templatesView.emptyTemplate') }}
@@ -327,19 +372,30 @@ function saveItem(item: PackingTemplateItem, payload: PackingAddPayload) {
               :key="group.name"
               :name="group.name"
               :color="group.color"
-              :count="String(group.items.length)"
+              :count="String((lists[group.name] ?? []).length)"
               size="sm"
             >
-              <ul>
-                <TemplateItemRow
-                  v-for="item in group.items"
-                  :key="item.id"
-                  :item="item"
-                  :readonly="!canEditDetail"
-                  @save="(payload) => saveItem(item, payload)"
-                  @remove="store.removeItem(item.id)"
-                />
-              </ul>
+              <draggable
+                :list="lists[group.name]"
+                group="template-items"
+                item-key="id"
+                handle=".tt-drag-handle"
+                :disabled="!reordering || !canEditDetail"
+                ghost-class="opacity-40"
+                tag="ul"
+                class="min-h-[2rem]"
+                @end="persistOrder"
+              >
+                <template #item="{ element }">
+                  <TemplateItemRow
+                    :item="element"
+                    :readonly="!canEditDetail"
+                    :reorderable="reordering"
+                    @save="(payload) => saveItem(element, payload)"
+                    @remove="store.removeItem(element.id)"
+                  />
+                </template>
+              </draggable>
             </PackingCategoryCard>
           </div>
         </div>

@@ -328,3 +328,61 @@ def test_packing_reorder_ignores_other_bags(client, trip):
     moved = next(i for i in resp.json() if i["id"] == hers["id"])
     assert moved["category"] == "Ropa"
     assert moved["traveler_id"] == ana["id"]
+
+
+def test_template_reorder(client, trip):
+    template = client.post("/api/v1/packing-templates", json={"name": "Montaña"}).json()
+
+    def add(name, category="Ropa"):
+        return client.post(
+            f"/api/v1/packing-templates/{template['id']}/items",
+            json={"name": name, "category": category},
+        ).json()
+
+    boots = add("Botas")
+    socks = add("Calcetines")
+    lamp = add("Frontal", "Tecnología")
+
+    def names():
+        detail = client.get(f"/api/v1/packing-templates/{template['id']}").json()
+        return [(i["name"], i["category"]) for i in detail["items"]]
+
+    assert names() == [("Botas", "Ropa"), ("Calcetines", "Ropa"), ("Frontal", "Tecnología")]
+
+    resp = client.post(
+        f"/api/v1/packing-templates/{template['id']}/reorder",
+        json={
+            "buckets": [
+                {"category": "Ropa", "ids": [socks["id"], boots["id"]]},
+                {"category": "Ropa", "ids": [socks["id"], boots["id"], lamp["id"]]},
+            ]
+        },
+    )
+    assert resp.status_code == 200
+    # el último cubo manda: el frontal acaba en Ropa, el tercero
+    assert names() == [("Calcetines", "Ropa"), ("Botas", "Ropa"), ("Frontal", "Ropa")]
+
+    # aplicarla a un viaje respeta ese orden y entra DETRÁS de lo que ya había
+    client.post(f"/api/v1/trips/{trip['id']}/packing", json={"name": "Pasaporte"})
+    items = client.post(
+        f"/api/v1/trips/{trip['id']}/packing/apply/{template['id']}"
+    ).json()
+    assert [i["name"] for i in items] == [
+        "Pasaporte", "Calcetines", "Botas", "Frontal",
+    ]
+
+
+def test_template_reorder_only_for_its_owner(app, client, trip):
+    from conftest import login, make_user
+
+    template = client.post("/api/v1/packing-templates", json={"name": "Mía"}).json()
+    item = client.post(
+        f"/api/v1/packing-templates/{template['id']}/items", json={"name": "Gorro"}
+    ).json()
+    make_user(client, "ajena")  # otra familia: ni la ve
+    other = login(app, "ajena")
+    resp = other.post(
+        f"/api/v1/packing-templates/{template['id']}/reorder",
+        json={"buckets": [{"category": "Ropa", "ids": [item["id"]]}]},
+    )
+    assert resp.status_code == 403

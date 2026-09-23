@@ -189,6 +189,8 @@ export interface PackingTemplateItem {
   category: string
   url: string | null
   quantity: number
+  /** orden manual dentro de su categoría (drag & drop) */
+  position: number
 }
 
 export interface PackingTemplateDetail {

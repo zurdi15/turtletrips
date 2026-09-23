@@ -734,7 +734,10 @@ class PackingTemplate(TimestampMixin, Base):
     traveler: Mapped[Traveler] = relationship()
 
     items: Mapped[list["PackingTemplateItem"]] = relationship(
-        back_populates="template", cascade="all, delete-orphan", passive_deletes=True
+        back_populates="template",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="PackingTemplateItem.position, PackingTemplateItem.id",
     )
 
 
@@ -749,6 +752,8 @@ class PackingTemplateItem(Base):
     category: Mapped[str] = mapped_column(String(50), default="Ropa")
     url: Mapped[str | None] = mapped_column(String(500))
     quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    # orden manual dentro de su categoría (drag & drop), como en la maleta
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     template: Mapped[PackingTemplate] = relationship(back_populates="items")
 

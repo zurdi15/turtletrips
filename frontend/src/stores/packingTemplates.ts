@@ -1,6 +1,11 @@
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
-import type { PackingTemplate, PackingTemplateDetail, PackingTemplateItem } from '../api/types'
+import type {
+  PackingBucket,
+  PackingTemplate,
+  PackingTemplateDetail,
+  PackingTemplateItem,
+} from '../api/types'
 
 export const usePackingTemplatesStore = defineStore('packingTemplates', {
   state: () => ({
@@ -80,6 +85,14 @@ export const usePackingTemplatesStore = defineStore('packingTemplates', {
         if (idx >= 0) this.detail.items[idx] = item
       }
       return item
+    },
+    /** Disposición entera de la plantilla tras un drag & drop */
+    async reorder(buckets: PackingBucket[]) {
+      if (!this.detail) return
+      this.detail = await api.post<PackingTemplateDetail>(
+        `/packing-templates/${this.detail.id}/reorder`,
+        { buckets },
+      )
     },
     async removeItem(id: number) {
       await api.delete(`/packing-template-items/${id}`)
