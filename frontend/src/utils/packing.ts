@@ -1,3 +1,5 @@
+import type { PackingBucket, PackingItem } from '../api/types'
+
 export interface PackingGroup<T> {
   name: string
   color: string | null
@@ -25,4 +27,16 @@ export function groupPackingItems<T extends { category: string }>(
       items: items.filter((i) => i.category === name),
     }))
     .filter((g) => g.items.length)
+}
+
+/**
+ * Traduce los espejos locales del drag & drop (categoría → elementos en orden)
+ * al payload del endpoint de reorder. Las categorías vacías viajan igual: así
+ * un elemento que salió de la última categoría deja su cubo a cero.
+ */
+export function packingBuckets(lists: Record<string, PackingItem[]>): PackingBucket[] {
+  return Object.entries(lists).map(([category, items]) => ({
+    category,
+    ids: items.map((item) => item.id),
+  }))
 }

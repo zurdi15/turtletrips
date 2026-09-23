@@ -34,7 +34,21 @@ class PackingItemRead(BaseModel):
     category: str
     url: str | None
     quantity: int
+    position: int
     checked: bool
+
+
+class PackingBucket(BaseModel):
+    """Una categoría de la maleta con sus elementos en orden."""
+
+    category: str = Field(min_length=1, max_length=50)
+    ids: list[int]
+
+
+class PackingReorder(BaseModel):
+    # la disposición ENTERA de la maleta tras un drag & drop (como en enlaces):
+    # un elemento arrastrado a otra tarjeta cambia de categoría
+    buckets: list[PackingBucket]
 
 
 class PackingSelectionRead(BaseModel):

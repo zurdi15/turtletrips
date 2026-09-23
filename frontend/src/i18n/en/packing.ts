@@ -21,6 +21,10 @@ export default {
     title: "{bag}'s bag is empty",
     subtitle: 'Add items or apply a template',
   },
+  reorder: 'Reorder items',
+  reorderDone: 'Done',
+  reorderHint: 'Drag by the handle to sort; drop it on another category to move it there.',
+  dragHint: 'Drag to sort',
   categorySelect: {
     new: 'New category',
     namePlaceholder: 'Category name',
@@ -58,6 +62,7 @@ export default {
     save: 'Save template',
   },
   toast: {
+    reorderError: 'The order could not be saved',
     addError: 'Failed to add',
     saveError: 'Failed to save',
     createError: 'Failed to create',

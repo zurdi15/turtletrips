@@ -689,6 +689,8 @@ class PackingItem(TimestampMixin, Base):
     url: Mapped[str | None] = mapped_column(String(500))  # enlace de compra
     # unidades de lo mismo (3 camisetas): un único elemento que se marca entero
     quantity: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    # orden manual dentro de su categoría (drag & drop); empata por id
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     checked: Mapped[bool] = mapped_column(Boolean, default=False)
 
     trip: Mapped[Trip] = relationship(back_populates="packing_items")

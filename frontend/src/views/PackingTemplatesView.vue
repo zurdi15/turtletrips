@@ -330,14 +330,16 @@ function saveItem(item: PackingTemplateItem, payload: PackingAddPayload) {
               :count="String(group.items.length)"
               size="sm"
             >
-              <TemplateItemRow
-                v-for="item in group.items"
-                :key="item.id"
-                :item="item"
-                :readonly="!canEditDetail"
-                @save="(payload) => saveItem(item, payload)"
-                @remove="store.removeItem(item.id)"
-              />
+              <ul>
+                <TemplateItemRow
+                  v-for="item in group.items"
+                  :key="item.id"
+                  :item="item"
+                  :readonly="!canEditDetail"
+                  @save="(payload) => saveItem(item, payload)"
+                  @remove="store.removeItem(item.id)"
+                />
+              </ul>
             </PackingCategoryCard>
           </div>
         </div>

@@ -18,6 +18,7 @@ from ..schemas.packing import (
     PackingItemCreate,
     PackingItemRead,
     PackingItemUpdate,
+    PackingReorder,
     PackingSelectionRead,
     PackingTemplateCreate,
     PackingTemplateDetail,
@@ -137,7 +138,18 @@ def _trip_items(db: Session, trip_id: int, traveler_id: int | None = ...) -> lis
     query = select(PackingItem).where(PackingItem.trip_id == trip_id)
     if traveler_id is not ...:
         query = query.where(PackingItem.traveler_id == traveler_id)
-    return list(db.scalars(query.order_by(PackingItem.id)))
+    # orden manual; los de antes del drag & drop comparten position y caen por id
+    return list(db.scalars(query.order_by(PackingItem.position, PackingItem.id)))
+
+
+def _next_position(db: Session, trip_id: int, traveler_id: int | None) -> int:
+    """El elemento nuevo entra al final de su maleta (dentro de su categoría)."""
+    last = db.scalar(
+        select(func.max(PackingItem.position)).where(
+            PackingItem.trip_id == trip_id, PackingItem.traveler_id == traveler_id
+        )
+    )
+    return (last or 0) + 1
 
 
 def _upsert_selection(
@@ -202,7 +214,10 @@ def create_packing_item(
     trip = ensure_trip_member(db, user, trip_id)
     _validate_traveler(db, trip, payload.traveler_id)
     _ensure_bag_editable(db, user, payload.traveler_id)
-    return save_new(db, PackingItem(trip_id=trip_id), payload.model_dump())
+    item = PackingItem(
+        trip_id=trip_id, position=_next_position(db, trip_id, payload.traveler_id)
+    )
+    return save_new(db, item, payload.model_dump())
 
 
 @router.patch("/packing/{item_id}", response_model=PackingItemRead)
@@ -218,6 +233,31 @@ def update_packing_item(
         # mover un elemento exige poder editar también la maleta destino
         _ensure_bag_editable(db, user, data["traveler_id"])
     return save_updates(db, item, data)
+
+
+@router.post("/trips/{trip_id}/packing/reorder", response_model=list[PackingItemRead])
+def reorder_packing(
+    trip_id: int,
+    payload: PackingReorder,
+    user: CurrentUser,
+    traveler_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    """Aplica la disposición completa de una maleta (categoría + orden) tras un
+    drag & drop y devuelve los elementos visibles para sustituirlos de golpe."""
+    trip = ensure_trip_member(db, user, trip_id)
+    _validate_traveler(db, trip, traveler_id)
+    _ensure_bag_editable(db, user, traveler_id)
+    # solo se tocan los de ESA maleta: una lista con ids de otra no la mueve
+    items = {item.id: item for item in _trip_items(db, trip_id, traveler_id)}
+    for bucket in payload.buckets:
+        for position, item_id in enumerate(bucket.ids):
+            item = items.get(item_id)
+            if item is not None:
+                item.category = bucket.category
+                item.position = position
+    db.commit()
+    return _visible_items(user, trip, _trip_items(db, trip_id))
 
 
 @router.delete("/packing/{item_id}", status_code=204)

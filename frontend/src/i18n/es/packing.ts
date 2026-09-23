@@ -21,6 +21,10 @@ export default {
     title: 'La maleta de {bag} está vacía',
     subtitle: 'Añade elementos o aplica una plantilla',
   },
+  reorder: 'Ordenar elementos',
+  reorderDone: 'Hecho',
+  reorderHint: 'Arrastra por el asa para ordenar; suelta en otra categoría para moverlo ahí.',
+  dragHint: 'Arrastrar para ordenar',
   categorySelect: {
     new: 'Nueva categoría',
     namePlaceholder: 'Nombre de la categoría',
@@ -58,6 +62,7 @@ export default {
     save: 'Guardar plantilla',
   },
   toast: {
+    reorderError: 'No se pudo guardar el orden',
     addError: 'Error al añadir',
     saveError: 'Error al guardar',
     createError: 'Error al crear',

@@ -28,8 +28,8 @@ withDefaults(
       <span class="font-semibold text-ink">{{ name }}</span>
       <span class="text-xs text-ink-faint">{{ count }}</span>
     </div>
-    <ul>
-      <slot />
-    </ul>
+    <!-- el contenedor de la lista lo pone quien la use: en la maleta es un
+         <draggable> y en las plantillas un <ul> normal -->
+    <slot />
   </div>
 </template>

@@ -256,3 +256,75 @@ def test_packing_quantity(client, trip):
         f"/api/v1/packing-templates/{template['id']}/sync-from-trip/{trip_id}"
     ).json()
     assert {i["name"]: i["quantity"] for i in detail["items"]} == {"Gorra": 2, "Camisetas": 5}
+
+
+def test_packing_reorder(client, trip):
+    trip_id = trip["id"]
+
+    def add(name, category="Ropa"):
+        return client.post(
+            f"/api/v1/trips/{trip_id}/packing", json={"name": name, "category": category}
+        ).json()
+
+    cap = add("Gorra")
+    socks = add("Calcetines")
+    shirt = add("Camiseta")
+    kit = add("Tiritas", "Botiquín")
+
+    def names():
+        return [i["name"] for i in client.get(f"/api/v1/trips/{trip_id}/packing").json()]
+
+    assert names() == ["Gorra", "Calcetines", "Camiseta", "Tiritas"]
+
+    # la camiseta arriba del todo y las tiritas pasan a Ropa, al final
+    resp = client.post(
+        f"/api/v1/trips/{trip_id}/packing/reorder",
+        json={
+            "buckets": [
+                {"category": "Ropa", "ids": [shirt["id"], cap["id"], socks["id"], kit["id"]]}
+            ]
+        },
+    )
+    assert resp.status_code == 200
+    items = {i["name"]: i for i in resp.json()}
+    assert items["Tiritas"]["category"] == "Ropa"
+    assert [i["name"] for i in resp.json()] == ["Camiseta", "Gorra", "Calcetines", "Tiritas"]
+    assert names() == ["Camiseta", "Gorra", "Calcetines", "Tiritas"]
+
+    # lo nuevo entra al final aunque el orden manual ya no vaya por id
+    add("Bañador")
+    assert names()[-1] == "Bañador"
+
+    # el orden manual viaja a la plantilla y de vuelta a otra maleta
+    template = client.post(
+        "/api/v1/packing-templates", json={"name": "Playa", "from_trip_id": trip_id}
+    ).json()
+    other = client.post("/api/v1/trips", json={"name": "Otro"}).json()
+    applied = client.post(f"/api/v1/trips/{other['id']}/packing/apply/{template['id']}").json()
+    assert [i["name"] for i in applied] == [
+        "Camiseta", "Gorra", "Calcetines", "Tiritas", "Bañador",
+    ]
+
+
+def test_packing_reorder_ignores_other_bags(client, trip):
+    from conftest import add_traveler
+
+    trip_id = trip["id"]
+    ana = add_traveler(client, trip_id, "Ana")
+    common = client.post(
+        f"/api/v1/trips/{trip_id}/packing", json={"name": "Botiquín común"}
+    ).json()
+    hers = client.post(
+        f"/api/v1/trips/{trip_id}/packing",
+        json={"name": "Su neceser", "traveler_id": ana["id"]},
+    ).json()
+
+    # reordenar la maleta común con un id de la de Ana no se lleva su elemento
+    resp = client.post(
+        f"/api/v1/trips/{trip_id}/packing/reorder",
+        json={"buckets": [{"category": "Botiquín", "ids": [hers["id"], common["id"]]}]},
+    )
+    assert resp.status_code == 200
+    moved = next(i for i in resp.json() if i["id"] == hers["id"])
+    assert moved["category"] == "Ropa"
+    assert moved["traveler_id"] == ana["id"]

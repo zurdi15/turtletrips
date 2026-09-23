@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { groupPackingItems } from './packing'
+import type { PackingItem } from '../api/types'
+import { groupPackingItems, packingBuckets } from './packing'
 
 const colorOf = (name: string) => (name === 'Ropa' ? '#f59e0b' : null)
 
@@ -34,5 +35,19 @@ describe('groupPackingItems', () => {
 
   it('sin items: sin grupos', () => {
     expect(groupPackingItems([], ['Ropa'], colorOf)).toEqual([])
+  })
+})
+
+describe('packingBuckets', () => {
+  const item = (id: number) => ({ id }) as PackingItem
+
+  it('manda la disposición entera, categorías vacías incluidas', () => {
+    expect(
+      packingBuckets({ Ropa: [item(3), item(1)], Botiquín: [], Tecnología: [item(2)] }),
+    ).toEqual([
+      { category: 'Ropa', ids: [3, 1] },
+      { category: 'Botiquín', ids: [] },
+      { category: 'Tecnología', ids: [2] },
+    ])
   })
 })

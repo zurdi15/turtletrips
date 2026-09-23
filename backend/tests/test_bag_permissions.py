@@ -53,6 +53,13 @@ def test_family_edits_by_default_until_revoked(app, client, trip):
         ).status_code
         == 403
     )
+    assert (
+        ben_c.post(
+            f"/api/v1/trips/{trip['id']}/packing/reorder?traveler_id={ana_id}",
+            json={"buckets": [{"category": "Ropa", "ids": [item["id"]]}]},
+        ).status_code
+        == 403
+    )
 
     # …pero la SIGUE VIENDO (solo-consulta), y su propia maleta y la común van bien
     visible = ben_c.get(f"/api/v1/trips/{trip['id']}/packing").json()

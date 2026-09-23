@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
 import type {
+  PackingBucket,
   PackingInput,
   PackingItem,
   PackingSelection,
@@ -80,6 +81,15 @@ export const usePackingStore = defineStore('packing', () => {
     await refreshSelections()
   }
 
+  /** Disposición entera de una maleta tras el drag & drop (categoría + orden) */
+  async function reorder(buckets: PackingBucket[], travelerId: number | null) {
+    const query = travelerId != null ? `?traveler_id=${travelerId}` : ''
+    base.items.value = await api.post<PackingItem[]>(
+      `/trips/${base.tripId.value}/packing/reorder${query}`,
+      { buckets },
+    )
+  }
+
   async function applyTemplate(templateId: number, travelerId: number | null) {
     const query = travelerId != null ? `?traveler_id=${travelerId}` : ''
     base.items.value = await api.post<PackingItem[]>(
@@ -110,6 +120,7 @@ export const usePackingStore = defineStore('packing', () => {
     toggle,
     saveAsTemplate,
     clearSelection,
+    reorder,
     applyTemplate,
     syncTemplateFromTrip,
   }

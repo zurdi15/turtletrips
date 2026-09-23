@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import draggable from 'vuedraggable'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
-import Checkbox from 'primevue/checkbox'
 import EmptyState from '../../components/EmptyState.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
 import FormDialog from '../../components/ui/FormDialog.vue'
 import ProgressMeter from '../../components/ui/ProgressMeter.vue'
-import RowActions from '../../components/ui/RowActions.vue'
 import TravelerAvatar from '../../components/ui/TravelerAvatar.vue'
 import BagSelector, { type BagOption } from '../../components/packing/BagSelector.vue'
 import PackingAddBar, { type PackingAddPayload } from '../../components/packing/PackingAddBar.vue'
 import PackingCategoryCard from '../../components/packing/PackingCategoryCard.vue'
 import PackingItemDialog from '../../components/packing/PackingItemDialog.vue'
-import PackingQuantity from '../../components/packing/PackingQuantity.vue'
+import PackingItemRow from '../../components/packing/PackingItemRow.vue'
 import type { PackingItem, Trip } from '../../api/types'
 import { usePackingStore } from '../../stores/packing'
 import { useBagPermissionsStore } from '../../stores/bagPermissions'
@@ -25,7 +24,7 @@ import { useTravelersStore } from '../../stores/travelers'
 import { useConfirmDelete } from '../../composables/useConfirmDelete'
 import { useNotify } from '../../composables/useNotify'
 import { useTripTabData } from '../../composables/useTripTabData'
-import { groupPackingItems } from '../../utils/packing'
+import { groupPackingItems, packingBuckets } from '../../utils/packing'
 
 const props = defineProps<{ trip: Trip }>()
 const store = usePackingStore()
@@ -200,6 +199,32 @@ const grouped = computed(() =>
     (name) => categories.colorOf('packing', name),
   ),
 )
+
+// modo Ordenar: las asas del drag & drop solo aparecen mientras está activo
+const reordering = ref(false)
+// cambiar de maleta con el modo abierto dejaba asas sobre una lista distinta
+watch(activeTraveler, () => (reordering.value = false))
+
+// espejo local por categoría: el <draggable> reordena en sitio (y mueve entre
+// tarjetas, que es cambiar de categoría) y luego se persiste la disposición
+const lists = reactive<Record<string, PackingItem[]>>({})
+watch(
+  grouped,
+  (groups) => {
+    for (const key of Object.keys(lists)) delete lists[key]
+    for (const group of groups) lists[group.name] = [...group.items]
+  },
+  { immediate: true, deep: true },
+)
+
+async function persistOrder() {
+  try {
+    await store.reorder(packingBuckets(lists), activeTraveler.value)
+  } catch (err) {
+    notify.error(t('packing.toast.reorderError'), err)
+    store.load(props.trip.id)
+  }
+}
 
 async function addItem(payload: PackingAddPayload) {
   try {
@@ -419,8 +444,25 @@ async function saveTemplate() {
       v-if="canEditActive"
       :placeholder="$t('packing.addToBagPlaceholder', { bag: activeBagLabel })"
       :onAdd="addItem"
-      class="mb-5"
+      class="mb-3"
     />
+
+    <!-- Ordenar en su propia fila: dentro de la barra de añadir dejaba el
+         selector de categoría sin sitio en móvil. La pista va a su izquierda -->
+    <div v-if="canEditActive && activeItems.length" class="flex items-center gap-2 mb-3">
+      <p v-if="reordering" class="flex-1 text-xs text-ink-faint">{{ $t('packing.reorderHint') }}</p>
+      <span v-else class="flex-1" />
+      <Button
+        :icon="reordering ? 'pi pi-check' : 'pi pi-sort-alt'"
+        severity="secondary"
+        size="small"
+        :outlined="!reordering"
+        :aria-label="reordering ? $t('packing.reorderDone') : $t('packing.reorder')"
+        :aria-pressed="reordering"
+        v-tooltip.bottom="reordering ? $t('packing.reorderDone') : $t('packing.reorder')"
+        @click="reordering = !reordering"
+      />
+    </div>
 
     <TabSkeleton v-if="store.loading && !store.items.length" variant="list" :rows="8" />
 
@@ -437,39 +479,32 @@ async function saveTemplate() {
         :key="group.name"
         :name="group.name"
         :color="group.color"
-        :count="`${group.items.filter((i) => i.checked).length}/${group.items.length}`"
+        :count="`${(lists[group.name] ?? []).filter((i) => i.checked).length}/${(lists[group.name] ?? []).length}`"
       >
-        <li
-          v-for="item in group.items"
-          :key="item.id"
-          class="flex items-center gap-3 px-4 py-2 border-b border-line-faint last:border-b-0 hover:bg-surface-hover group/item"
+        <!-- una lista por categoría, todas del mismo grupo: arrastrar a otra
+             tarjeta es cambiar de categoría (el orden se persiste al soltar) -->
+        <draggable
+          :list="lists[group.name]"
+          group="packing"
+          item-key="id"
+          handle=".tt-drag-handle"
+          :disabled="!reordering || !canEditActive"
+          ghost-class="opacity-40"
+          tag="ul"
+          class="min-h-[2.25rem]"
+          @end="persistOrder"
         >
-          <Checkbox
-            :modelValue="item.checked"
-            binary
-            :disabled="!canEditActive"
-            @update:modelValue="store.toggle(item)"
-          />
-          <span
-            class="flex-1 transition-colors duration-200"
-            :class="{ 'line-through text-ink-faint': item.checked }"
-          >
-            {{ item.name }}
-            <PackingQuantity :quantity="item.quantity" />
-            <a
-              v-if="item.url"
-              :href="item.url"
-              target="_blank"
-              rel="noopener"
-              class="ml-1 text-info hover:underline text-xs"
-              v-tooltip.top="$t('packing.purchaseLink')"
-              @click.stop
-            >
-              <i class="pi pi-shopping-cart" />
-            </a>
-          </span>
-          <RowActions v-if="canEditActive" @edit="openEdit(item)" @remove="removeItem(item)" />
-        </li>
+          <template #item="{ element }">
+            <PackingItemRow
+              :item="element"
+              :editable="canEditActive"
+              :reorderable="reordering"
+              @toggle="store.toggle(element)"
+              @edit="openEdit(element)"
+              @remove="removeItem(element)"
+            />
+          </template>
+        </draggable>
       </PackingCategoryCard>
     </div>
 

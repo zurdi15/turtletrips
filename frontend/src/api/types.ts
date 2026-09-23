@@ -134,6 +134,8 @@ export interface PackingItem {
   url: string | null
   /** unidades de lo mismo (3 camisetas); el elemento se marca entero */
   quantity: number
+  /** orden manual dentro de su categoría (drag & drop) */
+  position: number
   checked: boolean
 }
 
@@ -445,6 +447,11 @@ export type ExpenseInput = Partial<
 > & { amount?: number | string; exchange_rate?: number | string | null }
 export type ItineraryInput = Partial<Omit<ItineraryItem, 'id' | 'trip_id'>>
 export type PackingInput = Partial<Omit<PackingItem, 'id' | 'trip_id'>>
+/** disposición completa de una maleta tras un drag & drop: categoría → ids en orden */
+export interface PackingBucket {
+  category: string
+  ids: number[]
+}
 export type ChecklistInput = Partial<Omit<ChecklistItem, 'id' | 'trip_id'>>
 export type LinkGroupInput = Partial<Omit<LinkGroup, 'id' | 'trip_id' | 'position'>>
 export type TripLinkInput = Partial<Omit<TripLink, 'id' | 'trip_id' | 'position' | 'image_url'>>
