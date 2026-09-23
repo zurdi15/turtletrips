@@ -162,7 +162,10 @@ const has = (scope: string) => !!trip.value?.scopes.includes(scope as never)
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-6 sm:py-10 flex flex-col gap-8">
+  <!-- sin ancho ni padding propios: esta vista ya vive dentro del <main> de
+       App.vue (max-w-6xl + px-4), y al sumar otro px-4 las tarjetas salían 32px
+       más estrechas que en la app y recortaban las rutas ("MAD → A…") -->
+  <div class="flex flex-col gap-8 pb-4">
     <TabSkeleton v-if="loading" variant="cards" :rows="3" />
 
     <EmptyState
