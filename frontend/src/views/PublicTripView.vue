@@ -132,13 +132,17 @@ const has = (scope: string) => !!trip.value?.scopes.includes(scope as never)
           <PlaceMap :places="places" :route="route" :countryCode="trip.countries[0]" />
         </div>
         <ul class="tt-stagger grid sm:grid-cols-2 gap-2">
+          <!-- min-w-0: sin él una dirección larga estira su celda de la rejilla
+               (que mide por max-content) y con ella la página entera -->
           <li
             v-for="place in places"
             :key="place.id"
-            class="bg-surface rounded-card border border-line px-3 py-2"
+            class="bg-surface rounded-card border border-line px-3 py-2 min-w-0"
           >
-            <p class="text-sm font-medium text-ink">{{ place.name }}</p>
-            <p v-if="place.address" class="text-xs text-ink-faint truncate">{{ place.address }}</p>
+            <p class="text-sm font-medium text-ink break-words">{{ place.name }}</p>
+            <!-- la dirección se parte en varias líneas: a quien recibe el enlace
+                 le sirve entera, no cortada con puntos suspensivos -->
+            <p v-if="place.address" class="text-xs text-ink-faint break-words">{{ place.address }}</p>
             <a
               v-if="place.url"
               :href="place.url"
