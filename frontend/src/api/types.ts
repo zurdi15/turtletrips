@@ -491,6 +491,16 @@ export interface ImportResult {
 // alguien reutiliza aquí un tipo de la app, deja de verse lo que NO viaja.
 export type ShareScope = 'itinerary' | 'bookings' | 'map'
 
+/** Documento personal de un viajero (DNI, pasaporte…), compartido con su familia */
+export interface Document {
+  id: number
+  traveler_id: number
+  original_name: string
+  content_type: string
+  size_bytes: number
+  created_at: string
+}
+
 export interface PublicTraveler {
   name: string
   color: string | null

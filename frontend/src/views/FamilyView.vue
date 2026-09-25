@@ -5,6 +5,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import PageHeader from '../components/ui/PageHeader.vue'
 import ColorSwatchPopover from '../components/ui/ColorSwatchPopover.vue'
 import EmptyState from '../components/EmptyState.vue'
+import DocumentsSection from '../components/family/DocumentsSection.vue'
 import TravelerItem from '../components/travelers/TravelerItem.vue'
 import type { Traveler } from '../api/types'
 import { useBagPermissionsStore } from '../stores/bagPermissions'
@@ -98,8 +99,8 @@ async function setBagAllowed(traveler: Traveler, allowed: boolean) {
 </script>
 
 <template>
-  <div class="max-w-2xl mx-auto">
-    <PageHeader :title="t('family.title')" :info="t('family.info')" class="mb-6" />
+  <div class="max-w-2xl mx-auto flex flex-col gap-6">
+    <PageHeader :title="t('family.title')" :info="t('family.info')" />
 
     <EmptyState
       v-if="myFamilyId == null"
@@ -142,6 +143,9 @@ async function setBagAllowed(traveler: Traveler, allowed: boolean) {
         <i class="pi pi-briefcase text-3xs" /> {{ t('family.bagPermissionHint') }}
       </p>
     </section>
+
+    <!-- documentos personales de la familia (DNI, pasaporte, carnet…) -->
+    <DocumentsSection v-if="myFamilyId != null" :members="members" class="tt-anim-rise" />
 
     <ColorSwatchPopover ref="colorPopover" @select="pickColor" />
   </div>

@@ -1,4 +1,15 @@
 export default {
+  documents: {
+    title: 'Documents',
+    hint: 'ID cards, passports, driving licences… Your whole family sees and manages them; they never travel in a trip\'s shared link.',
+    add: 'Add',
+    empty: 'No documents yet',
+    uploadError: 'The document could not be uploaded',
+    confirmDelete: {
+      header: 'Delete document',
+      message: 'Delete "{name}"?',
+    },
+  },
   title: 'Family',
   info: 'Your family members and what you share: world map, categories, templates… and your bags. Decide here who can manage them.',
   empty: {

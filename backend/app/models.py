@@ -758,6 +758,30 @@ class PackingTemplateItem(Base):
     template: Mapped[PackingTemplate] = relationship(back_populates="items")
 
 
+class Document(TimestampMixin, Base):
+    """Documento personal de un viajero (DNI, pasaporte, carnet…).
+
+    Cuelga de la FAMILIA, no de un viaje: lo ve y lo gestiona toda la familia
+    (para reservar vuelos hace falta el pasaporte de todos, niños incluidos).
+    Nunca sale por el enlace público ni por el .ics.
+    """
+
+    __tablename__ = "documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    family_id: Mapped[int] = mapped_column(
+        ForeignKey("families.id", ondelete="CASCADE"), index=True
+    )
+    # de quién es el documento (el viajero puede no tener cuenta: los niños)
+    traveler_id: Mapped[int] = mapped_column(
+        ForeignKey("travelers.id", ondelete="CASCADE"), index=True
+    )
+    original_name: Mapped[str] = mapped_column(String(300))
+    stored_name: Mapped[str] = mapped_column(String(100))
+    content_type: Mapped[str] = mapped_column(String(100))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+
+
 class WorldPlace(TimestampMixin, Base):
     """Diario mundial de una familia: lugares visitados, a mano o derivados de viajes."""
 

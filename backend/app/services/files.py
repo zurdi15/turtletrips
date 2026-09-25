@@ -83,6 +83,34 @@ def delete_avatar(stored_name: str) -> None:
         pass
 
 
+def _documents_dir(family_id: int) -> Path:
+    # una carpeta por familia: los documentos no pertenecen a ningún viaje
+    return get_settings().uploads_dir / "documents" / str(family_id)
+
+
+async def save_document(family_id: int, upload: UploadFile) -> tuple[str, int]:
+    """Guarda un documento personal; devuelve (stored_name, size_bytes)."""
+    if not is_allowed_content_type(upload.content_type):
+        raise FileValidationError("Solo se admiten PDFs e imágenes")
+    return await _write_upload(_documents_dir(family_id), upload)
+
+
+def resolve_document(family_id: int, stored_name: str) -> Path:
+    """Ruta absoluta de un documento, a prueba de path traversal."""
+    base = _documents_dir(family_id).resolve()
+    path = (base / stored_name).resolve()
+    if not path.is_relative_to(base):
+        raise FileValidationError("Ruta de fichero inválida")
+    return path
+
+
+def delete_document(family_id: int, stored_name: str) -> None:
+    try:
+        resolve_document(family_id, stored_name).unlink(missing_ok=True)
+    except FileValidationError:
+        pass
+
+
 def _world_dir() -> Path:
     # plano y compartido: las postales del mapa mundial no pertenecen a ningún viaje
     return get_settings().uploads_dir / "world"

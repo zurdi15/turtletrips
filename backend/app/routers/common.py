@@ -1,5 +1,6 @@
 import enum
 import unicodedata
+from pathlib import Path
 from typing import TypeVar
 
 from fastapi import HTTPException
@@ -117,6 +118,24 @@ def save_updates(db: Session, obj: T, data: dict) -> T:
 def delete_by_id(db: Session, model: type[T], obj_id: int) -> None:
     db.delete(get_or_404(db, model, obj_id))
     db.commit()
+
+
+def clean_file_name(new_name: str, current: str) -> str:
+    """Nombre nuevo de un fichero subido, sin rutas y con su extensión.
+
+    El nombre acaba en la cabecera de descarga, así que fuera separadores y
+    caracteres de control; y si el usuario escribe "Billete de vuelta" sin
+    extensión, se le pega la que ya tenía para que el fichero siga abriéndose
+    con su programa.
+    """
+    name = "".join(ch for ch in new_name if ch.isprintable() and ch not in "/\\").strip()
+    name = " ".join(name.split())
+    if not name:
+        raise HTTPException(status_code=400, detail="El nombre no puede quedar vacío")
+    suffix = Path(current).suffix
+    if suffix and not name.lower().endswith(suffix.lower()):
+        name = f"{name}{suffix}"
+    return name[:300]
 
 
 def ascii_filename(name: str, fallback: str) -> str:

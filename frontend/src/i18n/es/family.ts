@@ -1,4 +1,15 @@
 export default {
+  documents: {
+    title: 'Documentos',
+    hint: 'DNI, pasaporte, carnet de conducir… Los ve y los gestiona toda tu familia; nunca salen en el enlace compartido de un viaje.',
+    add: 'Añadir',
+    empty: 'Sin documentos',
+    uploadError: 'No se pudo subir el documento',
+    confirmDelete: {
+      header: 'Eliminar documento',
+      message: '¿Eliminar "{name}"?',
+    },
+  },
   title: 'Familia',
   info: 'Los miembros de tu familia y lo que compartís: mapa mundial, categorías, plantillas… y tus maletas. Aquí decides quién puede gestionarlas.',
   empty: {

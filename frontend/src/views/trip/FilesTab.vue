@@ -139,6 +139,10 @@ function remove(id: number, name: string) {
       </template>
     </template>
 
-    <FileRenameDialog v-model:visible="showRename" :file="renaming" />
+    <FileRenameDialog
+      v-model:visible="showRename"
+      :file="renaming"
+      :onRename="(name: string) => store.update(renaming!.id, { original_name: name })"
+    />
   </div>
 </template>

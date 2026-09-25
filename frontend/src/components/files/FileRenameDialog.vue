@@ -4,31 +4,33 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import FormDialog from '../ui/FormDialog.vue'
 import FormField from '../ui/FormField.vue'
-import type { Attachment } from '../../api/types'
-import { useAttachmentsStore } from '../../stores/attachments'
 import { useFormDialog } from '../../composables/useFormDialog'
 import { fileExtension } from '../../utils/files'
 
 // Renombrar un fichero subido: cambia el nombre que se ve y con el que se
 // descarga, no el fichero en disco. La extensión la conserva el servidor si
 // no se escribe, así que aquí solo se avisa.
-const props = defineProps<{ file: Attachment | null }>()
+// sirve para los ficheros del viaje y para los documentos de la familia: quien
+// lo abre pone qué hacer con el nombre nuevo
+const props = defineProps<{
+  file: { original_name: string } | null
+  onRename: (name: string) => Promise<unknown>
+}>()
 const visible = defineModel<boolean>('visible', { required: true })
 
-const store = useAttachmentsStore()
 const { t } = useI18n()
 
 const name = ref('')
 const extension = computed(() => fileExtension(props.file?.original_name ?? ''))
 
-const { saving, save } = useFormDialog<Attachment>({
+const { saving, save } = useFormDialog<{ original_name: string }>({
   visible,
   entity: () => props.file,
   reset(file) {
     name.value = file?.original_name ?? ''
   },
   validate: () => (name.value.trim() ? null : t('bookings.files.rename.nameRequired')),
-  submit: () => store.update(props.file!.id, { original_name: name.value.trim() }),
+  submit: () => props.onRename(name.value.trim()),
 })
 </script>
 

@@ -45,7 +45,7 @@ export default defineConfig({
             urlPattern: ({ url, request }) =>
               request.method === 'GET' &&
               url.pathname.startsWith('/api/v1/') &&
-              !/\/(auth|users|famil(y|ies)|backup|public\/trips|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(
+              !/\/(auth|users|famil(y|ies)|documents|backup|public\/trips|attachments\/\d+\/download|calendar\.ics|calendar\/[^/]+\.ics|expenses\/export\.csv|trips\/\d+\/cover|travelers\/\d+\/avatar)/.test(
                 url.pathname,
               ),
             handler: 'NetworkFirst',
@@ -69,9 +69,9 @@ export default defineConfig({
               expiration: { maxEntries: 60, maxAgeSeconds: 180 * 86400 },
             },
           },
-          // tiles de CARTO: cache-first (cambian poco y pesan)
+          // teselas de Esri: cache-first (cambian poco y pesan)
           {
-            urlPattern: /^https:\/\/[abcd]\.basemaps\.cartocdn\.com\//,
+            urlPattern: /^https:\/\/server\.arcgisonline\.com\/ArcGIS\/rest\/services\//,
             handler: 'CacheFirst',
             options: {
               cacheName: 'map-tiles',
