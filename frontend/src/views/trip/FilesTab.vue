@@ -4,9 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import AttachmentList from '../../components/AttachmentList.vue'
 import EmptyState from '../../components/EmptyState.vue'
+import FileRenameDialog from '../../components/files/FileRenameDialog.vue'
 import FilesSection from '../../components/files/FilesSection.vue'
 import TabSkeleton from '../../components/TabSkeleton.vue'
-import type { Trip } from '../../api/types'
+import type { Attachment, Trip } from '../../api/types'
 import { useAttachmentsStore } from '../../stores/attachments'
 import { useBookingsStore } from '../../stores/bookings'
 import { useExpensesStore } from '../../stores/expenses'
@@ -61,6 +62,15 @@ const expenseDesc = computed(() => new Map(expenses.items.map((e) => [e.id, e.de
 const receipts = computed(() => store.items.filter((a) => a.expense_id != null))
 const tripFiles = computed(() => store.items.filter((a) => a.expense_id == null))
 
+// renombrar: un diálogo para las dos secciones (tabla y tarjetas)
+const renaming = ref<Attachment | null>(null)
+const showRename = ref(false)
+
+function rename(file: Attachment) {
+  renaming.value = file
+  showRename.value = true
+}
+
 function remove(id: number, name: string) {
   confirmAction({
     message: t('bookings.files.confirmDelete.message', { name }),
@@ -105,6 +115,7 @@ function remove(id: number, name: string) {
         :expenseDesc="expenseDesc"
         :highlightId="highlightId"
         @remove="remove"
+        @rename="rename"
       />
 
       <!-- recibos de gastos: sección propia, con enlace al gasto -->
@@ -123,8 +134,11 @@ function remove(id: number, name: string) {
           :expenseDesc="expenseDesc"
           :highlightId="highlightId"
           @remove="remove"
+          @rename="rename"
         />
       </template>
     </template>
+
+    <FileRenameDialog v-model:visible="showRename" :file="renaming" />
   </div>
 </template>

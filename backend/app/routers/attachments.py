@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import select
@@ -6,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..auth import CurrentUser
 from ..db import get_db
 from ..models import Attachment, Booking, Expense
-from ..schemas.attachment import AttachmentRead
+from ..schemas.attachment import AttachmentRead, AttachmentUpdate
 from ..services import files
 from .common import ensure_in_trip, ensure_trip_member, get_trip_scoped
 
@@ -87,6 +89,38 @@ def download_attachment(
         filename=attachment.original_name,
         content_disposition_type="inline" if inline else "attachment",
     )
+
+
+def _clean_name(new_name: str, current: str) -> str:
+    """Nombre nuevo, sin rutas y conservando la extensión del fichero.
+
+    El nombre acaba en la cabecera de descarga, así que fuera separadores y
+    caracteres de control; y si el usuario escribe "Billete de vuelta" sin
+    extensión, se le pega la que ya tenía para que el fichero siga abriéndose
+    con su programa.
+    """
+    name = "".join(ch for ch in new_name if ch.isprintable() and ch not in "/\\").strip()
+    name = " ".join(name.split())
+    if not name:
+        raise HTTPException(status_code=400, detail="El nombre no puede quedar vacío")
+    suffix = Path(current).suffix
+    if suffix and not name.lower().endswith(suffix.lower()):
+        name = f"{name}{suffix}"
+    return name[:300]
+
+
+@router.patch("/attachments/{attachment_id}", response_model=AttachmentRead)
+def rename_attachment(
+    attachment_id: int,
+    payload: AttachmentUpdate,
+    user: CurrentUser,
+    db: Session = Depends(get_db),
+):
+    attachment = get_trip_scoped(db, user, Attachment, attachment_id)
+    attachment.original_name = _clean_name(payload.original_name, attachment.original_name)
+    db.commit()
+    db.refresh(attachment)
+    return attachment
 
 
 @router.delete("/attachments/{attachment_id}", status_code=204)

@@ -87,3 +87,34 @@ def test_upload_receipt_linked_to_expense(client, trip):
     listed = client.get(f"/api/v1/trips/{trip_id}/attachments").json()
     assert len(listed) == 1
     assert listed[0]["expense_id"] is None
+
+
+def test_rename_attachment(client, trip):
+    trip_id = trip["id"]
+    att = _upload(client, trip_id).json()
+
+    # renombrar de verdad: cambia lo que se ve y lo que se descarga
+    resp = client.patch(
+        f"/api/v1/attachments/{att['id']}", json={"original_name": "Billete de vuelta.pdf"}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["original_name"] == "Billete de vuelta.pdf"
+    listed = client.get(f"/api/v1/trips/{trip_id}/attachments").json()[0]
+    assert listed["original_name"] == "Billete de vuelta.pdf"
+    resp = client.get(f"/api/v1/attachments/{att['id']}/download")
+    assert resp.content == PDF_BYTES
+    assert "Billete" in resp.headers["content-disposition"]
+
+    # sin extensión se conserva la que tenía: el fichero sigue abriéndose igual
+    resp = client.patch(f"/api/v1/attachments/{att['id']}", json={"original_name": "  Visado  "})
+    assert resp.json()["original_name"] == "Visado.pdf"
+
+    # ni rutas ni nombres vacíos
+    resp = client.patch(
+        f"/api/v1/attachments/{att['id']}", json={"original_name": "../../etc/passwd"}
+    )
+    assert resp.json()["original_name"] == "....etcpasswd.pdf"
+    assert (
+        client.patch(f"/api/v1/attachments/{att['id']}", json={"original_name": "   "}).status_code
+        == 400
+    )

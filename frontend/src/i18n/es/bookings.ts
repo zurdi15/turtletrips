@@ -92,6 +92,13 @@ export default {
       header: 'Eliminar adjunto',
       message: '¿Eliminar el fichero "{name}"?',
     },
+    rename: {
+      action: 'Renombrar',
+      title: 'Renombrar fichero',
+      name: 'Nombre',
+      nameRequired: 'El nombre es obligatorio',
+      keepsExtension: 'Si no la escribes, se conserva la extensión {ext}',
+    },
     columns: {
       file: 'Fichero',
       booking: 'Reserva',

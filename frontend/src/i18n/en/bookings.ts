@@ -92,6 +92,13 @@ export default {
       header: 'Delete attachment',
       message: 'Delete the file "{name}"?',
     },
+    rename: {
+      action: 'Rename',
+      title: 'Rename file',
+      name: 'Name',
+      nameRequired: 'The name is required',
+      keepsExtension: 'Leave it out and the {ext} extension is kept',
+    },
     columns: {
       file: 'File',
       booking: 'Booking',

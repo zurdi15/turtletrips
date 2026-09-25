@@ -4,7 +4,8 @@ import type { Attachment } from '../api/types'
 import { useTripResource } from './tripResource'
 
 export const useAttachmentsStore = defineStore('attachments', () => {
-  const base = useTripResource<Attachment, never>({
+  // el único campo editable es el nombre que se enseña y con el que se descarga
+  const base = useTripResource<Attachment, { original_name: string }>({
     listPath: (tripId) => `/trips/${tripId}/attachments`,
     itemPath: (id) => `/attachments/${id}`,
   })

@@ -22,7 +22,7 @@ const props = defineProps<{
   /** adjunto enlazado desde un gasto: se enciende */
   highlightId: number | null
 }>()
-defineEmits<{ remove: [id: number, name: string] }>()
+defineEmits<{ remove: [id: number, name: string]; rename: [file: Attachment] }>()
 
 const store = useAttachmentsStore()
 const isDesktop = useMediaQuery('(min-width: 640px)')
@@ -89,9 +89,18 @@ function rowClass(row: Attachment): string {
         <span class="text-sm text-ink-muted">{{ formatDate(data.created_at) }}</span>
       </template>
     </Column>
-    <Column style="width: 6rem">
+    <Column style="width: 8rem">
       <template #body="{ data }">
         <div class="flex gap-1 justify-end">
+          <Button
+            icon="pi pi-pencil"
+            text
+            size="small"
+            severity="secondary"
+            :aria-label="$t('bookings.files.rename.action')"
+            v-tooltip.top="$t('bookings.files.rename.action')"
+            @click="$emit('rename', data)"
+          />
           <a :href="store.downloadUrl(data.id)" download>
             <Button icon="pi pi-download" text size="small" severity="secondary" />
           </a>
@@ -126,6 +135,14 @@ function rowClass(row: Attachment): string {
           {{ att.original_name }}
         </a>
         <div class="flex gap-1 -mt-1.5 -mr-1.5 shrink-0">
+          <Button
+            icon="pi pi-pencil"
+            text
+            size="small"
+            severity="secondary"
+            :aria-label="$t('bookings.files.rename.action')"
+            @click="$emit('rename', att)"
+          />
           <a :href="store.downloadUrl(att.id)" download>
             <Button icon="pi pi-download" text size="small" severity="secondary" />
           </a>

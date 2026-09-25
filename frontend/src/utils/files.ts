@@ -11,3 +11,9 @@ export function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
+
+/** Extensión de un fichero (".pdf"), vacía si no la tiene */
+export function fileExtension(name: string): string {
+  const dot = name.lastIndexOf('.')
+  return dot > 0 && dot < name.length - 1 ? name.slice(dot) : ''
+}

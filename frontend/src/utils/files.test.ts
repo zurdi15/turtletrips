@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fileIcon, formatSize } from './files'
+import { fileExtension, fileIcon, formatSize } from './files'
 
 describe('fileIcon', () => {
   it('distingue pdf, imagen y genérico', () => {
@@ -22,5 +22,18 @@ describe('formatSize', () => {
   it('megabytes con un decimal', () => {
     expect(formatSize(1024 * 1024)).toBe('1.0 MB')
     expect(formatSize(2.5 * 1024 * 1024)).toBe('2.5 MB')
+  })
+})
+
+describe('fileExtension', () => {
+  it('devuelve la extensión con el punto', () => {
+    expect(fileExtension('reserva.pdf')).toBe('.pdf')
+    expect(fileExtension('foto.viaje.JPG')).toBe('.JPG')
+  })
+
+  it('sin extensión, cadena vacía (ni ocultos ni puntos finales)', () => {
+    expect(fileExtension('billete')).toBe('')
+    expect(fileExtension('.gitignore')).toBe('')
+    expect(fileExtension('acaba en punto.')).toBe('')
   })
 })
