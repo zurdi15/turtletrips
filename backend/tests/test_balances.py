@@ -428,6 +428,19 @@ def test_partial_settlement_reduces_suggestion(client, trip):
     assert data["debts_settled"] is False
 
 
+def test_settlement_cannot_exceed_outstanding_debt(client, trip):
+    ana = add_traveler(client, trip["id"], "Ana")
+    luis = add_traveler(client, trip["id"], "Luis")
+    _expense(client, trip["id"], amount="100", paid_by_id=ana["id"])
+
+    resp = client.post(
+        f"/api/v1/trips/{trip['id']}/settlements",
+        json={"from_id": luis["id"], "to_id": ana["id"], "amount_base": "50.01"},
+    )
+    assert resp.status_code == 400
+    assert "superar" in resp.json()["detail"]
+
+
 def test_trip_without_settlements_not_marked_settled(client, trip):
     add_traveler(client, trip["id"], "Ana")
     # sin gastos ni liquidaciones: la pill no debe salir aunque los saldos sean cero

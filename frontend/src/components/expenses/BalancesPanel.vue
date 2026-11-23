@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
+import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import MemberChip from '../MemberChip.vue'
 import type { SettlementTransfer, Trip } from '../../api/types'
@@ -12,6 +13,8 @@ import { useTripsStore } from '../../stores/trips'
 import { formatDate, formatMoney } from '../../composables/useMoney'
 import { useMediaQuery } from '../../composables/useMediaQuery'
 import { useNotify } from '../../composables/useNotify'
+import FormDialog from '../ui/FormDialog.vue'
+import { intlLocale } from '../../i18n'
 
 const props = defineProps<{ trip: Trip }>()
 const { t } = useI18n()
@@ -40,18 +43,33 @@ function netClass(net: number): string {
 }
 
 const settling = ref(false)
+const paymentTransfer = ref<SettlementTransfer | null>(null)
+const paymentAmount = ref<number | null>(null)
+const showPaymentDialog = ref(false)
+const numberLocale = computed(() => intlLocale())
 
-async function settle(transfer: SettlementTransfer) {
+function openPayment(transfer: SettlementTransfer) {
+  paymentTransfer.value = transfer
+  paymentAmount.value = transfer.amount_base
+  showPaymentDialog.value = true
+}
+
+async function settle() {
+  if (!paymentTransfer.value || paymentAmount.value == null || paymentAmount.value <= 0) return
   settling.value = true
   try {
     await store.settle({
-      from_id: transfer.from_id,
-      to_id: transfer.to_id,
-      amount_base: transfer.amount_base,
+      from_id: paymentTransfer.value.from_id,
+      to_id: paymentTransfer.value.to_id,
+      amount_base: paymentAmount.value,
     })
     notify.success(
-      t('expenses.balances.toastSettled', { from: transfer.from_name, to: transfer.to_name }),
+      t('expenses.balances.toastSettled', {
+        from: paymentTransfer.value.from_name,
+        to: paymentTransfer.value.to_name,
+      }),
     )
+    showPaymentDialog.value = false
     // refresca la pill de "deudas saldadas" del viaje
     await trips.loadTrip(props.trip.id)
   } catch (err) {
@@ -196,7 +214,7 @@ async function undo(settlementId: number) {
               class="max-sm:w-full"
               :loading="settling"
               v-tooltip.left="$t('expenses.balances.settleTooltip')"
-              @click="settle(t)"
+              @click="openPayment(t)"
             />
           </li>
         </TransitionGroup>
@@ -229,6 +247,47 @@ async function undo(settlementId: number) {
         </TransitionGroup>
       </div>
     </template>
+
+    <FormDialog
+      v-model:visible="showPaymentDialog"
+      :header="$t('expenses.balances.paymentDialog.title')"
+      :save-label="$t('expenses.balances.paymentDialog.save')"
+      :saving="settling"
+      width="md"
+      @save="settle"
+    >
+      <p v-if="paymentTransfer" class="text-sm text-ink-secondary">
+        {{
+          $t('expenses.balances.paymentDialog.description', {
+            from: paymentTransfer.from_name,
+            to: paymentTransfer.to_name,
+          })
+        }}
+      </p>
+      <div class="flex flex-col gap-1">
+        <label for="settlement-amount" class="text-sm font-medium text-ink">
+          {{ $t('expenses.balances.paymentDialog.amount') }}
+        </label>
+        <InputNumber
+          id="settlement-amount"
+          v-model="paymentAmount"
+          :locale="numberLocale"
+          :min="0.01"
+          :max="paymentTransfer?.amount_base"
+          :min-fraction-digits="2"
+          :max-fraction-digits="2"
+          :suffix="` ${props.trip.base_currency}`"
+          autofocus
+        />
+        <small v-if="paymentTransfer" class="text-ink-faint">
+          {{
+            $t('expenses.balances.paymentDialog.max', {
+              amount: money(paymentTransfer.amount_base),
+            })
+          }}
+        </small>
+      </div>
+    </FormDialog>
   </div>
 </template>
 

@@ -124,6 +124,21 @@ def create_settlement(
         raise HTTPException(status_code=400, detail="El pagador y el receptor deben ser distintos")
     get_or_404(db, Traveler, payload.from_id)
     get_or_404(db, Traveler, payload.to_id)
+    available = next(
+        (
+            transfer.amount_base
+            for transfer in trip_balances(db, trip).settlements
+            if transfer.from_id == payload.from_id and transfer.to_id == payload.to_id
+        ),
+        None,
+    )
+    if available is None:
+        raise HTTPException(status_code=400, detail="No hay una deuda pendiente entre esos viajeros")
+    if payload.amount_base.quantize(Decimal("0.01")) > Decimal(str(available)).quantize(Decimal("0.01")):
+        raise HTTPException(
+            status_code=400,
+            detail=f"El pago no puede superar la deuda pendiente ({available:.2f})",
+        )
     db.add(
         Settlement(
             trip_id=trip_id,

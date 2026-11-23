@@ -193,6 +193,13 @@ export default {
     allSquare: 'Todo cuadra: nadie debe nada.',
     settle: 'Liquidar',
     settleTooltip: 'Marcar este pago como hecho',
+    paymentDialog: {
+      title: 'Registrar pago',
+      description: '{from} paga a {to}. Puedes registrar todo o solo una parte de la deuda.',
+      amount: 'Importe pagado',
+      max: 'Pendiente máximo: {amount}',
+      save: 'Registrar pago',
+    },
     paymentsTitle: 'Pagos registrados',
     undoTooltip: 'Deshacer este pago',
     toastSettled: 'Pago registrado: {from} → {to}',

@@ -193,6 +193,13 @@ export default {
     allSquare: 'All square: nobody owes anything.',
     settle: 'Settle',
     settleTooltip: 'Mark this payment as done',
+    paymentDialog: {
+      title: 'Record payment',
+      description: '{from} pays {to}. You can record the full debt or only part of it.',
+      amount: 'Amount paid',
+      max: 'Maximum outstanding: {amount}',
+      save: 'Record payment',
+    },
     paymentsTitle: 'Recorded payments',
     undoTooltip: 'Undo this payment',
     toastSettled: 'Payment recorded: {from} → {to}',
