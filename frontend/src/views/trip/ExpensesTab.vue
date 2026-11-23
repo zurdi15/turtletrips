@@ -22,6 +22,7 @@ import FilterToggleButton from '../../components/ui/FilterToggleButton.vue'
 import CurrencyConverterDialog from '../../components/expenses/CurrencyConverterDialog.vue'
 import type { Expense, Trip } from '../../api/types'
 import { useExpensesStore } from '../../stores/expenses'
+import { useBookingsStore } from '../../stores/bookings'
 import { useAttachmentsStore } from '../../stores/attachments'
 import { useCategoriesStore } from '../../stores/categories'
 import { usePlacesStore } from '../../stores/places'
@@ -39,6 +40,7 @@ import {
   currencyBreakdown,
   groupTotals as computeGroupTotals,
   partitionForStats,
+  spreadLodgingExpensesForStats,
   sortRows,
   tripDayCount,
   type ExpenseGroupBy,
@@ -48,6 +50,7 @@ import {
 const props = defineProps<{ trip: Trip }>()
 const { t } = useI18n()
 const store = useExpensesStore()
+const bookings = useBookingsStore()
 const attachments = useAttachmentsStore()
 const categoriesStore = useCategoriesStore()
 const places = usePlacesStore()
@@ -106,6 +109,7 @@ const highlightId = ref<number | null>(null)
 useTripTabData(() => props.trip, {
   load(tripId) {
     store.load(tripId)
+    bookings.load(tripId)
     categoriesStore.load('expense')
     places.load(tripId)
     attachments.load(tripId)
@@ -156,7 +160,13 @@ const {
 // ---- métricas ----
 // los gastos marcados fuera de estadísticas (vuelos…) siguen en la tabla, pero
 // ni tarjetas ni gráficas los cuentan
-const forStats = computed(() => partitionForStats(filtered.value))
+const forStats = computed(() => {
+  const partition = partitionForStats(filtered.value)
+  return {
+    ...partition,
+    counted: spreadLodgingExpensesForStats(partition.counted, bookings.items),
+  }
+})
 const stats = computed(() =>
   computeStats(
     forStats.value.counted,

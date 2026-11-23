@@ -77,3 +77,21 @@ def test_yearly_stats_skip_expenses_out_of_stats(client):
     )
     years = {y["year"]: y for y in client.get("/api/v1/stats/yearly").json()}
     assert years[2025]["spent"] == [{"currency": "EUR", "amount": 20.0}]
+
+
+def test_yearly_stats_spreads_hotel_expense_over_nights(client):
+    trip = _trip(client, "Hotel", "2025-04-10", "2025-04-13", ["ES"])
+    booking = client.post(
+        f"/api/v1/trips/{trip['id']}/bookings",
+        json={
+            "type": "hotel",
+            "title": "Hotel Madrid",
+            "start_dt": "2025-04-10T15:00:00",
+            "end_dt": "2025-04-13T11:00:00",
+            "cost_amount": "300",
+            "cost_currency": "EUR",
+        },
+    )
+    assert booking.status_code == 201
+    years = {y["year"]: y for y in client.get("/api/v1/stats/yearly").json()}
+    assert years[2025]["spent"] == [{"currency": "EUR", "amount": 300.0}]

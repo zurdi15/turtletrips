@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import CurrentUser
 from ..db import get_db
-from ..models import Expense, Trip, WorldPlace, trip_travelers
+from ..models import Booking, Expense, Trip, WorldPlace, trip_travelers
 from ..schemas.misc import YearStats
 from ..services.stats import yearly_stats
 from ..services.worldmap import derive_country_visits
@@ -36,6 +36,11 @@ def yearly(user: CurrentUser, db: Session = Depends(get_db)):
         if trip_ids
         else []
     )
+    bookings = (
+        list(db.scalars(select(Booking).where(Booking.trip_id.in_(trip_ids))).all())
+        if trip_ids
+        else []
+    )
 
     world_countries: list[tuple[int, str]] = []
     family_id = user.traveler.family_id if user.traveler else None
@@ -55,4 +60,4 @@ def yearly(user: CurrentUser, db: Session = Depends(get_db)):
             if year is not None and entry.country_code:
                 world_countries.append((year, entry.country_code))
 
-    return yearly_stats(trips, expenses, world_countries)
+    return yearly_stats(trips, expenses, world_countries, bookings)

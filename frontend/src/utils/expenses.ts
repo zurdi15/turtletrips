@@ -1,6 +1,6 @@
-import type { Expense } from '../api/types'
+import type { Booking, Expense } from '../api/types'
 import { toIsoDate } from '../composables/useMoney'
-import { daysBetween } from './dates'
+import { addDays, daysBetween } from './dates'
 
 export interface ExpenseFilterState {
   searchText: string
@@ -87,6 +87,42 @@ export interface StatsPartition {
   /** los marcados fuera de estadísticas (vuelos…): cuántos y cuánto suman */
   excludedCount: number
   excludedTotal: number
+}
+
+/** Reparte los gastos de hotel entre las noches que cubre la reserva. */
+export function spreadLodgingExpensesForStats(
+  expenses: Expense[],
+  bookings: Booking[],
+): Expense[] {
+  const bookingById = new Map(bookings.map((booking) => [booking.id, booking]))
+  const result: Expense[] = []
+  for (const expense of expenses) {
+    const booking = expense.booking_id != null ? bookingById.get(expense.booking_id) : undefined
+    if (booking?.type !== 'hotel' || !booking.start_dt || !booking.end_dt) {
+      result.push(expense)
+      continue
+    }
+    const start = booking.start_dt.slice(0, 10)
+    const checkout = booking.end_dt.slice(0, 10)
+    const nights = Math.max(1, daysBetween(start, checkout))
+    if (nights === 1) {
+      result.push(expense)
+      continue
+    }
+    const baseCents = Math.round(expense.amount_base * 100)
+    const amountCents = Math.round(expense.amount * 100)
+    for (let i = 0; i < nights; i++) {
+      const basePart = Math.floor(baseCents / nights) + (i < baseCents % nights ? 1 : 0)
+      const amountPart = Math.floor(amountCents / nights) + (i < amountCents % nights ? 1 : 0)
+      result.push({
+        ...expense,
+        day: addDays(start, i),
+        amount_base: basePart / 100,
+        amount: amountPart / 100,
+      })
+    }
+  }
+  return result
 }
 
 /**

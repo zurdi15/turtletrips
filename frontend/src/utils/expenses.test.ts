@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Expense } from '../api/types'
+import type { Booking } from '../api/types'
 import {
   aggregate,
   buildRows,
@@ -12,6 +13,7 @@ import {
   groupTotals,
   isGroupSelected,
   partitionForStats,
+  spreadLodgingExpensesForStats,
   sortRows,
   toggleGroupSelection,
   toggleRowSelection,
@@ -139,6 +141,36 @@ describe('partitionForStats', () => {
     expect(excludedCount).toBe(2)
     expect(excludedTotal).toBe(650.5)
     expect(computeStats(counted, 2, 4).perDay).toBe(10)
+  })
+
+  describe('spreadLodgingExpensesForStats', () => {
+    it('reparte un hotel entre sus noches y conserva el total', () => {
+      const expense = makeExpense({
+        booking_id: 7,
+        day: '2026-04-10',
+        amount: 100,
+        amount_base: 100,
+      })
+      const booking = {
+        id: 7,
+        type: 'hotel',
+        start_dt: '2026-04-10T15:00:00',
+        end_dt: '2026-04-13T11:00:00',
+      } as Booking
+      const rows = spreadLodgingExpensesForStats([expense], [booking])
+      expect(rows.map((row) => [row.day, row.amount_base])).toEqual([
+        ['2026-04-10', 33.34],
+        ['2026-04-11', 33.33],
+        ['2026-04-12', 33.33],
+      ])
+      expect(rows.reduce((total, row) => total + row.amount_base, 0)).toBe(100)
+    })
+
+    it('no reparte gastos no hotel ni reservas incompletas', () => {
+      const expense = makeExpense({ booking_id: 8 })
+      const booking = { id: 8, type: 'flight', start_dt: null, end_dt: null } as Booking
+      expect(spreadLodgingExpensesForStats([expense], [booking])).toEqual([expense])
+    })
   })
 
   it('sin marcados deja la lista intacta', () => {

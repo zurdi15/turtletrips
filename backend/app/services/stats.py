@@ -7,9 +7,10 @@ de su viaje (sumar monedas base distintas sería mentir).
 """
 
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
+from decimal import Decimal
 
-from ..models import Expense, Trip
+from ..models import Booking, Expense, Trip
 from ..schemas.misc import CurrencyTotal, YearStats
 
 
@@ -24,10 +25,32 @@ def _days_in_year(trip: Trip, year: int) -> int:
     return (end - start).days + 1 if end >= start else 0
 
 
+def _lodging_allocations(
+    expense: Expense, booking_by_id: dict[int, Booking]
+) -> list[tuple[date, Decimal]]:
+    booking = booking_by_id.get(expense.booking_id) if expense.booking_id is not None else None
+    if (
+        booking is None
+        or booking.type != "hotel"
+        or booking.start_dt is None
+        or booking.end_dt is None
+    ):
+        return [(expense.day, Decimal(str(expense.amount_base)))]
+    start = booking.start_dt.date()
+    nights = max(1, (booking.end_dt.date() - start).days)
+    total_cents = int(Decimal(str(expense.amount_base)) * 100)
+    base, remainder = divmod(total_cents, nights)
+    return [
+        (start + timedelta(days=index), Decimal(base + (index < remainder)) / 100)
+        for index in range(nights)
+    ]
+
+
 def yearly_stats(
     trips: list[Trip],
     expenses: list[Expense],
     world_countries: list[tuple[int, str]] | None = None,
+    bookings: list[Booking] | None = None,
 ) -> list[YearStats]:
     """`world_countries`: (año, código) del diario mundial — entradas
     retroactivas con fecha de visita que no vienen de ningún viaje de la app."""
@@ -44,12 +67,14 @@ def yearly_stats(
 
     # gasto por año real del gasto y moneda base de su viaje
     currency_of = {trip.id: trip.base_currency for trip in trips}
+    booking_by_id = {booking.id: booking for booking in bookings or []}
     spent: dict[int, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     for expense in expenses:
         currency = currency_of.get(expense.trip_id)
         if currency is None:
             continue
-        spent[expense.day.year][currency] += float(expense.amount_base)
+        for day, amount in _lodging_allocations(expense, booking_by_id):
+            spent[day.year][currency] += float(amount)
 
     seen_countries: set[str] = set()
     results: list[YearStats] = []
